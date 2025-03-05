@@ -12,7 +12,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
 const CINETPAY_SITE_ID = "105889251";
 const CINETPAY_API_KEY = "152913513467c83763ee8962.23212316";
-const CINETPAY_CHECKOUT_URL = "https://checkout.cinetpay.com";
 
 type PaymentFormProps = {
   participant: any;
@@ -88,7 +87,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         return;
       }
       
-      // Création des paramètres pour l'initialisation de CinetPay
+      // Création des paramètres pour l'initialisation de CinetPay (selon la doc)
       const cinetpayParams = {
         transaction_id: transactionId,
         amount: PAYMENT_AMOUNT,
@@ -111,19 +110,13 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         metadata: JSON.stringify({ participant_id: participant.id })
       };
       
-      // Création de l'URL de redirection CinetPay avec les paramètres dans l'URL
-      const queryParams = new URLSearchParams({
-        apikey: CINETPAY_API_KEY,
-        site_id: CINETPAY_SITE_ID
-      }).toString();
+      // Construction de l'URL pour la redirection vers la page de paiement CinetPay
+      const cinetpayUrl = `https://checkout.cinetpay.com/payment?apikey=${CINETPAY_API_KEY}&site_id=${CINETPAY_SITE_ID}`;
       
-      // Construction de l'URL de redirection
-      const redirectUrl = `${CINETPAY_CHECKOUT_URL}/payment?${queryParams}`;
-      
-      // Créer un formulaire pour la redirection POST vers CinetPay
+      // Création d'un formulaire pour la redirection POST vers CinetPay
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = redirectUrl;
+      form.action = cinetpayUrl;
       form.style.display = 'none';
       
       // Ajout des paramètres au formulaire
@@ -137,8 +130,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       
       // Ajout du formulaire au DOM et soumission
       document.body.appendChild(form);
-      console.log("PaymentForm: Redirection vers CinetPay...", redirectUrl);
-      console.log("PaymentForm: Paramètres", cinetpayParams);
+      console.log("PaymentForm: Redirection vers CinetPay...");
       form.submit();
       
     } catch (error: any) {
