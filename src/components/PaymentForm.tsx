@@ -6,6 +6,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { initiateCinetPayPayment } from "@/integrations/cinetpay/api";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Définition des constantes
 const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
@@ -16,6 +18,7 @@ type PaymentFormProps = {
 
 export function PaymentForm({ participant }: PaymentFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   console.log("PaymentForm: Mounted with participant ID:", participant.id);
@@ -33,6 +36,8 @@ export function PaymentForm({ participant }: PaymentFormProps) {
 
   async function handlePayment() {
     try {
+      // Réinitialiser les erreurs précédentes
+      setPaymentError(null);
       console.log("PaymentForm: Payment process started");
       setIsProcessing(true);
 
@@ -49,19 +54,35 @@ export function PaymentForm({ participant }: PaymentFormProps) {
 
       // Appeler l'API CinetPay pour initialiser le paiement
       console.log("PaymentForm: Appel à initiateCinetPayPayment...");
-      const cinetPayResponse = await initiateCinetPayPayment(
-        participant,
-        PAYMENT_AMOUNT,
-        paymentMethod
-      );
+      
+      let cinetPayResponse;
+      try {
+        cinetPayResponse = await initiateCinetPayPayment(
+          participant,
+          PAYMENT_AMOUNT,
+          paymentMethod
+        );
+        console.log("PaymentForm: Réponse reçue de initiateCinetPayPayment:", cinetPayResponse);
+      } catch (apiError: any) {
+        console.error("PaymentForm: Erreur lors de l'appel à l'API CinetPay:", apiError);
+        throw new Error(`Erreur de communication avec CinetPay: ${apiError.message}`);
+      }
 
-      console.log("PaymentForm: Réponse reçue de initiateCinetPayPayment:", cinetPayResponse);
+      if (!cinetPayResponse) {
+        throw new Error("Aucune réponse reçue de CinetPay");
+      }
 
       if (cinetPayResponse.code !== "201") {
         console.error("PaymentForm: Erreur CinetPay - code:", cinetPayResponse.code);
         console.error("PaymentForm: Erreur CinetPay - message:", cinetPayResponse.message);
         console.error("PaymentForm: Erreur CinetPay - description:", cinetPayResponse.description);
         throw new Error(`Erreur CinetPay: ${cinetPayResponse.message} - ${cinetPayResponse.description}`);
+      }
+
+      // Vérifier les données essentielles dans la réponse
+      if (!cinetPayResponse.data || !cinetPayResponse.data.payment_url || !cinetPayResponse.data.payment_token) {
+        console.error("PaymentForm: Données manquantes dans la réponse CinetPay:", cinetPayResponse);
+        throw new Error("Données manquantes dans la réponse CinetPay");
       }
 
       // Enregistrer les détails du paiement dans Supabase
@@ -74,28 +95,39 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         cinetpay_payment_url: cinetPayResponse.data.payment_url
       });
 
-      const { data: paymentRecord, error } = await supabase
-        .from('payments')
-        .insert({
-          participant_id: participant.id,
-          amount: PAYMENT_AMOUNT,
-          payment_method: paymentMethod,
-          status: 'pending', // Le statut sera mis à jour après confirmation du paiement
-          transaction_id: cinetPayResponse.api_response_id,
-          cinetpay_token: cinetPayResponse.data.payment_token,
-          cinetpay_payment_url: cinetPayResponse.data.payment_url,
-          cinetpay_api_response_id: cinetPayResponse.api_response_id,
-          currency: "XOF"
-        })
-        .select()
-        .single();
+      try {
+        const { data: paymentRecord, error } = await supabase
+          .from('payments')
+          .insert({
+            participant_id: participant.id,
+            amount: PAYMENT_AMOUNT,
+            payment_method: paymentMethod,
+            status: 'pending', // Le statut sera mis à jour après confirmation du paiement
+            transaction_id: cinetPayResponse.api_response_id,
+            cinetpay_token: cinetPayResponse.data.payment_token,
+            cinetpay_payment_url: cinetPayResponse.data.payment_url,
+            cinetpay_api_response_id: cinetPayResponse.api_response_id,
+            currency: "XOF"
+          })
+          .select()
+          .single();
 
-      if (error) {
-        console.error("PaymentForm: Erreur Supabase lors de l'insertion du paiement:", error);
-        throw error;
+        if (error) {
+          console.error("PaymentForm: Erreur Supabase lors de l'insertion du paiement:", error);
+          throw error;
+        }
+
+        console.log("PaymentForm: Paiement enregistré avec succès. ID:", paymentRecord.id);
+      } catch (dbError: any) {
+        console.error("PaymentForm: Erreur de base de données:", dbError);
+        // Ne pas bloquer le flux de paiement si l'enregistrement en base échoue
+        toast({
+          title: "Attention",
+          description: "Le paiement peut continuer mais nous avons rencontré un problème pour enregistrer les détails.",
+          variant: "destructive",
+        });
       }
 
-      console.log("PaymentForm: Paiement enregistré avec succès. ID:", paymentRecord.id);
       console.log("PaymentForm: Redirection vers la page de paiement CinetPay:", cinetPayResponse.data.payment_url);
 
       // Rediriger l'utilisateur vers la page de paiement CinetPay
@@ -104,6 +136,10 @@ export function PaymentForm({ participant }: PaymentFormProps) {
     } catch (error: any) {
       console.error("PaymentForm: Erreur lors du traitement du paiement:", error);
       console.error("PaymentForm: Stack trace:", error.stack);
+      
+      // Capturer le message d'erreur pour l'afficher dans l'interface
+      setPaymentError(error.message || "Une erreur est survenue lors du traitement de votre paiement.");
+      
       toast({
         title: "Erreur de paiement",
         description: error.message || "Une erreur est survenue lors du traitement de votre paiement.",
@@ -119,6 +155,13 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         <CardTitle className="text-2xl">Paiement</CardTitle>
       </CardHeader>
       <CardContent>
+        {paymentError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erreur de paiement</AlertTitle>
+            <AlertDescription>{paymentError}</AlertDescription>
+          </Alert>
+        )}
         <div className="bg-gray-50 p-4 rounded-md">
           <div className="flex justify-between mb-2">
             <span className="font-medium">Montant à payer:</span>

@@ -1,4 +1,3 @@
-
 import { CINETPAY_API_KEY, CINETPAY_SITE_ID, CINETPAY_API_URL, PAYMENT_CHANNELS, PAYMENT_METHOD_MAP } from './config';
 import type { Database } from '../supabase/types';
 
@@ -28,6 +27,22 @@ export const initiateCinetPayPayment = async (
   paymentMethod: string
 ): Promise<CinetPayInitResponse> => {
   console.log("CinetPayAPI: Début de l'initialisation du paiement");
+  
+  // Vérifier que les clés d'API sont définies
+  if (!CINETPAY_API_KEY || !CINETPAY_SITE_ID || !CINETPAY_API_URL) {
+    console.error("CinetPayAPI: Configuration CinetPay manquante:", {
+      API_KEY_SET: !!CINETPAY_API_KEY,
+      SITE_ID_SET: !!CINETPAY_SITE_ID,
+      API_URL_SET: !!CINETPAY_API_URL
+    });
+    throw new Error("Configuration CinetPay incomplète. Veuillez contacter l'administrateur.");
+  }
+  
+  // Vérifier que les informations du participant sont valides
+  if (!participant || !participant.id || !participant.first_name || !participant.last_name || !participant.email || !participant.contact_number) {
+    console.error("CinetPayAPI: Informations du participant invalides:", participant);
+    throw new Error("Informations du participant invalides ou incomplètes");
+  }
   
   // Générer un ID de transaction unique - format YYYYMMDD-HHMMSS-RandomNum
   const date = new Date();
@@ -94,55 +109,86 @@ export const initiateCinetPayPayment = async (
     console.log("CinetPayAPI: Envoi du payload à CinetPay:", JSON.stringify(payload, null, 2));
     console.log("CinetPayAPI: URL d'appel API:", CINETPAY_API_URL);
     
-    // Appel à l'API CinetPay
+    // Appel à l'API CinetPay avec un timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 secondes de timeout
+    
     const startTime = Date.now();
     console.log("CinetPayAPI: Début de l'appel API à", new Date().toISOString());
     
-    const response = await fetch(CINETPAY_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
+    try {
+      const response = await fetch(CINETPAY_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
 
-    const endTime = Date.now();
-    console.log(`CinetPayAPI: Appel API terminé en ${endTime - startTime}ms à`, new Date().toISOString());
-    console.log("CinetPayAPI: Status HTTP:", response.status);
-    console.log("CinetPayAPI: Headers:", Object.fromEntries(response.headers.entries()));
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("CinetPayAPI: Texte de la réponse d'erreur:", errorText);
+      clearTimeout(timeoutId);
       
-      let errorData;
+      const endTime = Date.now();
+      console.log(`CinetPayAPI: Appel API terminé en ${endTime - startTime}ms à`, new Date().toISOString());
+      console.log("CinetPayAPI: Status HTTP:", response.status);
+      console.log("CinetPayAPI: Headers:", Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("CinetPayAPI: Texte de la réponse d'erreur:", errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+          console.error("CinetPayAPI: Réponse d'erreur CinetPay (parsée):", errorData);
+        } catch (parseError) {
+          console.error("CinetPayAPI: Erreur lors du parsing de la réponse:", parseError);
+          errorData = { message: errorText };
+        }
+        
+        throw new Error(`Erreur de réponse CinetPay (${response.status}): ${errorData.message || 'Erreur inconnue'}`);
+      }
+
+      const responseText = await response.text();
+      console.log("CinetPayAPI: Texte de la réponse:", responseText);
+      
+      let data;
       try {
-        errorData = JSON.parse(errorText);
-        console.error("CinetPayAPI: Réponse d'erreur CinetPay (parsée):", errorData);
+        data = JSON.parse(responseText);
+        console.log("CinetPayAPI: Réponse de CinetPay (parsée):", data);
       } catch (parseError) {
-        console.error("CinetPayAPI: Erreur lors du parsing de la réponse:", parseError);
-        errorData = { message: errorText };
+        console.error("CinetPayAPI: Erreur lors du parsing de la réponse réussie:", parseError);
+        throw new Error("Erreur lors du parsing de la réponse CinetPay");
       }
       
-      throw new Error(`Erreur HTTP: ${response.status} - ${errorData.message || 'Erreur inconnue'}`);
+      // Vérifier que les données attendues sont présentes
+      if (!data.code || !data.data || !data.data.payment_token || !data.data.payment_url) {
+        console.error("CinetPayAPI: Données manquantes dans la réponse:", data);
+        throw new Error("Réponse CinetPay incomplète: données manquantes");
+      }
+      
+      return data as CinetPayInitResponse;
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      
+      if (fetchError.name === 'AbortError') {
+        console.error("CinetPayAPI: Timeout lors de l'appel à l'API CinetPay (30s)");
+        throw new Error("Délai d'attente dépassé lors de la communication avec CinetPay. Veuillez réessayer.");
+      }
+      
+      throw fetchError;
     }
-
-    const responseText = await response.text();
-    console.log("CinetPayAPI: Texte de la réponse:", responseText);
-    
-    let data;
-    try {
-      data = JSON.parse(responseText);
-      console.log("CinetPayAPI: Réponse de CinetPay (parsée):", data);
-    } catch (parseError) {
-      console.error("CinetPayAPI: Erreur lors du parsing de la réponse réussie:", parseError);
-      throw new Error("Erreur lors du parsing de la réponse CinetPay");
-    }
-    
-    return data as CinetPayInitResponse;
   } catch (error: any) {
     console.error("CinetPayAPI: Erreur lors de l'initialisation du paiement CinetPay:", error);
     console.error("CinetPayAPI: Stack trace:", error.stack);
+    
+    // Ajouter des informations supplémentaires au message d'erreur
+    if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+      throw new Error("Impossible de communiquer avec CinetPay. Vérifiez votre connexion internet et réessayez.");
+    }
+    
     throw error;
   }
 };
