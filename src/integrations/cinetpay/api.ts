@@ -53,8 +53,8 @@ export const initiateCinetPayPayment = async (
     customer_surname: participant.last_name,
     customer_email: participant.email,
     customer_phone_number: participant.contact_number,
-    customer_address: "",
-    customer_city: "",
+    customer_address: "Adresse non fournie",
+    customer_city: "Abidjan", // Fournir une valeur valide pour la ville
     customer_country: "CI", // Code ISO pour la Côte d'Ivoire
     customer_state: "CI",
     customer_zip_code: "00000"
@@ -71,7 +71,9 @@ export const initiateCinetPayPayment = async (
     });
 
     if (!response.ok) {
-      throw new Error(`Erreur HTTP: ${response.status}`);
+      const errorData = await response.json();
+      console.error("Réponse d'erreur CinetPay:", errorData);
+      throw new Error(`Erreur HTTP: ${response.status} - ${errorData.message || 'Erreur inconnue'}`);
     }
 
     const data = await response.json();
