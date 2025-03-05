@@ -10,7 +10,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { SmartphoneIcon } from "lucide-react";
 
 // Définition du schéma de validation
 const paymentSchema = z.object({
@@ -27,25 +26,25 @@ const PAYMENT_METHODS = [
   {
     id: "wave",
     name: "Wave",
-    icon: <SmartphoneIcon className="h-5 w-5 text-blue-500" />,
+    icon: "/lovable-uploads/b9ea8b89-890d-460c-b608-1a123b2052a9.png",
     description: "Payer via votre compte Wave",
   },
   {
     id: "orange_money",
     name: "Orange Money",
-    icon: <SmartphoneIcon className="h-5 w-5 text-orange-500" />,
+    icon: "/lovable-uploads/5f74e8dc-7b9f-405d-8380-4e3ad7eb61a8.png",
     description: "Payer via Orange Money",
   },
   {
     id: "moov_money",
     name: "Moov Money",
-    icon: <SmartphoneIcon className="h-5 w-5 text-purple-500" />,
+    icon: "/lovable-uploads/10df0067-62c4-48ed-bd2d-2559bb5dbf71.png",
     description: "Payer via Moov Money",
   },
   {
     id: "mtn_money",
     name: "MTN Money",
-    icon: <SmartphoneIcon className="h-5 w-5 text-yellow-500" />,
+    icon: "/lovable-uploads/b2c951b6-9240-4fd5-86ee-052c25606c40.png",
     description: "Payer via MTN Money",
   },
 ];
@@ -157,8 +156,12 @@ export function PaymentForm({ participant }: PaymentFormProps) {
                                 <RadioGroupItem value={method.id} />
                               </FormControl>
                               <div className="flex flex-1 items-center justify-between">
-                                <div className="flex items-center space-x-2">
-                                  {method.icon}
+                                <div className="flex items-center space-x-3">
+                                  <img 
+                                    src={method.icon} 
+                                    alt={`Logo ${method.name}`} 
+                                    className="h-10 w-auto object-contain"
+                                  />
                                   <div>
                                     <FormLabel className="text-base">{method.name}</FormLabel>
                                     <p className="text-sm text-gray-500">{method.description}</p>
