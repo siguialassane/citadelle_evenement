@@ -96,8 +96,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
             <span className="font-bold">{PAYMENT_AMOUNT.toLocaleString()} XOF</span>
           </div>
           <p className="text-sm text-gray-600 mt-4">
-            En cliquant sur le bouton ci-dessous, vous serez redirigé vers la plateforme de paiement CinetPay 
-            où vous pourrez choisir votre méthode de paiement préférée (Wave, Orange Money, Moov Money, MTN Money).
+            En cliquant sur le bouton ci-dessous, vous serez redirigé vers la plateforme de paiement CinetPay.
           </p>
         </div>
       </CardContent>

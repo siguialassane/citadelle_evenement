@@ -32,10 +32,16 @@ export const initiateCinetPayPayment = async (
   const dateStr = date.toISOString().replace(/[^0-9]/g, '').slice(0, 8); // YYYYMMDD
   const timeStr = `${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}${date.getSeconds().toString().padStart(2, '0')}`;
   const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  const transactionId = `TRX-${dateStr}-${timeStr}-${randomNum}`;
+  const transactionId = `TR${dateStr}${timeStr}${randomNum}`;
   
   // URL de base de l'application pour les redirections
   const baseUrl = window.location.origin;
+  
+  // Construction de l'URL de notification pour webhook
+  const notifyUrl = `${baseUrl}/api/webhooks/cinetpay/notification`;
+  
+  // Construction de l'URL de retour
+  const returnUrl = `${baseUrl}/confirmation/${participant.id}`;
 
   // Formater le numéro de téléphone pour qu'il soit sans espaces et +
   const formattedPhoneNumber = participant.contact_number.replace(/\s+/g, '').replace(/^\+/, '');
@@ -48,8 +54,8 @@ export const initiateCinetPayPayment = async (
     amount: amount,
     currency: "XOF",
     description: `Paiement pour ${participant.first_name} ${participant.last_name}`,
-    notify_url: `${baseUrl}/api/webhooks/cinetpay/notification`,
-    return_url: `${baseUrl}/confirmation/${participant.id}`,
+    notify_url: notifyUrl,
+    return_url: returnUrl,
     channels: PAYMENT_CHANNELS,
     metadata: JSON.stringify({
       participant_id: participant.id,

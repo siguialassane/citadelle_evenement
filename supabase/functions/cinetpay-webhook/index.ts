@@ -9,10 +9,20 @@ const CINETPAY_SITE_ID = Deno.env.get("CINETPAY_SITE_ID") || "105889251";
 console.log("CinetPay Webhook Function Initialized");
 
 serve(async (req) => {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   // Vérifier la méthode HTTP
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Méthode non autorisée" }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 405,
     });
   }
@@ -32,7 +42,7 @@ serve(async (req) => {
 
     if (!transactionId || !siteId) {
       return new Response(JSON.stringify({ error: "Données incomplètes" }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
     }
@@ -40,7 +50,7 @@ serve(async (req) => {
     // Vérifier que le site_id correspond à notre site_id
     if (siteId !== CINETPAY_SITE_ID) {
       return new Response(JSON.stringify({ error: "Site ID non reconnu" }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
     }
@@ -49,15 +59,28 @@ serve(async (req) => {
     const { data: payment, error: fetchError } = await supabase
       .from('payments')
       .select('*')
-      .eq('cinetpay_api_response_id', transactionId)
+      .eq('transaction_id', transactionId)
       .single();
 
     if (fetchError) {
       console.error("Erreur lors de la récupération du paiement:", fetchError);
-      return new Response(JSON.stringify({ error: "Paiement non trouvé" }), {
-        headers: { "Content-Type": "application/json" },
-        status: 404,
-      });
+      
+      // Si la transaction n'est pas trouvée avec le transaction_id, essayons avec cinetpay_api_response_id
+      const { data: paymentAlt, error: fetchAltError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('cinetpay_api_response_id', transactionId)
+        .single();
+        
+      if (fetchAltError) {
+        return new Response(JSON.stringify({ error: "Paiement non trouvé", transaction_id: transactionId }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404,
+        });
+      }
+      
+      // Si nous avons trouvé le paiement avec cinetpay_api_response_id, continuons avec celui-ci
+      payment = paymentAlt;
     }
 
     // Mettre à jour le statut du paiement
@@ -75,7 +98,7 @@ serve(async (req) => {
     if (updateError) {
       console.error("Erreur lors de la mise à jour du paiement:", updateError);
       return new Response(JSON.stringify({ error: "Erreur lors de la mise à jour du paiement" }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
     }
@@ -98,13 +121,13 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ success: true }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error("Erreur lors du traitement de la notification CinetPay:", error);
     return new Response(JSON.stringify({ error: "Erreur interne" }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
   }
