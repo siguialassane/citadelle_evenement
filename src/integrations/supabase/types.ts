@@ -9,7 +9,149 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      check_ins: {
+        Row: {
+          check_in_time: string
+          checked_by: string | null
+          id: string
+          notes: string | null
+          participant_id: string
+        }
+        Insert: {
+          check_in_time?: string
+          checked_by?: string | null
+          id?: string
+          notes?: string | null
+          participant_id: string
+        }
+        Update: {
+          check_in_time?: string
+          checked_by?: string | null
+          id?: string
+          notes?: string | null
+          participant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_ins_checked_by_fkey"
+            columns: ["checked_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_ins_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      participants: {
+        Row: {
+          check_in_status: boolean | null
+          check_in_timestamp: string | null
+          contact_number: string
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          is_member: boolean | null
+          last_name: string
+          qr_code_id: string | null
+        }
+        Insert: {
+          check_in_status?: boolean | null
+          check_in_timestamp?: string | null
+          contact_number: string
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          is_member?: boolean | null
+          last_name: string
+          qr_code_id?: string | null
+        }
+        Update: {
+          check_in_status?: boolean | null
+          check_in_timestamp?: string | null
+          contact_number?: string
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          is_member?: boolean | null
+          last_name?: string
+          qr_code_id?: string | null
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          currency: string
+          id: string
+          participant_id: string
+          payment_date: string
+          payment_method: string
+          status: string
+          transaction_id: string | null
+        }
+        Insert: {
+          amount: number
+          currency?: string
+          id?: string
+          participant_id: string
+          payment_date?: string
+          payment_method: string
+          status: string
+          transaction_id?: string | null
+        }
+        Update: {
+          amount?: number
+          currency?: string
+          id?: string
+          participant_id?: string
+          payment_date?: string
+          payment_method?: string
+          status?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          password: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          password: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          password?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

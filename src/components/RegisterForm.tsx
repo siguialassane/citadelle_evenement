@@ -7,7 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { User, Mail, Phone } from "lucide-react";
+import { User, Mail, Phone, Check } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 // Définition du schéma de validation
 const formSchema = z.object({
@@ -19,12 +23,16 @@ const formSchema = z.object({
       message: "Le numéro doit être au format +225 suivi de 10 chiffres" 
     }),
   email: z.string().email({ message: "Adresse email invalide" }),
+  isMember: z.boolean().default(false),
 });
 
 // Type pour les données du formulaire basé sur le schéma
 type FormValues = z.infer<typeof formSchema>;
 
 export function RegisterForm() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
+
   // Initialisation du formulaire avec react-hook-form et le resolver zod
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -33,23 +41,57 @@ export function RegisterForm() {
       lastName: "",
       contactNumber: "+225 ",
       email: "",
+      isMember: false,
     },
   });
 
   // Fonction pour gérer la soumission du formulaire
-  function onSubmit(data: FormValues) {
-    // Pour l'instant, afficher les données soumises dans un toast
-    toast({
-      title: "Inscription réussie",
-      description: (
-        <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
-    
-    // Réinitialiser le formulaire après la soumission
-    form.reset();
+  async function onSubmit(data: FormValues) {
+    try {
+      setIsSubmitting(true);
+      
+      // Sauvegarde des données dans Supabase
+      const { data: participant, error } = await supabase
+        .from('participants')
+        .insert({
+          first_name: data.firstName,
+          last_name: data.lastName,
+          contact_number: data.contactNumber,
+          email: data.email,
+          is_member: data.isMember,
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+
+      // Afficher notification de succès
+      toast({
+        title: "Inscription réussie",
+        description: "Vos informations ont été enregistrées avec succès. Vous allez être redirigé vers la page de paiement.",
+      });
+      
+      // Réinitialiser le formulaire après la soumission
+      form.reset();
+      
+      // Redirection vers la page de paiement (à implémenter)
+      // navigate(`/payment/${participant.id}`);
+      
+      // Pour le moment, on reste sur la même page
+      console.log("Participant enregistré:", participant);
+      
+    } catch (error: any) {
+      console.error("Erreur d'inscription:", error);
+      toast({
+        title: "Erreur d'inscription",
+        description: error.message || "Une erreur est survenue lors de l'enregistrement de vos informations.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   // Gérer le format du numéro de téléphone
@@ -151,7 +193,30 @@ export function RegisterForm() {
               )}
             />
 
-            <Button type="submit" className="w-full">S'inscrire</Button>
+            <FormField
+              control={form.control}
+              name="isMember"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Membre de la Citadelle</FormLabel>
+                    <FormDescription>
+                      Cochez cette case si vous êtes membre de la Citadelle
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Inscription en cours..." : "S'inscrire"}
+            </Button>
           </form>
         </Form>
       </CardContent>
