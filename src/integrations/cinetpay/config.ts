@@ -22,3 +22,9 @@ export const PAYMENT_METHOD_MAP: Record<string, string> = {
   "moov_money": "MOOV",
   "mtn_money": "MTN"
 };
+
+// Configuration pour le transfert d'argent (si besoin futur)
+export const CINETPAY_AUTH_URL = "https://client.cinetpay.com/v1/auth/login";
+export const CINETPAY_TRANSFER_CHECK_BALANCE_URL = "https://client.cinetpay.com/v1/transfer/check/balance";
+export const CINETPAY_TRANSFER_CONTACT_URL = "https://client.cinetpay.com/v1/transfer/contact";
+export const CINETPAY_TRANSFER_MONEY_URL = "https://client.cinetpay.com/v1/transfer/money/send/contact";
