@@ -19,6 +19,8 @@ const Payment = () => {
       try {
         setLoading(true);
         
+        console.log("Payment page - Participant ID:", participantId);
+        
         if (!participantId) {
           setError("Identifiant de participant manquant");
           return;
@@ -31,6 +33,7 @@ const Payment = () => {
           .single();
 
         if (error) {
+          console.error("Erreur Supabase:", error);
           throw error;
         }
 
@@ -39,6 +42,7 @@ const Payment = () => {
           return;
         }
 
+        console.log("Payment page - Participant data:", data);
         setParticipant(data);
       } catch (err: any) {
         console.error("Erreur lors de la récupération du participant:", err);
@@ -132,25 +136,25 @@ const Payment = () => {
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Nom complet</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {participant.first_name} {participant.last_name}
+                  {participant?.first_name} {participant?.last_name}
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Email</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {participant.email}
+                  {participant?.email}
                 </dd>
               </div>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Numéro de contact</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {participant.contact_number}
+                  {participant?.contact_number}
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Membre de la Citadelle</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {participant.is_member ? "Oui" : "Non"}
+                  {participant?.is_member ? "Oui" : "Non"}
                 </dd>
               </div>
             </dl>
@@ -158,7 +162,7 @@ const Payment = () => {
         </div>
 
         {/* Formulaire de paiement */}
-        <PaymentForm participant={participant} />
+        {participant && <PaymentForm participant={participant} />}
       </div>
     </div>
   );
