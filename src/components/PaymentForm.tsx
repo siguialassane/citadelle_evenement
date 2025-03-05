@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -21,7 +22,7 @@ const paymentSchema = z.object({
 type PaymentFormValues = z.infer<typeof paymentSchema>;
 
 // Définition des constantes
-const PAYMENT_AMOUNT = 1000; // Montant modifié à 1000 XOF (doit être un multiple de 5)
+const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
 const PAYMENT_METHODS = [
   {
     id: "wave",
@@ -184,9 +185,6 @@ export function PaymentForm({ participant }: PaymentFormProps) {
                 <span className="font-medium">Montant à payer:</span>
                 <span className="font-bold">{PAYMENT_AMOUNT.toLocaleString()} XOF</span>
               </div>
-              <p className="text-sm text-gray-500">
-                Le paiement est sécurisé par CinetPay. Aucune information bancaire n'est stockée sur nos serveurs.
-              </p>
             </div>
           </form>
         </Form>
