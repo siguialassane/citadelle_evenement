@@ -7,15 +7,11 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "
 const CINETPAY_SITE_ID = Deno.env.get("CINETPAY_SITE_ID") || "105889251";
 
 console.log("CinetPay Webhook Function Initialized");
-console.log("SUPABASE_URL defined:", !!SUPABASE_URL);
-console.log("SUPABASE_SERVICE_ROLE_KEY defined:", !!SUPABASE_SERVICE_ROLE_KEY);
-console.log("CINETPAY_SITE_ID:", CINETPAY_SITE_ID);
 
 serve(async (req) => {
   console.log("CinetPay Webhook: Nouvelle requête reçue");
   console.log("CinetPay Webhook: Méthode:", req.method);
   console.log("CinetPay Webhook: URL:", req.url);
-  console.log("CinetPay Webhook: Headers:", JSON.stringify(Object.fromEntries(req.headers.entries()), null, 2));
 
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -65,7 +61,8 @@ serve(async (req) => {
       });
     }
 
-    // Vérifier les données obligatoires
+    // Vérifier les données obligatoires 
+    // Format CinetPay : cpm_trans_id contient l'ID de transaction
     const transactionId = payload.cpm_trans_id;
     const siteId = payload.cpm_site_id;
     const status = payload.status;
@@ -75,8 +72,6 @@ serve(async (req) => {
       siteId,
       status,
       paymentMethod: payload.payment_method,
-      paymentStatus: status,
-      additionalData: payload
     });
 
     if (!transactionId || !siteId) {
@@ -104,90 +99,24 @@ serve(async (req) => {
       .eq('transaction_id', transactionId)
       .single();
 
-    let finalPayment = payment;
-
     if (fetchError) {
-      console.error("CinetPay Webhook: Erreur lors de la récupération du paiement avec transaction_id:", fetchError);
-      console.log("CinetPay Webhook: Tentative de recherche avec cinetpay_api_response_id");
-      
-      // Si la transaction n'est pas trouvée avec le transaction_id, essayons avec cinetpay_api_response_id
-      const { data: paymentAlt, error: fetchAltError } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('cinetpay_api_response_id', transactionId)
-        .single();
-        
-      if (fetchAltError) {
-        console.error("CinetPay Webhook: Erreur lors de la récupération du paiement avec cinetpay_api_response_id:", fetchAltError);
-
-        // Dernière tentative: rechercher par préfixe de transaction_id
-        console.log("CinetPay Webhook: Dernière tentative - Recherche avec préfixe transaction_id");
-        const { data: payments, error: fetchAllError } = await supabase
-          .from('payments')
-          .select('*');
-
-        if (fetchAllError) {
-          console.error("CinetPay Webhook: Erreur lors de la récupération de tous les paiements:", fetchAllError);
-          return new Response(JSON.stringify({ 
-            error: "Paiement non trouvé après plusieurs tentatives", 
-            transaction_id: transactionId,
-            all_attempts_failed: true 
-          }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 404,
-          });
-        }
-
-        console.log(`CinetPay Webhook: ${payments.length} paiements trouvés au total`);
-        
-        // Recherche de transaction_id partielle
-        const matchingPayment = payments.find(p => 
-          (p.transaction_id && transactionId && p.transaction_id.includes(transactionId)) || 
-          (transactionId && p.transaction_id && transactionId.includes(p.transaction_id))
-        );
-
-        if (!matchingPayment) {
-          console.error("CinetPay Webhook: Aucun paiement correspondant trouvé après recherche par préfixe");
-          
-          // Log de tous les transaction_id pour le débogage
-          console.log("CinetPay Webhook: Liste de tous les transaction_id dans la base de données:");
-          payments.forEach((p, index) => {
-            console.log(`${index + 1}. ${p.id}: transaction_id=${p.transaction_id}, cinetpay_api_response_id=${p.cinetpay_api_response_id}`);
-          });
-          
-          return new Response(JSON.stringify({ 
-            error: "Paiement non trouvé", 
-            transaction_id: transactionId,
-            available_transactions: payments.map(p => ({ id: p.id, transaction_id: p.transaction_id, api_response_id: p.cinetpay_api_response_id }))
-          }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 404,
-          });
-        }
-        
-        console.log("CinetPay Webhook: Paiement trouvé par recherche partielle:", matchingPayment);
-        finalPayment = matchingPayment;
-      } else {
-        console.log("CinetPay Webhook: Paiement trouvé avec cinetpay_api_response_id:", paymentAlt);
-        finalPayment = paymentAlt;
-      }
-    } else {
-      console.log("CinetPay Webhook: Paiement trouvé avec transaction_id:", payment);
-    }
-
-    if (!finalPayment) {
-      console.error("CinetPay Webhook: finalPayment est null ou undefined malgré les recherches");
-      return new Response(JSON.stringify({ error: "Paiement introuvable malgré plusieurs tentatives" }), {
+      console.error("CinetPay Webhook: Erreur lors de la récupération du paiement:", fetchError);
+      return new Response(JSON.stringify({ 
+        error: "Paiement non trouvé", 
+        transaction_id: transactionId 
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 404,
       });
     }
 
+    console.log("CinetPay Webhook: Paiement trouvé:", payment);
+
     // Mettre à jour le statut du paiement
     const newStatus = status === "ACCEPTED" ? "success" : 
                       status === "REFUSED" ? "failed" : "pending";
 
-    console.log(`CinetPay Webhook: Mise à jour du statut du paiement ${finalPayment.id} vers '${newStatus}'`);
+    console.log(`CinetPay Webhook: Mise à jour du statut du paiement ${payment.id} vers '${newStatus}'`);
 
     const { error: updateError } = await supabase
       .from('payments')
@@ -195,7 +124,7 @@ serve(async (req) => {
         status: newStatus,
         cinetpay_operator_id: payload.operator_id || null,
       })
-      .eq('id', finalPayment.id);
+      .eq('id', payment.id);
 
     if (updateError) {
       console.error("CinetPay Webhook: Erreur lors de la mise à jour du paiement:", updateError);
@@ -210,15 +139,15 @@ serve(async (req) => {
     // Si le paiement est réussi, mettre à jour le participant avec un QR code
     if (newStatus === "success") {
       // Générer un identifiant unique pour le QR code
-      const qrCodeId = `QR-${finalPayment.participant_id}-${Date.now()}`;
-      console.log(`CinetPay Webhook: Paiement réussi - Génération du QR code ${qrCodeId} pour le participant ${finalPayment.participant_id}`);
+      const qrCodeId = `QR-${payment.participant_id}-${Date.now()}`;
+      console.log(`CinetPay Webhook: Paiement réussi - Génération du QR code ${qrCodeId} pour le participant ${payment.participant_id}`);
       
       const { error: participantUpdateError } = await supabase
         .from('participants')
         .update({
           qr_code_id: qrCodeId
         })
-        .eq('id', finalPayment.participant_id);
+        .eq('id', payment.participant_id);
 
       if (participantUpdateError) {
         console.error("CinetPay Webhook: Erreur lors de la mise à jour du participant:", participantUpdateError);
@@ -231,7 +160,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true,
       transaction_id: transactionId,
-      payment_id: finalPayment.id,
+      payment_id: payment.id,
       new_status: newStatus
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -239,7 +168,6 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("CinetPay Webhook: Erreur lors du traitement de la notification CinetPay:", error);
-    console.error("CinetPay Webhook: Stack trace:", error.stack);
     return new Response(JSON.stringify({ 
       error: "Erreur interne", 
       details: error.message,
