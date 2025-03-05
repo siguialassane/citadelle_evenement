@@ -26,7 +26,7 @@ const App = () => (
           {/* Route pour le webhook CinetPay */}
           <Route 
             path="/api/webhooks/cinetpay/notification" 
-            element={<div>Notification CinetPay reçue</div>} 
+            element={<div style={{ display: 'none' }}>Notification CinetPay reçue</div>} 
           />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
