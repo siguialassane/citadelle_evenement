@@ -1,4 +1,3 @@
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -76,11 +75,8 @@ export function RegisterForm() {
       // Réinitialiser le formulaire après la soumission
       form.reset();
       
-      // Redirection vers la page de paiement (à implémenter)
-      // navigate(`/payment/${participant.id}`);
-      
-      // Pour le moment, on reste sur la même page
-      console.log("Participant enregistré:", participant);
+      // Redirection vers la page de paiement
+      navigate(`/payment/${participant.id}`);
       
     } catch (error: any) {
       console.error("Erreur d'inscription:", error);
