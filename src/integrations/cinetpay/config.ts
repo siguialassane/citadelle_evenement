@@ -11,7 +11,8 @@ export const CINETPAY_API_URL = "https://api-checkout.cinetpay.com/v2/payment";
 export const CINETPAY_CHECK_URL = "https://api-checkout.cinetpay.com/v2/payment/check";
 
 // Configuration des canaux de paiement
-export const PAYMENT_CHANNELS = "MOBILE_MONEY"; // Uniquement mobile money, pas de carte bancaire
+// N'utiliser que le mobile money (pas de carte bancaire)
+export const PAYMENT_CHANNELS = "MOBILE_MONEY";
 export const PAYMENT_CURRENCY = "XOF";
 
 // Correspondance entre les méthodes de paiement internes et les canaux CinetPay

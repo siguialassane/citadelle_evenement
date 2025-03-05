@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -22,7 +21,7 @@ const paymentSchema = z.object({
 type PaymentFormValues = z.infer<typeof paymentSchema>;
 
 // Définition des constantes
-const PAYMENT_AMOUNT = 5000; // Montant fixe en XOF
+const PAYMENT_AMOUNT = 1000; // Montant modifié à 1000 XOF (doit être un multiple de 5)
 const PAYMENT_METHODS = [
   {
     id: "wave",

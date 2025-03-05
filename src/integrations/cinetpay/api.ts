@@ -33,7 +33,7 @@ export const initiateCinetPayPayment = async (
   // URL de base de l'application pour les redirections
   const baseUrl = window.location.origin;
 
-  // Construire le payload pour CinetPay
+  // Construire le payload pour CinetPay selon la documentation
   const payload = {
     apikey: CINETPAY_API_KEY,
     site_id: CINETPAY_SITE_ID,
@@ -48,7 +48,7 @@ export const initiateCinetPayPayment = async (
       participant_id: participant.id,
       payment_method: paymentMethod
     }),
-    // Informations du client (obligatoires même si on n'utilise pas la carte bancaire)
+    // Informations du client (obligatoires selon la documentation)
     customer_name: participant.first_name,
     customer_surname: participant.last_name,
     customer_email: participant.email,
@@ -61,6 +61,8 @@ export const initiateCinetPayPayment = async (
   };
 
   try {
+    console.log("Envoi du payload à CinetPay:", payload);
+    
     // Appel à l'API CinetPay
     const response = await fetch(CINETPAY_API_URL, {
       method: 'POST',
@@ -77,6 +79,7 @@ export const initiateCinetPayPayment = async (
     }
 
     const data = await response.json();
+    console.log("Réponse de CinetPay:", data);
     return data as CinetPayInitResponse;
   } catch (error) {
     console.error("Erreur lors de l'initialisation du paiement CinetPay:", error);
