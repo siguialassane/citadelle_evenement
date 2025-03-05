@@ -29,7 +29,7 @@ const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
 
 // Schéma de validation pour le formulaire de paiement
 const paymentFormSchema = z.object({
-  paymentMethod: z.enum(["ALL", "MOBILE_MONEY", "CREDIT_CARD"], {
+  paymentMethod: z.enum(["MOBILE_MONEY", "CREDIT_CARD", "ALL"], {
     required_error: "Veuillez sélectionner une méthode de paiement"
   })
 });
@@ -79,12 +79,12 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       }
       
       try {
-        // Configuration de CinetPay
+        // Configuration de CinetPay avec le mode TEST pour éviter des frais réels
         window.CinetPay.setConfig({
           apikey: CINETPAY_API_KEY,
           site_id: CINETPAY_SITE_ID,
           notify_url: `${window.location.origin}/api/webhooks/cinetpay/notification`,
-          mode: 'PRODUCTION',
+          mode: 'TEST', // Utiliser TEST plutôt que PRODUCTION pour les tests
           close_after_response: true
         });
         console.log("PaymentForm: CinetPay Seamless initialisé avec succès");
@@ -169,15 +169,21 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         throw new Error("Le SDK CinetPay n'est pas chargé. Veuillez rafraîchir la page.");
       }
 
+      // Vérification supplémentaire que CinetPay est correctement configuré
+      if (!window.CinetPay.getCheckout) {
+        throw new Error("Le SDK CinetPay n'est pas correctement initialisé. Veuillez rafraîchir la page.");
+      }
+
       // Appel au SDK Seamless pour afficher le guichet de paiement
       console.log("PaymentForm: Affichage du guichet CinetPay Seamless");
-      window.CinetPay.getCheckout({
+      
+      const checkoutConfig = {
         transaction_id: transactionId,
         amount: PAYMENT_AMOUNT,
         currency: 'XOF',
         channels: values.paymentMethod,
         description: `Paiement inscription - ${participant.first_name} ${participant.last_name}`,
-        // Informations du client pour le paiement par carte bancaire
+        // Informations du client pour le paiement
         customer_name: participant.first_name,
         customer_surname: participant.last_name,
         customer_email: participant.email,
@@ -191,7 +197,17 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         metadata: JSON.stringify({
           participant_id: participant.id
         })
-      });
+      };
+      
+      console.log("PaymentForm: Configuration du checkout:", checkoutConfig);
+      
+      try {
+        window.CinetPay.getCheckout(checkoutConfig);
+        console.log("PaymentForm: getCheckout appelé avec succès");
+      } catch (checkoutError: any) {
+        console.error("PaymentForm: Erreur lors de l'appel à getCheckout:", checkoutError);
+        throw new Error(`Erreur lors de l'affichage du guichet de paiement: ${checkoutError.message || 'Erreur inconnue'}`);
+      }
 
       // Configurer le callback pour gérer la réponse de paiement
       window.CinetPay.waitResponse(function(data: any) {
