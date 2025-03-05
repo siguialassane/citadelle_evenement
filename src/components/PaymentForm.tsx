@@ -26,13 +26,13 @@ const PAYMENT_METHODS = [
   {
     id: "wave",
     name: "Wave",
-    icon: "/lovable-uploads/b9ea8b89-890d-460c-b608-1a123b2052a9.png",
+    icon: "/lovable-uploads/6b003492-4875-44bb-bef8-3feecf36716e.png",
     description: "Payer via votre compte Wave",
   },
   {
     id: "orange_money",
     name: "Orange Money",
-    icon: "/lovable-uploads/5f74e8dc-7b9f-405d-8380-4e3ad7eb61a8.png",
+    icon: "/lovable-uploads/860c57aa-e79f-4298-97a8-84c1792cf18f.png",
     description: "Payer via Orange Money",
   },
   {
