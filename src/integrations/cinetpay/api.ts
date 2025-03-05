@@ -27,6 +27,8 @@ export const initiateCinetPayPayment = async (
   amount: number,
   paymentMethod: string
 ): Promise<CinetPayInitResponse> => {
+  console.log("CinetPayAPI: Début de l'initialisation du paiement");
+  
   // Générer un ID de transaction unique - format YYYYMMDD-HHMMSS-RandomNum
   const date = new Date();
   const dateStr = date.toISOString().replace(/[^0-9]/g, '').slice(0, 8); // YYYYMMDD
@@ -34,17 +36,25 @@ export const initiateCinetPayPayment = async (
   const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
   const transactionId = `TR${dateStr}${timeStr}${randomNum}`;
   
+  console.log("CinetPayAPI: ID de transaction généré:", transactionId);
+  
   // URL de base de l'application pour les redirections
   const baseUrl = window.location.origin;
+  console.log("CinetPayAPI: URL de base pour les redirections:", baseUrl);
   
   // Construction de l'URL de notification pour webhook
   const notifyUrl = `${baseUrl}/api/webhooks/cinetpay/notification`;
+  console.log("CinetPayAPI: URL de notification (webhook):", notifyUrl);
   
   // Construction de l'URL de retour
   const returnUrl = `${baseUrl}/confirmation/${participant.id}`;
+  console.log("CinetPayAPI: URL de retour après paiement:", returnUrl);
 
   // Formater le numéro de téléphone pour qu'il soit sans espaces et +
+  const originalPhoneNumber = participant.contact_number;
   const formattedPhoneNumber = participant.contact_number.replace(/\s+/g, '').replace(/^\+/, '');
+  console.log("CinetPayAPI: Numéro de téléphone original:", originalPhoneNumber);
+  console.log("CinetPayAPI: Numéro de téléphone formaté:", formattedPhoneNumber);
 
   // Construire le payload pour CinetPay selon la documentation
   const payload = {
@@ -74,9 +84,20 @@ export const initiateCinetPayPayment = async (
   };
 
   try {
-    console.log("Envoi du payload à CinetPay:", payload);
+    console.log("CinetPayAPI: Configuration CinetPay:", {
+      APIKEY: CINETPAY_API_KEY ? "DÉFINIE" : "NON DÉFINIE",
+      SITE_ID: CINETPAY_SITE_ID,
+      API_URL: CINETPAY_API_URL,
+      CHANNELS: PAYMENT_CHANNELS
+    });
+    
+    console.log("CinetPayAPI: Envoi du payload à CinetPay:", JSON.stringify(payload, null, 2));
+    console.log("CinetPayAPI: URL d'appel API:", CINETPAY_API_URL);
     
     // Appel à l'API CinetPay
+    const startTime = Date.now();
+    console.log("CinetPayAPI: Début de l'appel API à", new Date().toISOString());
+    
     const response = await fetch(CINETPAY_API_URL, {
       method: 'POST',
       headers: {
@@ -85,17 +106,43 @@ export const initiateCinetPayPayment = async (
       body: JSON.stringify(payload)
     });
 
+    const endTime = Date.now();
+    console.log(`CinetPayAPI: Appel API terminé en ${endTime - startTime}ms à`, new Date().toISOString());
+    console.log("CinetPayAPI: Status HTTP:", response.status);
+    console.log("CinetPayAPI: Headers:", Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Réponse d'erreur CinetPay:", errorData);
+      const errorText = await response.text();
+      console.error("CinetPayAPI: Texte de la réponse d'erreur:", errorText);
+      
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+        console.error("CinetPayAPI: Réponse d'erreur CinetPay (parsée):", errorData);
+      } catch (parseError) {
+        console.error("CinetPayAPI: Erreur lors du parsing de la réponse:", parseError);
+        errorData = { message: errorText };
+      }
+      
       throw new Error(`Erreur HTTP: ${response.status} - ${errorData.message || 'Erreur inconnue'}`);
     }
 
-    const data = await response.json();
-    console.log("Réponse de CinetPay:", data);
+    const responseText = await response.text();
+    console.log("CinetPayAPI: Texte de la réponse:", responseText);
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+      console.log("CinetPayAPI: Réponse de CinetPay (parsée):", data);
+    } catch (parseError) {
+      console.error("CinetPayAPI: Erreur lors du parsing de la réponse réussie:", parseError);
+      throw new Error("Erreur lors du parsing de la réponse CinetPay");
+    }
+    
     return data as CinetPayInitResponse;
-  } catch (error) {
-    console.error("Erreur lors de l'initialisation du paiement CinetPay:", error);
+  } catch (error: any) {
+    console.error("CinetPayAPI: Erreur lors de l'initialisation du paiement CinetPay:", error);
+    console.error("CinetPayAPI: Stack trace:", error.stack);
     throw error;
   }
 };
@@ -109,31 +156,58 @@ export const checkCinetPayPayment = async (
   transactionId: string
 ): Promise<any> => {
   try {
-    console.log("Vérification du paiement CinetPay pour la transaction:", transactionId);
+    console.log("CinetPayAPI: Vérification du paiement CinetPay pour la transaction:", transactionId);
+    
+    const checkPayload = {
+      transaction_id: transactionId,
+      site_id: CINETPAY_SITE_ID,
+      apikey: CINETPAY_API_KEY
+    };
+    
+    console.log("CinetPayAPI: Payload de vérification:", checkPayload);
     
     const response = await fetch("https://api-checkout.cinetpay.com/v2/payment/check", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        transaction_id: transactionId,
-        site_id: CINETPAY_SITE_ID,
-        apikey: CINETPAY_API_KEY
-      })
+      body: JSON.stringify(checkPayload)
     });
 
+    console.log("CinetPayAPI: Status de la réponse de vérification:", response.status);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Réponse d'erreur vérification CinetPay:", errorData);
+      const errorText = await response.text();
+      console.error("CinetPayAPI: Texte de la réponse d'erreur de vérification:", errorText);
+      
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+        console.error("CinetPayAPI: Réponse d'erreur de vérification CinetPay (parsée):", errorData);
+      } catch (parseError) {
+        console.error("CinetPayAPI: Erreur lors du parsing de la réponse d'erreur de vérification:", parseError);
+        errorData = { message: errorText };
+      }
+      
       throw new Error(`Erreur HTTP: ${response.status} - ${errorData.message || 'Erreur inconnue'}`);
     }
 
-    const data = await response.json();
-    console.log("Réponse de vérification CinetPay:", data);
+    const responseText = await response.text();
+    console.log("CinetPayAPI: Texte de la réponse de vérification:", responseText);
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+      console.log("CinetPayAPI: Réponse de vérification CinetPay (parsée):", data);
+    } catch (parseError) {
+      console.error("CinetPayAPI: Erreur lors du parsing de la réponse de vérification:", parseError);
+      throw new Error("Erreur lors du parsing de la réponse de vérification CinetPay");
+    }
+    
     return data;
-  } catch (error) {
-    console.error("Erreur lors de la vérification du paiement CinetPay:", error);
+  } catch (error: any) {
+    console.error("CinetPayAPI: Erreur lors de la vérification du paiement CinetPay:", error);
+    console.error("CinetPayAPI: Stack trace:", error.stack);
     throw error;
   }
 };
