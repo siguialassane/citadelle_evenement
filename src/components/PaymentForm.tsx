@@ -1,7 +1,6 @@
 
-// Commentaires: Ce fichier a été mis à jour pour utiliser l'intégration Seamless de CinetPay
-// au lieu de l'API REST. Cela permet d'afficher le guichet de paiement directement sur la page
-// sans redirection complète.
+// Commentaires: Ce fichier a été mis à jour pour résoudre un problème avec l'initialisation de CinetPay Seamless
+// où site_id n'était pas correctement défini.
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +22,7 @@ import { useForm } from "react-hook-form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { CINETPAY_API_KEY, CINETPAY_SITE_ID } from "@/integrations/cinetpay/config";
 
 // Définition des constantes
 const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
@@ -66,12 +66,15 @@ export function PaymentForm({ participant }: PaymentFormProps) {
   useEffect(() => {
     if (window.CinetPay) {
       console.log("PaymentForm: Initialisation de CinetPay Seamless");
+      console.log("PaymentForm: CINETPAY_API_KEY:", CINETPAY_API_KEY ? "Défini" : "Non défini");
+      console.log("PaymentForm: CINETPAY_SITE_ID:", CINETPAY_SITE_ID ? "Défini" : "Non défini");
+      
       try {
         window.CinetPay.setConfig({
-          apikey: import.meta.env.VITE_CINETPAY_API_KEY || '',
-          site_id: import.meta.env.VITE_CINETPAY_SITE_ID || '',
+          apikey: CINETPAY_API_KEY,
+          site_id: CINETPAY_SITE_ID,
           notify_url: `${window.location.origin}/api/webhooks/cinetpay/notification`,
-          mode: import.meta.env.VITE_CINETPAY_MODE || 'PRODUCTION',
+          mode: 'PRODUCTION',
           close_after_response: true
         });
         console.log("PaymentForm: CinetPay Seamless initialisé avec succès");
