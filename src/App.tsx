@@ -8,7 +8,7 @@ import Index from "./pages/Index";
 import Payment from "./pages/Payment";
 import Confirmation from "./pages/Confirmation";
 import NotFound from "./pages/NotFound";
-import { cinetpayWebhookHandler } from "./integrations/cinetpay/webhookHandler";
+import { handleCinetPayWebhook } from "./integrations/cinetpay/webhookHandler";
 
 const queryClient = new QueryClient();
 
