@@ -1,18 +1,21 @@
 
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, ArrowLeft, CheckCircle, Download } from "lucide-react";
+import { checkCinetPayPayment } from "@/integrations/cinetpay/api";
 
 const Confirmation = () => {
   const { participantId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [participant, setParticipant] = useState<any>(null);
   const [payment, setPayment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,6 +53,44 @@ const Confirmation = () => {
 
         setParticipant(participantData);
         setPayment(paymentData);
+
+        // Vérifier le statut de paiement dans CinetPay si nécessaire
+        // Cela peut être nécessaire si le webhook n'a pas encore mis à jour le statut
+        if (paymentData.status === 'pending' && paymentData.cinetpay_token) {
+          setIsVerifying(true);
+          try {
+            const cinetPayStatus = await checkCinetPayPayment(paymentData.cinetpay_token);
+            
+            if (cinetPayStatus.code === "00" && cinetPayStatus.data.status === "ACCEPTED") {
+              // Mettre à jour le statut du paiement dans Supabase
+              const { error: updateError } = await supabase
+                .from('payments')
+                .update({
+                  status: 'success',
+                  cinetpay_operator_id: cinetPayStatus.data.operator_id
+                })
+                .eq('id', paymentData.id);
+
+              if (!updateError) {
+                // Rafraîchir les données de paiement
+                const { data: refreshedPayment } = await supabase
+                  .from('payments')
+                  .select('*')
+                  .eq('id', paymentData.id)
+                  .single();
+                
+                if (refreshedPayment) {
+                  setPayment(refreshedPayment);
+                }
+              }
+            }
+          } catch (checkError) {
+            console.error("Erreur lors de la vérification du statut CinetPay:", checkError);
+          } finally {
+            setIsVerifying(false);
+          }
+        }
+
       } catch (err: any) {
         console.error("Erreur lors de la récupération des données:", err);
         setError(err.message || "Une erreur est survenue");
@@ -117,6 +158,9 @@ const Confirmation = () => {
     );
   }
 
+  // Vérifier si le paiement est toujours en attente
+  const isPending = payment?.status === 'pending';
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-10">
@@ -131,15 +175,31 @@ const Confirmation = () => {
         
         {/* En-tête de la page */}
         <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <CheckCircle className="h-16 w-16 text-green-500" />
-          </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
-            <span className="block">Inscription confirmée</span>
-          </h1>
-          <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-            Merci pour votre inscription! Votre paiement a été traité avec succès.
-          </p>
+          {isPending ? (
+            <>
+              <div className="flex justify-center">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500"></div>
+              </div>
+              <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
+                <span className="block">Paiement en cours de traitement</span>
+              </h1>
+              <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+                Veuillez patienter pendant que nous vérifions votre paiement...
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex justify-center">
+                <CheckCircle className="h-16 w-16 text-green-500" />
+              </div>
+              <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
+                <span className="block">Inscription confirmée</span>
+              </h1>
+              <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+                Merci pour votre inscription! Votre paiement a été traité avec succès.
+              </p>
+            </>
+          )}
         </div>
 
         {/* Carte de confirmation */}
@@ -149,7 +209,7 @@ const Confirmation = () => {
               Détails de votre inscription
             </h2>
             <p className="mt-1 max-w-2xl text-sm text-gray-500">
-              Référence de transaction: {payment?.transaction_id}
+              Référence de transaction: {payment?.transaction_id || payment?.cinetpay_api_response_id}
             </p>
           </div>
           <div className="border-t border-gray-200">
@@ -193,13 +253,35 @@ const Confirmation = () => {
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Date de paiement</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {new Date(payment?.payment_date).toLocaleString('fr-FR', {
+                  {payment?.payment_date ? new Date(payment.payment_date).toLocaleString('fr-FR', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit'
-                  })}
+                  }) : "En attente"}
+                </dd>
+              </div>
+              {payment?.cinetpay_operator_id && (
+                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Identifiant de l'opération</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    {payment.cinetpay_operator_id}
+                  </dd>
+                </div>
+              )}
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Statut</dt>
+                <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2">
+                  {isPending ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      En attente
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Confirmé
+                    </span>
+                  )}
                 </dd>
               </div>
             </dl>
@@ -208,13 +290,15 @@ const Confirmation = () => {
 
         {/* Actions */}
         <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-2 w-full md:w-auto"
-          >
-            <Download className="h-4 w-4" />
-            Télécharger le reçu
-          </Button>
+          {!isPending && (
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2 w-full md:w-auto"
+            >
+              <Download className="h-4 w-4" />
+              Télécharger le reçu
+            </Button>
+          )}
           <Button 
             className="w-full md:w-auto"
             onClick={handleBackToHome}
@@ -224,13 +308,26 @@ const Confirmation = () => {
         </div>
 
         {/* Instructions */}
-        <Alert className="bg-blue-50 border-blue-200">
-          <AlertTitle className="text-blue-800">Instructions importantes</AlertTitle>
-          <AlertDescription className="text-blue-700">
-            <p>Un email de confirmation contenant votre QR code d'accès a été envoyé à votre adresse email. Assurez-vous de présenter ce QR code lors de votre arrivée à l'événement.</p>
-            <p className="mt-2">Pour toute question, veuillez nous contacter à l'adresse email: support@example.com</p>
-          </AlertDescription>
-        </Alert>
+        {!isPending && (
+          <Alert className="bg-blue-50 border-blue-200">
+            <AlertTitle className="text-blue-800">Instructions importantes</AlertTitle>
+            <AlertDescription className="text-blue-700">
+              <p>Un email de confirmation contenant votre QR code d'accès a été envoyé à votre adresse email. Assurez-vous de présenter ce QR code lors de votre arrivée à l'événement.</p>
+              <p className="mt-2">Pour toute question, veuillez nous contacter à l'adresse email: support@example.com</p>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Message en cas de paiement en cours */}
+        {isPending && (
+          <Alert className="bg-yellow-50 border-yellow-200">
+            <AlertTitle className="text-yellow-800">Paiement en cours de traitement</AlertTitle>
+            <AlertDescription className="text-yellow-700">
+              <p>Votre paiement est en cours de traitement. Cette page se mettra à jour automatiquement dès que nous aurons reçu la confirmation.</p>
+              <p className="mt-2">Si vous avez déjà effectué le paiement via votre opérateur mobile et que cette page ne se met pas à jour, veuillez rafraîchir la page ou nous contacter à support@example.com</p>
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
     </div>
   );

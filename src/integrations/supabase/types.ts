@@ -90,6 +90,10 @@ export type Database = {
       payments: {
         Row: {
           amount: number
+          cinetpay_api_response_id: string | null
+          cinetpay_operator_id: string | null
+          cinetpay_payment_url: string | null
+          cinetpay_token: string | null
           currency: string
           id: string
           participant_id: string
@@ -100,6 +104,10 @@ export type Database = {
         }
         Insert: {
           amount: number
+          cinetpay_api_response_id?: string | null
+          cinetpay_operator_id?: string | null
+          cinetpay_payment_url?: string | null
+          cinetpay_token?: string | null
           currency?: string
           id?: string
           participant_id: string
@@ -110,6 +118,10 @@ export type Database = {
         }
         Update: {
           amount?: number
+          cinetpay_api_response_id?: string | null
+          cinetpay_operator_id?: string | null
+          cinetpay_payment_url?: string | null
+          cinetpay_token?: string | null
           currency?: string
           id?: string
           participant_id?: string
