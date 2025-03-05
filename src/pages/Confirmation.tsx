@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, ArrowLeft, CheckCircle, Download } from "lucide-react";
+import { checkCinetPayPayment } from "@/integrations/cinetpay/api";
 
 const Confirmation = () => {
   const { participantId } = useParams();
@@ -53,8 +54,42 @@ const Confirmation = () => {
         setParticipant(participantData);
         setPayment(paymentData);
 
-        // Note: We've removed the CinetPay API verification code since we're using form submission
-        // Status updates are now handled by the webhook directly
+        // Vérifier le statut de paiement dans CinetPay si nécessaire
+        // Cela peut être nécessaire si le webhook n'a pas encore mis à jour le statut
+        if (paymentData.status === 'pending' && paymentData.cinetpay_token) {
+          setIsVerifying(true);
+          try {
+            const cinetPayStatus = await checkCinetPayPayment(paymentData.cinetpay_token);
+            
+            if (cinetPayStatus.code === "00" && cinetPayStatus.data.status === "ACCEPTED") {
+              // Mettre à jour le statut du paiement dans Supabase
+              const { error: updateError } = await supabase
+                .from('payments')
+                .update({
+                  status: 'success',
+                  cinetpay_operator_id: cinetPayStatus.data.operator_id
+                })
+                .eq('id', paymentData.id);
+
+              if (!updateError) {
+                // Rafraîchir les données de paiement
+                const { data: refreshedPayment } = await supabase
+                  .from('payments')
+                  .select('*')
+                  .eq('id', paymentData.id)
+                  .single();
+                
+                if (refreshedPayment) {
+                  setPayment(refreshedPayment);
+                }
+              }
+            }
+          } catch (checkError) {
+            console.error("Erreur lors de la vérification du statut CinetPay:", checkError);
+          } finally {
+            setIsVerifying(false);
+          }
+        }
 
       } catch (err: any) {
         console.error("Erreur lors de la récupération des données:", err);
