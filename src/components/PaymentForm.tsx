@@ -10,11 +10,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard, SmartphoneIcon } from "lucide-react";
+import { SmartphoneIcon } from "lucide-react";
 
 // Définition du schéma de validation
 const paymentSchema = z.object({
-  paymentMethod: z.enum(["wave", "orange_money", "moov_money", "mtn_money", "bank_card"], {
+  paymentMethod: z.enum(["wave", "orange_money", "moov_money", "mtn_money"], {
     required_error: "Veuillez sélectionner une méthode de paiement",
   }),
 });
@@ -47,12 +47,6 @@ const PAYMENT_METHODS = [
     name: "MTN Money",
     icon: <SmartphoneIcon className="h-5 w-5 text-yellow-500" />,
     description: "Payer via MTN Money",
-  },
-  {
-    id: "bank_card",
-    name: "Carte bancaire",
-    icon: <CreditCard className="h-5 w-5 text-gray-500" />,
-    description: "Payer avec votre carte bancaire",
   },
 ];
 
