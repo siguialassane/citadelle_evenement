@@ -1,12 +1,12 @@
-
 // Commentaires: Ce fichier gère la simulation du paiement et l'envoi d'emails de confirmation via EmailJS
-// Dernière modification: Ajout d'un QR code dans l'email de confirmation qui dirige vers la page d'inscription confirmée
+// Dernière modification: Intégration du SDK CinetPay pour les paiements réels
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { initiateCinetPayPayment } from "@/integrations/cinetpay/api";
 import { 
   Form,
   FormControl,
@@ -45,9 +45,10 @@ type PaymentFormProps = {
 
 export function PaymentForm({ participant }: PaymentFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSimulationMode, setIsSimulationMode] = useState(false); // Mode test/production
   const navigate = useNavigate();
 
-  console.log("PaymentForm: Simulation de paiement pour le participant ID:", participant.id);
+  console.log("PaymentForm: Initialisation pour le participant ID:", participant.id);
 
   // Initialiser le formulaire avec react-hook-form et zod
   const form = useForm<PaymentFormValues>({
@@ -142,70 +143,138 @@ export function PaymentForm({ participant }: PaymentFormProps) {
 
   async function onSubmit(values: PaymentFormValues) {
     try {
-      console.log("PaymentForm: Début de la simulation du paiement");
       setIsProcessing(true);
-
-      // Simuler un délai de traitement
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Générer un ID de transaction simulé
-      const transactionId = `SIM-${participant.id.slice(0, 8)}-${Date.now()}`;
       
-      // Simuler l'enregistrement du paiement dans Supabase
-      const { data: paymentRecord, error } = await supabase
-        .from('payments')
-        .insert({
-          participant_id: participant.id,
-          amount: PAYMENT_AMOUNT,
-          payment_method: values.paymentMethod,
-          status: 'completed', // Simuler un paiement réussi
-          transaction_id: transactionId,
-          currency: "XOF"
-        })
-        .select()
-        .single();
+      if (isSimulationMode) {
+        // Mode simulation - utiliser le code existant
+        console.log("PaymentForm: Début de la simulation du paiement");
+        
+        // Simuler un délai de traitement
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-      if (error) {
-        throw error;
-      }
+        // Générer un ID de transaction simulé
+        const transactionId = `SIM-${participant.id.slice(0, 8)}-${Date.now()}`;
+        
+        // Simuler l'enregistrement du paiement dans Supabase
+        const { data: paymentRecord, error } = await supabase
+          .from('payments')
+          .insert({
+            participant_id: participant.id,
+            amount: PAYMENT_AMOUNT,
+            payment_method: values.paymentMethod,
+            status: 'completed', // Simuler un paiement réussi
+            transaction_id: transactionId,
+            currency: "XOF"
+          })
+          .select()
+          .single();
 
-      // Générer un QR code pour le participant
-      const qrCodeId = `QR-${participant.id}-${Date.now()}`;
-      const { error: participantUpdateError } = await supabase
-        .from('participants')
-        .update({
-          qr_code_id: qrCodeId
-        })
-        .eq('id', participant.id);
+        if (error) {
+          throw error;
+        }
 
-      if (participantUpdateError) {
-        console.error("Erreur lors de la mise à jour du participant:", participantUpdateError);
-      }
+        // Générer un QR code pour le participant
+        const qrCodeId = `QR-${participant.id}-${Date.now()}`;
+        const { error: participantUpdateError } = await supabase
+          .from('participants')
+          .update({
+            qr_code_id: qrCodeId
+          })
+          .eq('id', participant.id);
 
-      // Envoyer un email de confirmation
-      const emailSent = await sendConfirmationEmail(participant, paymentRecord, qrCodeId);
-      
-      if (emailSent) {
-        console.log("Email de confirmation envoyé avec succès");
+        if (participantUpdateError) {
+          console.error("Erreur lors de la mise à jour du participant:", participantUpdateError);
+        }
+
+        // Envoyer un email de confirmation
+        const emailSent = await sendConfirmationEmail(participant, paymentRecord, qrCodeId);
+        
+        if (emailSent) {
+          console.log("Email de confirmation envoyé avec succès");
+        } else {
+          console.warn("L'email de confirmation n'a pas pu être envoyé, mais le paiement a été enregistré");
+        }
+
+        // Afficher un message de succès
+        toast({
+          title: "Paiement simulé réussi",
+          description: "Le paiement a été simulé avec succès. Un email de confirmation a été envoyé.",
+          variant: "default",
+        });
+        
+        // Rediriger vers la page de confirmation
+        navigate(`/confirmation/${participant.id}`);
       } else {
-        console.warn("L'email de confirmation n'a pas pu être envoyé, mais le paiement a été enregistré");
+        // Mode production - utiliser CinetPay SDK
+        console.log("PaymentForm: Début du paiement réel avec CinetPay");
+        
+        try {
+          // Initialiser le paiement avec CinetPay
+          const paymentResponse = await initiateCinetPayPayment(
+            participant,
+            PAYMENT_AMOUNT,
+            values.paymentMethod
+          );
+          
+          console.log("PaymentForm: Réponse CinetPay:", paymentResponse);
+          
+          // Vérifier la réponse
+          if (
+            paymentResponse.code !== '201' || 
+            !paymentResponse.data || 
+            !paymentResponse.data.payment_url
+          ) {
+            throw new Error(`Erreur lors de l'initialisation du paiement: ${paymentResponse.message}`);
+          }
+          
+          // Enregistrer les détails du paiement dans Supabase
+          const { data: paymentRecord, error } = await supabase
+            .from('payments')
+            .insert({
+              participant_id: participant.id,
+              amount: PAYMENT_AMOUNT,
+              payment_method: values.paymentMethod,
+              status: 'pending', // Le paiement est initialisé mais pas encore complété
+              transaction_id: paymentResponse.data.payment_token,
+              cinetpay_api_response_id: paymentResponse.api_response_id,
+              currency: "XOF"
+            })
+            .select()
+            .single();
+            
+          if (error) {
+            console.error("PaymentForm: Erreur lors de l'enregistrement du paiement:", error);
+            throw error;
+          }
+          
+          console.log("PaymentForm: Paiement enregistré avec succès:", paymentRecord);
+          
+          // Rediriger vers la page de paiement CinetPay
+          window.location.href = paymentResponse.data.payment_url;
+          return; // Arrêter l'exécution ici car nous redirigeons
+        } catch (cinetpayError: any) {
+          console.error("PaymentForm: Erreur CinetPay:", cinetpayError);
+          toast({
+            title: "Erreur de paiement",
+            description: cinetpayError.message || "Une erreur est survenue lors de l'initialisation du paiement.",
+            variant: "destructive",
+          });
+          
+          // Ne pas rediriger en cas d'erreur
+          setIsProcessing(false);
+          return;
+        }
       }
-
-      // Afficher un message de succès
-      toast({
-        title: "Paiement simulé réussi",
-        description: "Le paiement a été simulé avec succès. Un email de confirmation a été envoyé.",
-        variant: "default",
-      });
       
+      // Code qui s'exécute uniquement en mode simulation après le traitement réussi
       // Rediriger vers la page de confirmation
       navigate(`/confirmation/${participant.id}`);
       
     } catch (error: any) {
-      console.error("PaymentForm: Erreur lors de la simulation:", error);
+      console.error("PaymentForm: Erreur lors du traitement:", error);
       toast({
-        title: "Erreur de simulation",
-        description: error.message || "Une erreur est survenue lors de la simulation du paiement.",
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors du traitement.",
         variant: "destructive",
       });
     } finally {
@@ -216,7 +285,9 @@ export function PaymentForm({ participant }: PaymentFormProps) {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-2xl">Simulation de Paiement</CardTitle>
+        <CardTitle className="text-2xl">
+          {isSimulationMode ? "Simulation de Paiement" : "Paiement CinetPay"}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="bg-gray-50 p-4 rounded-md mb-6">
@@ -224,9 +295,18 @@ export function PaymentForm({ participant }: PaymentFormProps) {
             <span className="font-medium">Montant à payer:</span>
             <span className="font-bold">{PAYMENT_AMOUNT.toLocaleString()} XOF</span>
           </div>
-          <p className="text-sm text-gray-600 mt-4">
-            Mode test : Le paiement sera simulé automatiquement comme réussi.
-          </p>
+          <div className="flex items-center mt-4">
+            <input
+              type="checkbox"
+              id="simulationToggle"
+              checked={isSimulationMode}
+              onChange={() => setIsSimulationMode(!isSimulationMode)}
+              className="mr-2"
+            />
+            <label htmlFor="simulationToggle" className="text-sm text-gray-600">
+              Mode test (simulation de paiement réussi)
+            </label>
+          </div>
         </div>
 
         <Form {...form}>
@@ -236,7 +316,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
               name="paymentMethod"
               render={({ field }) => (
                 <FormItem className="space-y-3">
-                  <FormLabel>Méthode de paiement (simulation)</FormLabel>
+                  <FormLabel>Méthode de paiement</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -281,17 +361,24 @@ export function PaymentForm({ participant }: PaymentFormProps) {
               {isProcessing ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Simulation en cours...
+                  {isSimulationMode ? "Simulation en cours..." : "Traitement en cours..."}
                 </>
               ) : (
-                `Simuler le paiement de ${PAYMENT_AMOUNT.toLocaleString()} XOF`
+                isSimulationMode 
+                  ? `Simuler le paiement de ${PAYMENT_AMOUNT.toLocaleString()} XOF`
+                  : `Payer ${PAYMENT_AMOUNT.toLocaleString()} XOF avec CinetPay`
               )}
             </Button>
           </form>
         </Form>
       </CardContent>
       <CardFooter className="flex flex-col items-start text-xs text-gray-500">
-        <p>Mode test : La simulation créera un paiement réussi dans la base de données et enverra un email de confirmation.</p>
+        <p>
+          {isSimulationMode 
+            ? "Mode test : La simulation créera un paiement réussi dans la base de données et enverra un email de confirmation."
+            : "Votre paiement sera traité de manière sécurisée par CinetPay."
+          }
+        </p>
       </CardFooter>
     </Card>
   );
