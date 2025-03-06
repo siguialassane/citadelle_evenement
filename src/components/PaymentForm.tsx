@@ -1,6 +1,6 @@
 
 // Commentaires: Ce fichier gère la simulation du paiement et l'envoi d'emails de confirmation via EmailJS
-// Dernière modification: Correction de l'erreur d'envoi d'email et adaptation du template personnalisé
+// Dernière modification: Ajout d'un QR code dans l'email de confirmation qui dirige vers la page d'inscription confirmée
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,13 @@ export function PaymentForm({ participant }: PaymentFormProps) {
     }
   });
 
+  // Fonction pour générer un QR code avec l'API QR Code Generator
+  const generateQRCode = (url: string) => {
+    // Utilisation de l'API QR Code Generator
+    // Format: https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=URL
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+  };
+
   // Fonction pour envoyer un email de confirmation avec le template personnalisé
   const sendConfirmationEmail = async (participantData: any, paymentData: any, qrCodeId: string) => {
     try {
@@ -74,6 +81,12 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       // Déterminer le statut du participant
       const statut = participantData.is_member ? "Membre" : "Non-membre";
       
+      // Créer l'URL de confirmation (qui sera utilisée pour le QR code)
+      const confirmationUrl = `${window.location.origin}/confirmation/${participantData.id}`;
+      
+      // Générer l'URL du QR code
+      const qrCodeUrl = generateQRCode(confirmationUrl);
+      
       // Créer l'URL du badge (simulée pour le moment)
       const badgeUrl = `${window.location.origin}/badge/${qrCodeId}`;
       
@@ -86,6 +99,8 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         tel: participantData.contact_number,
         status: statut,
         badge_url: badgeUrl,
+        qr_code_url: qrCodeUrl, // URL du QR code généré
+        confirmation_url: confirmationUrl, // URL de confirmation
         
         // Variables nécessaires pour EmailJS
         to_name: `${participantData.first_name} ${participantData.last_name}`,
