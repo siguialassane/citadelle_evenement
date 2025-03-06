@@ -1,7 +1,8 @@
 // Commentaires: Ce fichier gère l'intégration du paiement CinetPay Seamless
-// Dernière modification: Mise à jour pour utiliser le SDK CinetPay conforme à la documentation officielle
+// Dernière modification: Mise à jour pour utiliser UUID comme identifiant de transaction
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { v4 as uuidv4 } from 'uuid';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
@@ -322,8 +323,10 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         // Simuler un délai de traitement
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Générer un ID de transaction simulé
-        const transactionId = `SIM-${participant.id.slice(0, 8)}-${Date.now()}`;
+        // Générer un ID de transaction simulé en utilisant UUID
+        const uuid = uuidv4();
+        const transactionId = `SIM-${uuid}`;
+        console.log("Simulation: ID de transaction généré:", transactionId);
         
         // Simuler l'enregistrement du paiement dans Supabase
         const { data: paymentRecord, error } = await supabase
@@ -378,12 +381,10 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         // Mode production - tenter d'utiliser le SDK Seamless, sinon utiliser l'API directe
         console.log("PaymentForm: Début du paiement réel");
         
-        // Générer un ID de transaction unique
-        const date = new Date();
-        const dateStr = date.toISOString().replace(/[^0-9]/g, '').slice(0, 8);
-        const timeStr = `${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}${date.getSeconds().toString().padStart(2, '0')}`;
-        const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-        const transactionId = `TR${dateStr}${timeStr}${randomNum}`;
+        // Générer un ID de transaction unique avec UUID
+        const uuid = uuidv4();
+        const transactionId = `TR-${uuid}`;
+        console.log("PaymentForm: ID de transaction généré:", transactionId);
         
         // Tenter d'utiliser le SDK Seamless
         if (isCinetPayLoaded && !useOldMethod) {

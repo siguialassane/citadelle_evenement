@@ -1,10 +1,12 @@
 
 // Ce fichier contient l'API d'intégration avec CinetPay qui utilise des appels POST directs
 // Modifications: 
+// - Utilisation d'UUID pour les identifiants de transaction
 // - Simplification du format de métadonnées pour suivre la documentation CinetPay
 // - Utilisation de la fonction de formatage des numéros de téléphone SANS code pays
 // - Ajout du paramètre type: "WEB" dans les requêtes API
 
+import { v4 as uuidv4 } from 'uuid';
 import { CINETPAY_API_KEY, CINETPAY_SITE_ID, CINETPAY_API_URL, CINETPAY_CHECK_URL, PAYMENT_CHANNELS, PAYMENT_METHOD_MAP } from './config';
 import { formatPhoneForCinetPay } from './seamless';
 import type { Database } from '../supabase/types';
@@ -34,12 +36,10 @@ export const initiateCinetPayPayment = async (
   console.log("CinetPayAPI: Début de l'initialisation du paiement via POST");
   
   try {
-    // Générer un ID de transaction unique
-    const date = new Date();
-    const dateStr = date.toISOString().replace(/[^0-9]/g, '').slice(0, 8);
-    const timeStr = `${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}${date.getSeconds().toString().padStart(2, '0')}`;
-    const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    const transactionId = `TR${dateStr}${timeStr}${randomNum}`;
+    // Générer un ID de transaction unique en utilisant UUID
+    const uuid = uuidv4();
+    const transactionId = `TR-${uuid}`;
+    console.log("CinetPayAPI: ID de transaction généré:", transactionId);
     
     // URL de base de l'application pour les redirections
     const baseUrl = window.location.origin;
