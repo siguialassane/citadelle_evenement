@@ -1,3 +1,9 @@
+
+// Ce fichier contient le formulaire d'inscription pour les participants
+// Modifications:
+// - Format plus flexible pour le numéro de téléphone
+// - Amélioration du formatage automatique du numéro
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -18,8 +24,8 @@ const formSchema = z.object({
   lastName: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères" }),
   contactNumber: z
     .string()
-    .regex(/^\+225 \d{10}$/, { 
-      message: "Le numéro doit être au format +225 suivi de 10 chiffres" 
+    .regex(/^\+225[ ]?[0-9]{8,10}$/, { 
+      message: "Le numéro doit commencer par +225 suivi de 8 à 10 chiffres" 
     }),
   email: z.string().email({ message: "Adresse email invalide" }),
   isMember: z.boolean().default(false),
@@ -95,11 +101,12 @@ export function RegisterForm() {
     let value = e.target.value;
     
     // S'assurer que le préfixe +225 est toujours présent
-    if (!value.startsWith("+225 ")) {
+    if (!value.startsWith("+225")) {
       value = "+225 ";
     } else {
-      // Ne garder que le préfixe et jusqu'à 10 chiffres après
+      // Extraire tous les chiffres après le code pays
       const digits = value.replace(/\D/g, "").substring(3);
+      // Limiter à 10 chiffres maximum et reformater
       value = `+225 ${digits.substring(0, 10)}`;
     }
     

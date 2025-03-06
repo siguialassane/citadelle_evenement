@@ -1,5 +1,8 @@
 
 // Ce fichier contient l'intégration avec le SDK CinetPay Seamless
+// Modifications:
+// - Amélioration du formatage des numéros de téléphone
+
 import { CINETPAY_API_KEY, CINETPAY_SITE_ID } from './config';
 
 /**
@@ -36,6 +39,25 @@ export const initCinetPaySDK = (notifyUrl: string): boolean => {
 };
 
 /**
+ * Formate un numéro de téléphone pour CinetPay
+ * Retire les espaces, le +, et s'assure qu'il commence par le code pays
+ */
+export const formatPhoneForCinetPay = (phoneNumber: string): string => {
+  // Retirer tous les caractères non numériques
+  let cleaned = phoneNumber.replace(/\D/g, '');
+  
+  // S'assurer que le numéro commence par 225 (sans le +)
+  if (cleaned.startsWith('225')) {
+    return cleaned;
+  } else if (cleaned.length <= 10) {
+    return '225' + cleaned;
+  }
+  
+  // Si le numéro est plus long, on suppose que le code pays est déjà inclus
+  return cleaned;
+};
+
+/**
  * Lance le processus de paiement avec le SDK CinetPay
  */
 export const startCinetPayPayment = (paymentData: {
@@ -61,10 +83,16 @@ export const startCinetPayPayment = (paymentData: {
   }
 
   try {
-    console.log("Démarrage du paiement avec CinetPay SDK:", paymentData);
+    // Formater le numéro de téléphone pour CinetPay
+    const formattedData = {
+      ...paymentData,
+      customer_phone_number: formatPhoneForCinetPay(paymentData.customer_phone_number)
+    };
+    
+    console.log("Démarrage du paiement avec CinetPay SDK:", formattedData);
     
     // @ts-ignore - CinetPay est défini globalement par le script
-    window.CinetPay.getCheckout(paymentData);
+    window.CinetPay.getCheckout(formattedData);
     return true;
   } catch (error) {
     console.error("Erreur lors du démarrage du paiement CinetPay:", error);
