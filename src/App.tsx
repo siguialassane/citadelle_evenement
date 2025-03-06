@@ -8,6 +8,9 @@ import Index from "./pages/Index";
 import Payment from "./pages/Payment";
 import Confirmation from "./pages/Confirmation";
 import NotFound from "./pages/NotFound";
+import AdminLogin from "./pages/admin/Login";
+import AdminDashboard from "./pages/admin/Dashboard";
+import { AdminRoute } from "./components/admin/AdminRoute";
 import { handleCinetPayWebhook } from "./integrations/cinetpay/webhookHandler";
 
 const queryClient = new QueryClient();
@@ -22,6 +25,17 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/payment/:participantId" element={<Payment />} />
           <Route path="/confirmation/:participantId" element={<Confirmation />} />
+          
+          {/* Routes administrateur */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route 
+            path="/admin/dashboard" 
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            } 
+          />
           
           {/* Route pour le webhook CinetPay */}
           <Route 

@@ -1,11 +1,15 @@
 
 import { RegisterForm } from "@/components/RegisterForm";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Info, Lock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
+  
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="max-w-3xl mx-auto space-y-10">
         {/* En-tête de la page */}
         <div className="text-center space-y-4">
@@ -29,6 +33,17 @@ const Index = () => {
 
         {/* Formulaire d'inscription */}
         <RegisterForm />
+        
+        {/* Bouton d'accès admin */}
+        <div className="fixed bottom-5 right-5">
+          <Button 
+            onClick={() => navigate("/admin/login")}
+            className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+          >
+            <Lock className="h-4 w-4" />
+            Accès Admin
+          </Button>
+        </div>
       </div>
     </div>
   );
