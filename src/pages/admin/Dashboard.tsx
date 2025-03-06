@@ -305,29 +305,97 @@ const AdminDashboard = () => {
     });
 
     try {
+      const printTable = document.createElement('div');
+      printTable.innerHTML = tableElement.outerHTML;
+      printTable.id = 'pdf-table';
+      
+      printTable.style.width = '100%';
+      printTable.style.fontFamily = 'Arial, sans-serif';
+      printTable.style.fontSize = '8px';
+      
+      const actionButtons = printTable.querySelectorAll('button');
+      actionButtons.forEach(btn => {
+        btn.style.display = 'none';
+      });
+      
+      document.body.appendChild(printTable);
+      
       const pdf = new jsPDF('l', 'mm', 'a4');
       
-      // Ajouter un titre
-      pdf.setFontSize(18);
-      pdf.text('Liste des participants', 15, 15);
+      pdf.setFontSize(16);
+      pdf.text('Liste des participants', 15, 10);
       
-      // Ajouter la date d'extraction
       pdf.setFontSize(10);
-      pdf.text(`Extrait le: ${new Date().toLocaleDateString('fr-FR')}`, 15, 22);
+      pdf.text(`Extrait le: ${new Date().toLocaleDateString('fr-FR')}`, 15, 15);
       
-      // Capturer le tableau en image
-      const canvas = await html2canvas(tableElement, {
-        scale: 1,
+      const canvas = await html2canvas(printTable, {
+        scale: 2,
         useCORS: true,
-        logging: false
+        logging: false,
+        windowWidth: 1200,
+        windowHeight: 1600,
+        allowTaint: true,
+        foreignObjectRendering: true
       });
+      
+      document.body.removeChild(printTable);
       
       const imgData = canvas.toDataURL('image/png');
       
-      // Ajouter l'image du tableau
-      pdf.addImage(imgData, 'PNG', 10, 30, 280, 0);
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth - 20;
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
       
-      // Sauvegarder le PDF
+      if (imgHeight > pdfHeight - 20) {
+        const adjustedHeight = pdfHeight - 20;
+        const adjustedWidth = (imgProps.width * adjustedHeight) / imgProps.height;
+        const xOffset = (pdfWidth - adjustedWidth) / 2;
+        pdf.addImage(imgData, 'PNG', xOffset, 20, adjustedWidth, adjustedHeight);
+      } else {
+        const xOffset = (pdfWidth - imgWidth) / 2;
+        pdf.addImage(imgData, 'PNG', xOffset, 20, imgWidth, imgHeight);
+      }
+      
+      if (filteredParticipants.length > 15) {
+        const participantsPerPage = 25;
+        let currentPage = 0;
+        
+        for (let i = 0; i < filteredParticipants.length; i += participantsPerPage) {
+          if (i > 0) {
+            pdf.addPage();
+            currentPage++;
+            
+            pdf.setFontSize(14);
+            pdf.text(`Liste des participants (page ${currentPage + 1})`, 15, 10);
+            
+            const pageParticipants = filteredParticipants.slice(i, i + participantsPerPage);
+            
+            pdf.setFontSize(8);
+            pdf.setTextColor(100, 100, 100);
+            const headers = ["Nom", "Email", "Téléphone", "Statut", "Date d'inscription", "Paiement"];
+            const colWidth = (pdfWidth - 20) / headers.length;
+            
+            headers.forEach((header, index) => {
+              pdf.text(header, 10 + (colWidth * index), 20);
+            });
+            
+            pdf.setTextColor(0, 0, 0);
+            
+            pageParticipants.forEach((participant, index) => {
+              const y = 25 + (index * 7);
+              pdf.text(`${participant.last_name} ${participant.first_name}`, 10, y);
+              pdf.text(participant.email.substring(0, 25), 10 + colWidth, y);
+              pdf.text(participant.contact_number, 10 + (colWidth * 2), y);
+              pdf.text(participant.is_member ? "Membre" : "Non-membre", 10 + (colWidth * 3), y);
+              pdf.text(new Date(participant.created_at).toLocaleDateString(), 10 + (colWidth * 4), y);
+              pdf.text(participant.payments?.[0]?.status || "Non payé", 10 + (colWidth * 5), y);
+            });
+          }
+        }
+      }
+      
       pdf.save(`participants-${new Date().toISOString().slice(0,10)}.pdf`);
       
       toast({
@@ -338,7 +406,7 @@ const AdminDashboard = () => {
       console.error("Erreur lors de la génération du PDF:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de générer le PDF.",
+        description: "Impossible de générer le PDF. Veuillez réessayer.",
         variant: "destructive",
       });
     }
