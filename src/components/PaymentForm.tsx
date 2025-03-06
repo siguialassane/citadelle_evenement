@@ -1,11 +1,12 @@
-// Commentaires: Ce fichier gère l'intégration du paiement CinetPay Seamless et l'envoi d'emails de confirmation
-// Dernière modification: Implémentation du SDK CinetPay Seamless pour les paiements sans redirection
+// Commentaires: Ce fichier gère l'intégration du paiement CinetPay Seamless
+// Dernière modification: Mise à jour pour utiliser le SDK CinetPay Seamless avec l'intégration native
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { isCinetPaySDKLoaded, initCinetPaySDK, startCinetPayPayment, setupCinetPayCallback } from "@/integrations/cinetpay/seamless";
 import { initiateCinetPayPayment } from "@/integrations/cinetpay/api";
 import { 
   Form,
@@ -43,30 +44,11 @@ type PaymentFormProps = {
   participant: any;
 };
 
-// Charger le script CinetPay Seamless
-const loadCinetPayScript = () => {
-  return new Promise<void>((resolve, reject) => {
-    // Vérifier si le script est déjà chargé
-    if (document.getElementById('cinetpay-script')) {
-      resolve();
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = 'cinetpay-script';
-    script.src = 'https://cdn.cinetpay.com/seamless/latest/cinetpay.prod.min.js';
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Impossible de charger le script CinetPay"));
-    
-    document.head.appendChild(script);
-  });
-};
-
 export function PaymentForm({ participant }: PaymentFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSimulationMode, setIsSimulationMode] = useState(false); // Mode test/production
   const [isCinetPayLoaded, setIsCinetPayLoaded] = useState(false);
+  const [useOldMethod, setUseOldMethod] = useState(false); // Utiliser l'ancienne méthode d'API si le SDK échoue
   const navigate = useNavigate();
 
   console.log("PaymentForm: Initialisation pour le participant ID:", participant.id);
@@ -79,27 +61,27 @@ export function PaymentForm({ participant }: PaymentFormProps) {
     }
   });
 
-  // Charger le script CinetPay au chargement du composant
+  // Vérifier si le SDK CinetPay est chargé au chargement du composant
   useEffect(() => {
-    loadCinetPayScript()
-      .then(() => {
-        console.log("Script CinetPay chargé avec succès");
-        setIsCinetPayLoaded(true);
-      })
-      .catch(error => {
-        console.error("Erreur lors du chargement du script CinetPay:", error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger le module de paiement. Veuillez réessayer.",
-          variant: "destructive",
-        });
-      });
+    const checkCinetPaySDK = () => {
+      const sdkLoaded = isCinetPaySDKLoaded();
+      console.log("Vérification du SDK CinetPay:", sdkLoaded ? "Chargé" : "Non chargé");
+      setIsCinetPayLoaded(sdkLoaded);
+      
+      if (!sdkLoaded) {
+        console.warn("Le SDK CinetPay n'est pas chargé. L'API direct sera utilisée.");
+        setUseOldMethod(true);
+      }
+    };
+
+    // Vérifier après un court délai pour s'assurer que le script a eu le temps de se charger
+    const timer = setTimeout(checkCinetPaySDK, 1000);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   // Fonction pour générer un QR code avec l'API QR Code Generator
   const generateQRCode = (url: string) => {
-    // Utilisation de l'API QR Code Generator
-    // Format: https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=URL
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
   };
 
@@ -275,6 +257,55 @@ export function PaymentForm({ participant }: PaymentFormProps) {
     }
   };
 
+  // Fonction pour initialiser un paiement avec le SDK Seamless
+  const initializeSeamlessPayment = async (values: PaymentFormValues, transactionId: string) => {
+    console.log("Initialisation du paiement Seamless");
+    
+    // Créer les URLs de notification et de retour
+    const baseUrl = window.location.origin;
+    const notifyUrl = `${baseUrl}/api/webhooks/cinetpay/notification`;
+    const returnUrl = `${baseUrl}/confirmation/${participant.id}`;
+    
+    // Formater le numéro de téléphone
+    const formattedPhoneNumber = participant.contact_number.replace(/\s+/g, '').replace(/^\+/, '');
+    
+    // Initialiser le SDK
+    if (!initCinetPaySDK(notifyUrl)) {
+      console.error("Échec de l'initialisation du SDK CinetPay");
+      return false;
+    }
+    
+    // Configurer le callback
+    if (!setupCinetPayCallback(handleCinetPayCallback)) {
+      console.error("Échec de la configuration du callback CinetPay");
+      return false;
+    }
+    
+    // Démarrer le paiement
+    const paymentStarted = startCinetPayPayment({
+      transaction_id: transactionId,
+      amount: PAYMENT_AMOUNT,
+      currency: "XOF",
+      channels: values.paymentMethod,
+      description: `Paiement pour ${participant.first_name} ${participant.last_name}`,
+      customer_name: participant.first_name,
+      customer_surname: participant.last_name,
+      customer_email: participant.email,
+      customer_phone_number: formattedPhoneNumber,
+      customer_address: "Adresse non fournie",
+      customer_city: "Abidjan",
+      customer_country: "CI",
+      customer_state: "CI",
+      customer_zip_code: "00000",
+      metadata: JSON.stringify({
+        participant_id: participant.id,
+        payment_method: values.paymentMethod
+      })
+    });
+    
+    return paymentStarted;
+  };
+
   async function onSubmit(values: PaymentFormValues) {
     try {
       setIsProcessing(true);
@@ -339,12 +370,31 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         // Rediriger vers la page de confirmation
         navigate(`/confirmation/${participant.id}`);
       } else {
-        // Mode production - utiliser CinetPay SDK Seamless
-        console.log("PaymentForm: Début du paiement réel avec CinetPay API");
+        // Mode production - tenter d'utiliser le SDK Seamless, sinon utiliser l'API directe
+        console.log("PaymentForm: Début du paiement réel");
         
-        if (!isCinetPayLoaded) {
-          throw new Error("Le module de paiement CinetPay n'est pas encore chargé. Veuillez réessayer.");
+        // Générer un ID de transaction unique
+        const date = new Date();
+        const dateStr = date.toISOString().replace(/[^0-9]/g, '').slice(0, 8);
+        const timeStr = `${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}${date.getSeconds().toString().padStart(2, '0')}`;
+        const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        const transactionId = `TR${dateStr}${timeStr}${randomNum}`;
+        
+        // Tenter d'utiliser le SDK Seamless
+        if (isCinetPayLoaded && !useOldMethod) {
+          console.log("Tentative d'utilisation du SDK Seamless");
+          const seamlessSuccess = await initializeSeamlessPayment(values, transactionId);
+          
+          if (seamlessSuccess) {
+            console.log("Paiement via SDK Seamless initié avec succès");
+            return; // Le traitement est géré par le callback
+          } else {
+            console.warn("Échec de l'initialisation du paiement avec SDK Seamless, passage à l'API directe");
+          }
         }
+        
+        // Utiliser l'API directe en cas d'échec du SDK
+        console.log("PaymentForm: Utilisation de l'API directe CinetPay");
         
         try {
           // Initialiser le paiement avec CinetPay
@@ -400,10 +450,6 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         }
       }
       
-      // Code qui s'exécute uniquement en mode simulation après le traitement réussi
-      // Rediriger vers la page de confirmation
-      navigate(`/confirmation/${participant.id}`);
-      
     } catch (error: any) {
       console.error("PaymentForm: Erreur lors du traitement:", error);
       toast({
@@ -441,6 +487,20 @@ export function PaymentForm({ participant }: PaymentFormProps) {
               Mode test (simulation de paiement réussi)
             </label>
           </div>
+          {!isSimulationMode && (
+            <div className="flex items-center mt-2">
+              <input
+                type="checkbox"
+                id="apiToggle"
+                checked={useOldMethod}
+                onChange={() => setUseOldMethod(!useOldMethod)}
+                className="mr-2"
+              />
+              <label htmlFor="apiToggle" className="text-sm text-gray-600">
+                Utiliser l'API directe (sans SDK Seamless)
+              </label>
+            </div>
+          )}
         </div>
 
         <Form {...form}>
@@ -490,7 +550,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={isProcessing || (!isSimulationMode && !isCinetPayLoaded)}
+              disabled={isProcessing || (!isSimulationMode && !isCinetPayLoaded && !useOldMethod)}
             >
               {isProcessing ? (
                 <>
@@ -510,7 +570,9 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         <p>
           {isSimulationMode 
             ? "Mode test : La simulation créera un paiement réussi dans la base de données et enverra un email de confirmation."
-            : "Votre paiement sera traité de manière sécurisée par CinetPay avec l'intégration Seamless."
+            : useOldMethod
+              ? "Paiement via API CinetPay : Vous serez redirigé vers la page de paiement CinetPay."
+              : "Paiement via SDK Seamless : Le paiement s'effectuera directement sur cette page."
           }
         </p>
       </CardFooter>
