@@ -45,7 +45,6 @@ import { toast } from "@/hooks/use-toast";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-// Type pour les participants
 type Participant = {
   id: string;
   first_name: string;
@@ -58,7 +57,6 @@ type Participant = {
   payments: Payment[];
 };
 
-// Type pour les paiements
 type Payment = {
   id: string;
   status: string;
@@ -80,7 +78,6 @@ const AdminDashboard = () => {
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
-    // Vérifier si l'admin est connecté
     const checkAuth = () => {
       const isAdmin = localStorage.getItem("adminAuth") === "true";
       if (!isAdmin) {
@@ -97,7 +94,6 @@ const AdminDashboard = () => {
     fetchParticipants();
   }, [navigate]);
 
-  // Filtrer les participants en fonction du terme de recherche
   useEffect(() => {
     if (searchTerm.trim() === "") {
       setFilteredParticipants(participants);
@@ -116,7 +112,6 @@ const AdminDashboard = () => {
     setFilteredParticipants(filtered);
   }, [searchTerm, participants]);
 
-  // Récupérer les données des participants
   const fetchParticipants = async () => {
     setIsLoading(true);
     try {
@@ -154,7 +149,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Rafraîchir les données
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchParticipants();
@@ -165,7 +159,6 @@ const AdminDashboard = () => {
     });
   };
 
-  // Marquer un participant comme enregistré (check-in)
   const handleCheckIn = async (participantId: string, currentStatus: boolean | null) => {
     try {
       const { error } = await supabase
@@ -180,7 +173,6 @@ const AdminDashboard = () => {
         throw error;
       }
 
-      // Mettre à jour l'état local
       setParticipants(prevParticipants => 
         prevParticipants.map(participant => 
           participant.id === participantId 
@@ -205,7 +197,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Se déconnecter
   const handleLogout = () => {
     localStorage.removeItem("adminAuth");
     toast({
@@ -215,13 +206,11 @@ const AdminDashboard = () => {
     navigate("/");
   };
 
-  // Ouvrir la modal avec les détails du participant
   const handleViewDetails = (participant: Participant) => {
     setSelectedParticipant(participant);
     setDetailsOpen(true);
   };
 
-  // Formatage de la date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       day: '2-digit',
@@ -232,7 +221,6 @@ const AdminDashboard = () => {
     });
   };
 
-  // Obtenir le statut du paiement avec une couleur appropriée
   const getPaymentStatusBadge = (payment?: Payment) => {
     if (!payment) {
       return <Badge variant="outline" className="bg-gray-100 text-gray-800">Non payé</Badge>;
@@ -253,7 +241,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Exporter les données au format CSV
   const handleExportCSV = () => {
     const headers = [
       "Nom", 
@@ -294,106 +281,146 @@ const AdminDashboard = () => {
     document.body.removeChild(link);
   };
 
-  // Exporter les données au format PDF
   const handleExportPDF = async () => {
-    const tableElement = document.getElementById('participants-table');
-    if (!tableElement) return;
-
     toast({
       title: "Génération du PDF",
       description: "Veuillez patienter pendant la création du PDF...",
     });
 
     try {
-      const printTable = document.createElement('div');
-      printTable.innerHTML = tableElement.outerHTML;
-      printTable.id = 'pdf-table';
+      const pdf = new jsPDF('landscape', 'mm', 'a4');
       
-      printTable.style.width = '100%';
-      printTable.style.fontFamily = 'Arial, sans-serif';
-      printTable.style.fontSize = '8px';
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const usableWidth = pageWidth - (margin * 2);
       
-      const actionButtons = printTable.querySelectorAll('button');
-      actionButtons.forEach(btn => {
-        btn.style.display = 'none';
-      });
-      
-      document.body.appendChild(printTable);
-      
-      const pdf = new jsPDF('l', 'mm', 'a4');
-      
+      pdf.setFont("helvetica", "bold");
       pdf.setFontSize(16);
-      pdf.text('Liste des participants', 15, 10);
+      pdf.text('Liste des participants', margin, margin + 10);
       
+      pdf.setFont("helvetica", "normal");
       pdf.setFontSize(10);
-      pdf.text(`Extrait le: ${new Date().toLocaleDateString('fr-FR')}`, 15, 15);
+      pdf.text(`Extrait le: ${new Date().toLocaleDateString('fr-FR')}`, margin, margin + 20);
       
-      const canvas = await html2canvas(printTable, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        windowWidth: 1200,
-        windowHeight: 1600,
-        allowTaint: true,
-        foreignObjectRendering: true
+      const columns = [
+        "Nom", 
+        "Email", 
+        "Téléphone", 
+        "Membre", 
+        "Date d'inscription", 
+        "Paiement"
+      ];
+      
+      const columnWidths = {
+        0: usableWidth * 0.20, // Nom
+        1: usableWidth * 0.30, // Email
+        2: usableWidth * 0.15, // Téléphone
+        3: usableWidth * 0.10, // Membre
+        4: usableWidth * 0.15, // Date
+        5: usableWidth * 0.10, // Paiement
+      };
+      
+      let yPosition = margin + 30;
+      let currentPage = 1;
+      const lineHeight = 7;
+      const maxRowsPerPage = Math.floor((pageHeight - yPosition - margin) / lineHeight);
+      
+      const drawHeader = () => {
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(margin, yPosition, usableWidth, lineHeight, 'F');
+        
+        let xPosition = margin;
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(9);
+        
+        columns.forEach((column, index) => {
+          pdf.text(column, xPosition + 2, yPosition + 5);
+          xPosition += columnWidths[index as keyof typeof columnWidths];
+        });
+        
+        yPosition += lineHeight;
+      };
+      
+      const drawRowLines = (y: number) => {
+        let xPosition = margin;
+        
+        pdf.setDrawColor(200, 200, 200);
+        pdf.line(margin, y, margin + usableWidth, y);
+        
+        columns.forEach((_, index) => {
+          xPosition += columnWidths[index as keyof typeof columnWidths];
+          pdf.line(xPosition, y - lineHeight, xPosition, y);
+        });
+      };
+      
+      drawHeader();
+      
+      filteredParticipants.forEach((participant, index) => {
+        if (index > 0 && index % maxRowsPerPage === 0) {
+          pdf.addPage();
+          currentPage++;
+          yPosition = margin + 15;
+          
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(14);
+          pdf.text(`Liste des participants (page ${currentPage})`, margin, margin + 5);
+          
+          yPosition += 10;
+          drawHeader();
+        }
+        
+        if (index % 2 === 1) {
+          pdf.setFillColor(249, 250, 251);
+          pdf.rect(margin, yPosition, usableWidth, lineHeight, 'F');
+        }
+        
+        let xPosition = margin;
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        
+        pdf.text(`${participant.last_name} ${participant.first_name}`.substring(0, 25), xPosition + 2, yPosition + 5);
+        xPosition += columnWidths[0];
+        
+        pdf.text(participant.email.substring(0, 35), xPosition + 2, yPosition + 5);
+        xPosition += columnWidths[1];
+        
+        pdf.text(participant.contact_number, xPosition + 2, yPosition + 5);
+        xPosition += columnWidths[2];
+        
+        pdf.text(participant.is_member ? "Oui" : "Non", xPosition + 2, yPosition + 5);
+        xPosition += columnWidths[3];
+        
+        pdf.text(new Date(participant.created_at).toLocaleDateString('fr-FR'), xPosition + 2, yPosition + 5);
+        xPosition += columnWidths[4];
+        
+        const paymentStatus = participant.payments?.[0]?.status?.toUpperCase() || "NON PAYÉ";
+        pdf.text(
+          paymentStatus === "SUCCESS" || paymentStatus === "APPROVED" 
+            ? "Confirmé" 
+            : paymentStatus === "PENDING" 
+              ? "En cours" 
+              : "Non payé", 
+          xPosition + 2, 
+          yPosition + 5
+        );
+        
+        drawRowLines(yPosition + lineHeight);
+        
+        yPosition += lineHeight;
       });
       
-      document.body.removeChild(printTable);
+      pdf.setDrawColor(100, 100, 100);
+      pdf.rect(margin, margin + 30, usableWidth, Math.min(filteredParticipants.length, maxRowsPerPage) * lineHeight, 'D');
       
-      const imgData = canvas.toDataURL('image/png');
+      const totalPages = Math.ceil(filteredParticipants.length / maxRowsPerPage);
       
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pdfWidth - 20;
-      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-      
-      if (imgHeight > pdfHeight - 20) {
-        const adjustedHeight = pdfHeight - 20;
-        const adjustedWidth = (imgProps.width * adjustedHeight) / imgProps.height;
-        const xOffset = (pdfWidth - adjustedWidth) / 2;
-        pdf.addImage(imgData, 'PNG', xOffset, 20, adjustedWidth, adjustedHeight);
-      } else {
-        const xOffset = (pdfWidth - imgWidth) / 2;
-        pdf.addImage(imgData, 'PNG', xOffset, 20, imgWidth, imgHeight);
-      }
-      
-      if (filteredParticipants.length > 15) {
-        const participantsPerPage = 25;
-        let currentPage = 0;
-        
-        for (let i = 0; i < filteredParticipants.length; i += participantsPerPage) {
-          if (i > 0) {
-            pdf.addPage();
-            currentPage++;
-            
-            pdf.setFontSize(14);
-            pdf.text(`Liste des participants (page ${currentPage + 1})`, 15, 10);
-            
-            const pageParticipants = filteredParticipants.slice(i, i + participantsPerPage);
-            
-            pdf.setFontSize(8);
-            pdf.setTextColor(100, 100, 100);
-            const headers = ["Nom", "Email", "Téléphone", "Statut", "Date d'inscription", "Paiement"];
-            const colWidth = (pdfWidth - 20) / headers.length;
-            
-            headers.forEach((header, index) => {
-              pdf.text(header, 10 + (colWidth * index), 20);
-            });
-            
-            pdf.setTextColor(0, 0, 0);
-            
-            pageParticipants.forEach((participant, index) => {
-              const y = 25 + (index * 7);
-              pdf.text(`${participant.last_name} ${participant.first_name}`, 10, y);
-              pdf.text(participant.email.substring(0, 25), 10 + colWidth, y);
-              pdf.text(participant.contact_number, 10 + (colWidth * 2), y);
-              pdf.text(participant.is_member ? "Membre" : "Non-membre", 10 + (colWidth * 3), y);
-              pdf.text(new Date(participant.created_at).toLocaleDateString(), 10 + (colWidth * 4), y);
-              pdf.text(participant.payments?.[0]?.status || "Non payé", 10 + (colWidth * 5), y);
-            });
-          }
-        }
+      for (let i = 0; i < totalPages; i++) {
+        pdf.setPage(i + 1);
+        pdf.setFont("helvetica", "italic");
+        pdf.setFontSize(8);
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`Page ${i + 1}/${totalPages}`, pageWidth - 25, pageHeight - 10);
       }
       
       pdf.save(`participants-${new Date().toISOString().slice(0,10)}.pdf`);
@@ -414,7 +441,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* En-tête du tableau de bord */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Tableau de bord administrateur</h1>
@@ -429,9 +455,7 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      {/* Contenu principal */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Barre d'outils */}
         <div className="bg-white p-4 rounded-lg shadow mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="relative w-full sm:w-64">
@@ -471,7 +495,6 @@ const AdminDashboard = () => {
             </div>
           </div>
           
-          {/* Statistiques */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
             <div className="bg-indigo-50 p-4 rounded-lg">
               <p className="text-indigo-800 font-medium">Total des participants</p>
@@ -492,7 +515,6 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Tableau des participants */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <Table id="participants-table">
             <TableCaption>Liste des participants à l'événement</TableCaption>
@@ -606,7 +628,6 @@ const AdminDashboard = () => {
         </div>
       </main>
 
-      {/* Modal de détails du participant */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -620,7 +641,6 @@ const AdminDashboard = () => {
           
           {selectedParticipant && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Informations personnelles */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Informations personnelles</CardTitle>
@@ -655,7 +675,6 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
 
-              {/* Détails du paiement */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Détails du paiement</CardTitle>
