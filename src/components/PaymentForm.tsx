@@ -61,18 +61,35 @@ export function PaymentForm({ participant }: PaymentFormProps) {
     try {
       console.log("Préparation de l'envoi d'email de confirmation via EmailJS");
       
+      // Vérifier que l'email du participant existe
+      if (!participantData.email) {
+        console.error("Erreur: L'adresse email du participant est manquante");
+        return false;
+      }
+
+      // Log plus détaillé de l'objet participant pour le débogage
+      console.log("Données du participant:", JSON.stringify(participantData));
+      
       const templateParams = {
         to_name: `${participantData.first_name} ${participantData.last_name}`,
-        to_email: participantData.email,
+        to_email: participantData.email.trim(), // S'assurer qu'il n'y a pas d'espaces
+        from_name: "La Citadelle",
+        from_email: "no-reply@lacitadelle.ci", // Email d'expéditeur (peut être fictif pour les tests)
         payment_amount: `${PAYMENT_AMOUNT.toLocaleString()} XOF`,
         payment_method: paymentData.payment_method,
         transaction_id: paymentData.transaction_id,
         payment_date: new Date().toLocaleString(),
         qr_code_id: qrCodeId,
-        event_name: "Conférence La Citadelle"
+        event_name: "Conférence La Citadelle",
+        reply_to: "info@lacitadelle.ci" // Adresse pour les réponses
       };
 
-      console.log("Paramètres du template EmailJS:", templateParams);
+      console.log("Paramètres du template EmailJS:", JSON.stringify(templateParams));
+      
+      // Vérification supplémentaire avant l'envoi
+      if (!templateParams.to_email) {
+        throw new Error("L'adresse email du destinataire est vide");
+      }
       
       const response = await emailjs.send(
         EMAILJS_SERVICE_ID,
