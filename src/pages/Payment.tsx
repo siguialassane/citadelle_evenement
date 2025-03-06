@@ -1,5 +1,5 @@
 
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -10,16 +10,34 @@ import { Button } from "@/components/ui/button";
 const Payment = () => {
   const { participantId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [participant, setParticipant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Logger les informations de navigation pour le débogage
+  useEffect(() => {
+    console.log("Payment Page: Rendu avec URL:", window.location.href);
+    console.log("Payment Page: participantId:", participantId);
+    console.log("Payment Page: Location pathname:", location.pathname);
+    console.log("Payment Page: Query params:", location.search);
+    
+    // Vérifier les paramètres d'URL pour détecter un retour de CinetPay
+    const urlParams = new URLSearchParams(location.search);
+    if (urlParams.has('transaction_id') || urlParams.has('token') || urlParams.has('status')) {
+      console.log("Payment Page: Paramètres de retour CinetPay détectés:", 
+        Object.fromEntries(urlParams.entries()));
+    }
+  }, [location, participantId]);
 
   useEffect(() => {
     const fetchParticipant = async () => {
       try {
         setLoading(true);
+        console.log("Payment Page: Tentative de récupération du participant:", participantId);
         
         if (!participantId) {
+          console.error("Payment Page: Identifiant de participant manquant");
           setError("Identifiant de participant manquant");
           return;
         }
@@ -31,17 +49,20 @@ const Payment = () => {
           .single();
 
         if (error) {
+          console.error("Payment Page: Erreur Supabase:", error);
           throw error;
         }
 
         if (!data) {
+          console.error("Payment Page: Participant non trouvé");
           setError("Participant non trouvé");
           return;
         }
 
+        console.log("Payment Page: Participant récupéré:", data);
         setParticipant(data);
       } catch (err: any) {
-        console.error("Erreur lors de la récupération du participant:", err);
+        console.error("Payment Page: Erreur lors de la récupération du participant:", err);
         setError(err.message || "Une erreur est survenue");
       } finally {
         setLoading(false);
@@ -54,6 +75,31 @@ const Payment = () => {
   const handleBackToHome = () => {
     navigate("/");
   };
+
+  // Vérifier si l'utilisateur revient de CinetPay
+  useEffect(() => {
+    const checkReturnFromCinetPay = () => {
+      const urlParams = new URLSearchParams(location.search);
+      // Si on détecte des paramètres de retour CinetPay
+      if (urlParams.has('transaction_id') || urlParams.has('token') || urlParams.has('status')) {
+        console.log("Payment Page: Retour détecté de CinetPay avec paramètres:", 
+          Object.fromEntries(urlParams.entries()));
+        
+        // Si le statut indique un succès, rediriger vers la page de confirmation
+        if (participantId && (urlParams.get('status') === 'ACCEPTED' || urlParams.get('status') === 'SUCCESS')) {
+          console.log("Payment Page: Redirection vers la page de confirmation après paiement réussi");
+          navigate(`/confirmation/${participantId}`);
+          return true;
+        }
+      }
+      return false;
+    };
+    
+    // Exécuter la vérification seulement si le participant est chargé
+    if (participant && !loading) {
+      checkReturnFromCinetPay();
+    }
+  }, [participant, loading, location, navigate, participantId]);
 
   if (loading) {
     return (
