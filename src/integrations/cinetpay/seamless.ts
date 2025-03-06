@@ -2,7 +2,7 @@
 // Ce fichier contient l'intégration avec le SDK CinetPay Seamless
 // Modifications:
 // - Ajout du paramètre type: "WEB" dans setConfig
-// - Amélioration du formatage des numéros de téléphone pour suivre la documentation CinetPay
+// - Amélioration du formatage des numéros de téléphone pour TOUJOURS supprimer le code pays
 // - Ajout de typages pour les données de callback
 
 import { CINETPAY_API_KEY, CINETPAY_SITE_ID } from './config';
@@ -61,23 +61,27 @@ export const initCinetPaySDK = (notifyUrl: string): boolean => {
 
 /**
  * Formate un numéro de téléphone pour CinetPay
- * Selon la documentation CinetPay: client peut envoyer avec ou sans code pays
- * Exemples acceptés par CinetPay: "088767611" ou "22588767611"
+ * Selon la documentation CinetPay: retirer toujours le code pays
+ * Format attendu: "088767611" (sans code pays)
  */
 export const formatPhoneForCinetPay = (phoneNumber: string): string => {
   // Retirer tous les caractères non numériques
   let cleaned = phoneNumber.replace(/\D/g, '');
   
-  // Si le numéro commence déjà par 225, on peut le laisser tel quel
+  // Si le numéro commence par 225, on retire le code pays
   if (cleaned.startsWith('225')) {
-    // Si CinetPay attend sans code pays, décommenter la ligne suivante
-    // return cleaned.substring(3); // Retirer le code pays
-    return cleaned;
+    cleaned = cleaned.substring(3);
+    console.log("Numéro après suppression du code pays:", cleaned);
   }
   
-  // Si le numéro ne commence pas par 225 et est court (8-10 chiffres)
-  // Nous n'ajoutons pas automatiquement 225 car CinetPay semble accepter
-  // les numéros sans code pays d'après la documentation
+  // Si le numéro a plus de 10 chiffres et ne commence pas par 225
+  // il s'agit probablement d'un autre format avec code pays
+  if (cleaned.length > 10 && cleaned.length <= 13) {
+    // On garde seulement les 10 derniers chiffres maximum
+    cleaned = cleaned.substring(cleaned.length - 10);
+    console.log("Numéro tronqué aux 10 derniers chiffres:", cleaned);
+  }
+  
   return cleaned;
 };
 
