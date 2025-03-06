@@ -12,16 +12,16 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-// Schéma de validation pour le formulaire
+// Schéma de validation modifié pour accepter un nom d'utilisateur au lieu d'un email
 const loginSchema = z.object({
-  email: z.string().email({ message: "Veuillez entrer un email valide" }),
+  username: z.string().min(1, { message: "Le nom d'utilisateur est requis" }),
   password: z.string().min(1, { message: "Le mot de passe est requis" }),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 // Identifiants hardcodés pour l'admin
-const ADMIN_EMAIL = "admin@sigui";
+const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "010203";
 
 const AdminLogin = () => {
@@ -33,7 +33,7 @@ const AdminLogin = () => {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   });
@@ -45,7 +45,7 @@ const AdminLogin = () => {
 
     try {
       // Vérification des identifiants hardcodés
-      if (data.email === ADMIN_EMAIL && data.password === ADMIN_PASSWORD) {
+      if (data.username === ADMIN_USERNAME && data.password === ADMIN_PASSWORD) {
         // Stocker l'état de connexion
         localStorage.setItem("adminAuth", "true");
         
@@ -94,14 +94,14 @@ const AdminLogin = () => {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="email"
+                name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Nom d'utilisateur</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="admin@exemple.com" 
-                        type="email" 
+                        placeholder="admin" 
+                        type="text" 
                         {...field} 
                       />
                     </FormControl>
