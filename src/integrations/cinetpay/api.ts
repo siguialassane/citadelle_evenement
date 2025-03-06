@@ -1,7 +1,9 @@
+
 // Ce fichier contient l'API d'intégration avec CinetPay qui utilise des appels POST directs
 // Modifications: 
+// - Simplification du format de métadonnées pour suivre la documentation CinetPay
 // - Utilisation de la fonction de formatage des numéros de téléphone
-// - Ajout de log détaillé pour le numéro de téléphone
+// - Ajout du paramètre type: "WEB" dans les requêtes API
 
 import { CINETPAY_API_KEY, CINETPAY_SITE_ID, CINETPAY_API_URL, CINETPAY_CHECK_URL, PAYMENT_CHANNELS, PAYMENT_METHOD_MAP } from './config';
 import { formatPhoneForCinetPay } from './seamless';
@@ -22,6 +24,7 @@ interface CinetPayInitResponse {
 
 /**
  * Initialise un paiement avec CinetPay via appel POST direct
+ * Conforme à la documentation: https://docs.cinetpay.com/integration/integrate/api-endpoints
  */
 export const initiateCinetPayPayment = async (
   participant: Participant,
@@ -53,6 +56,9 @@ export const initiateCinetPayPayment = async (
     // Trouver le canal CinetPay correspondant
     const paymentChannel = PAYMENT_METHOD_MAP[paymentMethod] || "ALL";
     
+    // Métadonnées simplifiées selon documentation (format string)
+    const metadata = `PARTICIPANT:${participant.id}`;
+    
     // Préparer les données pour l'appel API
     const paymentData = {
       apikey: CINETPAY_API_KEY,
@@ -64,6 +70,7 @@ export const initiateCinetPayPayment = async (
       notify_url: notifyUrl,
       return_url: returnUrl,
       channels: paymentChannel,
+      type: "WEB", // Ajout du paramètre type selon la documentation
       customer_name: `${participant.first_name} ${participant.last_name}`,
       customer_surname: participant.last_name,
       customer_email: participant.email,
@@ -73,10 +80,7 @@ export const initiateCinetPayPayment = async (
       customer_country: "CI",
       customer_state: "CI",
       customer_zip_code: "00000",
-      metadata: JSON.stringify({
-        participant_id: participant.id,
-        payment_method: paymentMethod
-      })
+      metadata: metadata
     };
 
     console.log("CinetPayAPI: Données de paiement préparées:", paymentData);

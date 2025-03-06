@@ -1,12 +1,18 @@
 // Commentaires: Ce fichier gère l'intégration du paiement CinetPay Seamless
-// Dernière modification: Mise à jour pour utiliser le SDK CinetPay Seamless avec l'intégration native
+// Dernière modification: Mise à jour pour utiliser le SDK CinetPay conforme à la documentation officielle
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { isCinetPaySDKLoaded, initCinetPaySDK, startCinetPayPayment, setupCinetPayCallback } from "@/integrations/cinetpay/seamless";
+import { 
+  isCinetPaySDKLoaded, 
+  initCinetPaySDK, 
+  startCinetPayPayment, 
+  setupCinetPayCallback,
+  CinetPayCallbackData 
+} from "@/integrations/cinetpay/seamless";
 import { initiateCinetPayPayment } from "@/integrations/cinetpay/api";
 import { 
   Form,
@@ -162,7 +168,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
   };
 
   // Fonction pour traiter le paiement une fois complété avec CinetPay Seamless
-  const handleCinetPayCallback = async (data: any) => {
+  const handleCinetPayCallback = async (data: CinetPayCallbackData) => {
     console.log("PaymentForm: Callback CinetPay reçu:", data);
     
     try {
@@ -178,7 +184,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
           amount: PAYMENT_AMOUNT,
           payment_method: form.getValues().paymentMethod,
           status: paymentStatus,
-          transaction_id: data.transaction_id,
+          transaction_id: data.transaction_id || data.operator_id,
           cinetpay_operator_id: data.operator_id || null,
           cinetpay_api_response_id: data.api_response_id || data.transaction_id,
           currency: "XOF"
@@ -264,7 +270,6 @@ export function PaymentForm({ participant }: PaymentFormProps) {
     // Créer les URLs de notification et de retour
     const baseUrl = window.location.origin;
     const notifyUrl = `${baseUrl}/api/webhooks/cinetpay/notification`;
-    const returnUrl = `${baseUrl}/confirmation/${participant.id}`;
     
     // Formater le numéro de téléphone
     const formattedPhoneNumber = participant.contact_number.replace(/\s+/g, '').replace(/^\+/, '');
@@ -280,6 +285,9 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       console.error("Échec de la configuration du callback CinetPay");
       return false;
     }
+    
+    // Métadonnées simplifiées selon documentation (format string)
+    const metadata = `PARTICIPANT:${participant.id}`;
     
     // Démarrer le paiement
     const paymentStarted = startCinetPayPayment({
@@ -297,10 +305,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       customer_country: "CI",
       customer_state: "CI",
       customer_zip_code: "00000",
-      metadata: JSON.stringify({
-        participant_id: participant.id,
-        payment_method: values.paymentMethod
-      })
+      metadata: metadata
     });
     
     return paymentStarted;

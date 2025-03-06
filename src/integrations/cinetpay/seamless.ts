@@ -1,10 +1,28 @@
 
 // Ce fichier contient l'intégration avec le SDK CinetPay Seamless
 // Modifications:
+// - Ajout du paramètre type: "WEB" dans setConfig
 // - Amélioration du formatage des numéros de téléphone pour suivre la documentation CinetPay
-// - Correction du format de numéro pour supprimer le code pays 225 si nécessaire
+// - Ajout de typages pour les données de callback
 
 import { CINETPAY_API_KEY, CINETPAY_SITE_ID } from './config';
+
+/**
+ * Interface pour les données retournées par le callback CinetPay
+ * Selon la documentation officielle
+ */
+export interface CinetPayCallbackData {
+  amount: string;         // Montant payé
+  currency: string;       // Devise (XOF, etc.)
+  status: "ACCEPTED" | "REFUSED"; // État de la transaction
+  payment_method: string; // Moyen de paiement (MTN, ORANGE, FLOOZ, etc.)
+  description: string;    // Description fournie à l'initialisation
+  metadata: string;       // Metadata fournie à l'initialisation
+  operator_id: string;    // Identifiant de l'opérateur
+  payment_date: string;   // Date de paiement (format: "YYYY-MM-DD HH:MM:SS")
+  api_response_id?: string; // ID de réponse API (extension personnalisée)
+  transaction_id?: string;  // ID de transaction (extension personnalisée)
+}
 
 /**
  * Vérifie si le SDK CinetPay est disponible
@@ -15,6 +33,7 @@ export const isCinetPaySDKLoaded = (): boolean => {
 
 /**
  * Initialise le SDK CinetPay avec les paramètres de base
+ * Conforme à la documentation: https://docs.cinetpay.com/integration/integrate/sdk-javascript/seamless-sdk
  */
 export const initCinetPaySDK = (notifyUrl: string): boolean => {
   if (!isCinetPaySDKLoaded()) {
@@ -28,6 +47,7 @@ export const initCinetPaySDK = (notifyUrl: string): boolean => {
       apikey: CINETPAY_API_KEY,
       site_id: CINETPAY_SITE_ID,
       notify_url: notifyUrl,
+      type: "WEB", // Ajout du paramètre type selon la documentation
       close_after_response: false // Ne pas fermer automatiquement pour gérer nous-mêmes la redirection
     });
     
@@ -63,6 +83,7 @@ export const formatPhoneForCinetPay = (phoneNumber: string): string => {
 
 /**
  * Lance le processus de paiement avec le SDK CinetPay
+ * Conforme à la documentation: https://docs.cinetpay.com/integration/integrate/sdk-javascript/seamless-sdk
  */
 export const startCinetPayPayment = (paymentData: {
   transaction_id: string;
@@ -107,8 +128,9 @@ export const startCinetPayPayment = (paymentData: {
 
 /**
  * Configure la callback pour recevoir le résultat du paiement
+ * Conforme à la documentation: https://docs.cinetpay.com/integration/integrate/sdk-javascript/seamless-sdk
  */
-export const setupCinetPayCallback = (callback: (data: any) => void): boolean => {
+export const setupCinetPayCallback = (callback: (data: CinetPayCallbackData) => void): boolean => {
   if (!isCinetPaySDKLoaded()) {
     console.error("CinetPay SDK n'est pas chargé");
     return false;
@@ -116,8 +138,17 @@ export const setupCinetPayCallback = (callback: (data: any) => void): boolean =>
 
   try {
     // @ts-ignore - CinetPay est défini globalement par le script
-    window.CinetPay.waitResponse((data: any) => {
+    window.CinetPay.waitResponse((data: CinetPayCallbackData) => {
       console.log("Réponse du paiement CinetPay reçue:", data);
+      
+      // Gestion similaire à l'exemple de la documentation
+      if (data.status === "REFUSED") {
+        console.log("Paiement refusé");
+      } else if (data.status === "ACCEPTED") {
+        console.log("Paiement accepté");
+      }
+      
+      // Appel du callback personnalisé pour traitement supplémentaire
       callback(data);
     });
     return true;
