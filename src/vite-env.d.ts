@@ -4,6 +4,7 @@
 /**
  * Déclaration des types pour le SDK CinetPay qui est chargé globalement
  * via un script dans le HTML
+ * Documentation: https://docs.cinetpay.com/integration/integrate/sdk-javascript/seamless-sdk
  */
 interface Window {
   CinetPay?: {
@@ -11,15 +12,13 @@ interface Window {
       apikey: string;
       site_id: string;
       notify_url: string;
-      type?: string;
-      close_after_response?: boolean;
-      lang?: string; // Langue de l'interface (FR, EN, etc.)
-      display_mode?: string; // Mode d'affichage (DISPLAY_MODE_POPUP ou DISPLAY_MODE_INLINE)
-      return_url?: string; // URL de retour après paiement
+      lang?: string;
+      display_mode?: string;
+      return_url?: string;
     }) => void;
     getCheckout: (data: {
       transaction_id: string;
-      amount: number;
+      amount: string; // String comme indiqué dans la documentation
       currency: string;
       channels: string;
       description: string;
@@ -51,12 +50,6 @@ interface Window {
   };
   getCheckout?: any; // Généré dynamiquement par CinetPay après l'appel de getCheckout
   checkoutData?: any; // Généré dynamiquement par CinetPay après l'appel de getCheckout
-  
-  // Autres propriétés que CinetPay pourrait potentiellement générer
-  cinetpay_payment_iframe?: HTMLIFrameElement;
-  cinetpay_checkout_container?: HTMLElement;
-  cinetpay_callback_received?: boolean;
-  cinetpay_transaction_status?: string;
 }
 
 // Événements personnalisés que CinetPay pourrait déclencher

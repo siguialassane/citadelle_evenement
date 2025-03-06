@@ -1,14 +1,11 @@
 
 // Ce fichier contient l'API d'intégration avec CinetPay qui utilise des appels POST directs
 // Modifications: 
-// - Utilisation d'UUID brut sans préfixe pour les identifiants de transaction
-// - Simplification du format de métadonnées pour suivre la documentation CinetPay
-// - Utilisation de la fonction de formatage des numéros de téléphone SANS code pays
-// - Ajout du paramètre type: "WEB" dans les requêtes API
-// - NOUVEAU: Amélioration de la détection et journalisation des URL de notification/retour
+// - Mise en conformité avec la documentation CinetPay
+// - Conversion du montant en string pour être conforme à l'API
 
 import { v4 as uuidv4 } from 'uuid';
-import { CINETPAY_API_KEY, CINETPAY_SITE_ID, CINETPAY_API_URL, CINETPAY_CHECK_URL, PAYMENT_CHANNELS, PAYMENT_METHOD_MAP } from './config';
+import { CINETPAY_API_KEY, CINETPAY_SITE_ID, CINETPAY_API_URL, CINETPAY_CHECK_URL, PAYMENT_METHOD_MAP } from './config';
 import { formatPhoneForCinetPay } from './seamless';
 import type { Database } from '../supabase/types';
 
@@ -42,51 +39,39 @@ export const initiateCinetPayPayment = async (
     console.log("CinetPayAPI: ID de transaction généré:", transactionId);
     
     // URL de base de l'application pour les redirections
-    // Utiliser window.location.origin pour l'URL de base
     const baseUrl = window.location.origin;
     console.log("CinetPayAPI: URL de base détectée:", baseUrl);
     
     // Construction des URLs
-    // NOTE: Utilisation d'URL absolues pour les notifications
     const notifyUrl = `${baseUrl}/api/webhooks/cinetpay/notification`;
     const returnUrl = `${baseUrl}/confirmation/${participant.id}`;
     
     console.log("CinetPayAPI: URL de notification configurée:", notifyUrl);
     console.log("CinetPayAPI: URL de retour configurée:", returnUrl);
     
-    // Vérifier si les URLs sont bien formées
-    try {
-      new URL(notifyUrl);
-      new URL(returnUrl);
-      console.log("CinetPayAPI: Les URLs sont correctement formées");
-    } catch (urlError) {
-      console.error("CinetPayAPI: ERREUR - URL mal formée:", urlError);
-    }
-    
     // Formater le numéro de téléphone pour CinetPay (SANS code pays)
     const formattedPhoneNumber = formatPhoneForCinetPay(participant.contact_number);
-    console.log("CinetPayAPI: Numéro original:", participant.contact_number);
-    console.log("CinetPayAPI: Numéro formaté pour CinetPay (sans code pays):", formattedPhoneNumber);
+    console.log("CinetPayAPI: Numéro formaté pour CinetPay:", formattedPhoneNumber);
     
     // Trouver le canal CinetPay correspondant
     const paymentChannel = PAYMENT_METHOD_MAP[paymentMethod] || "ALL";
     console.log("CinetPayAPI: Canal de paiement sélectionné:", paymentChannel);
     
-    // Métadonnées simplifiées selon documentation (format string)
+    // Métadonnées selon documentation (format string)
     const metadata = `PARTICIPANT:${participant.id}`;
     
     // Préparer les données pour l'appel API
+    // IMPORTANT: montant en string selon la documentation
     const paymentData = {
       apikey: CINETPAY_API_KEY,
       site_id: CINETPAY_SITE_ID,
       transaction_id: transactionId,
-      amount: amount,
+      amount: String(amount), // Conversion en string selon la documentation
       currency: "XOF",
       description: `Paiement pour ${participant.first_name} ${participant.last_name}`,
       notify_url: notifyUrl,
       return_url: returnUrl,
       channels: paymentChannel,
-      type: "WEB", // Ajout du paramètre type selon la documentation
       customer_name: `${participant.first_name} ${participant.last_name}`,
       customer_surname: participant.last_name,
       customer_email: participant.email,
@@ -138,7 +123,6 @@ export const initiateCinetPayPayment = async (
     };
   } catch (error: any) {
     console.error("CinetPayAPI: Erreur lors de l'initialisation du paiement:", error);
-    console.error("CinetPayAPI: Stack trace:", error.stack);
     throw error;
   }
 };
@@ -164,7 +148,6 @@ export const checkCinetPayPayment = async (paymentToken: string) => {
 
     if (!response.ok) {
       console.error(`CinetPayAPI: Erreur HTTP lors de la vérification: ${response.status}`);
-      console.error(`CinetPayAPI: Texte de l'erreur:`, await response.text());
       throw new Error(`Erreur HTTP: ${response.status}`);
     }
 
@@ -174,7 +157,6 @@ export const checkCinetPayPayment = async (paymentToken: string) => {
     return data;
   } catch (error: any) {
     console.error("CinetPayAPI: Erreur lors de la vérification du paiement:", error);
-    console.error("CinetPayAPI: Stack trace:", error.stack);
     throw error;
   }
 };
