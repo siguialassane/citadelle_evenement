@@ -1,4 +1,3 @@
-
 // Commentaires: Ce fichier gère l'intégration du paiement CinetPay Seamless et l'envoi d'emails de confirmation
 // Dernière modification: Implémentation du SDK CinetPay Seamless pour les paiements sans redirection
 import { useState, useEffect } from "react";
@@ -341,7 +340,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         navigate(`/confirmation/${participant.id}`);
       } else {
         // Mode production - utiliser CinetPay SDK Seamless
-        console.log("PaymentForm: Début du paiement réel avec CinetPay Seamless");
+        console.log("PaymentForm: Début du paiement réel avec CinetPay API");
         
         if (!isCinetPayLoaded) {
           throw new Error("Le module de paiement CinetPay n'est pas encore chargé. Veuillez réessayer.");
@@ -357,24 +356,21 @@ export function PaymentForm({ participant }: PaymentFormProps) {
           
           console.log("PaymentForm: Réponse CinetPay:", paymentResponse);
           
-          // Vérifier la réponse
-          if (
-            paymentResponse.code !== '201' || 
-            !paymentResponse.data || 
-            !paymentResponse.data.payment_data
-          ) {
-            throw new Error(`Erreur lors de l'initialisation du paiement: ${paymentResponse.message}`);
+          if (!paymentResponse.data?.payment_url) {
+            throw new Error("URL de paiement manquante dans la réponse");
           }
-          
-          // Enregistrer les détails du paiement dans Supabase
+
+          // Enregistrer le paiement dans Supabase
           const { data: paymentRecord, error } = await supabase
             .from('payments')
             .insert({
               participant_id: participant.id,
               amount: PAYMENT_AMOUNT,
               payment_method: values.paymentMethod,
-              status: 'pending', // Le paiement est initialisé mais pas encore complété
+              status: 'pending',
               transaction_id: paymentResponse.data.payment_token,
+              cinetpay_payment_url: paymentResponse.data.payment_url,
+              cinetpay_token: paymentResponse.data.payment_token,
               cinetpay_api_response_id: paymentResponse.api_response_id,
               currency: "XOF"
             })
@@ -382,53 +378,14 @@ export function PaymentForm({ participant }: PaymentFormProps) {
             .single();
             
           if (error) {
-            console.error("PaymentForm: Erreur lors de l'enregistrement du paiement:", error);
             throw error;
           }
           
           console.log("PaymentForm: Paiement enregistré avec succès:", paymentRecord);
           
-          // Utiliser le SDK CinetPay Seamless pour afficher la fenêtre de paiement
-          // @ts-ignore - CinetPay est chargé dynamiquement
-          if (window.CinetPay) {
-            // @ts-ignore
-            const checkout = new window.CinetPay(paymentResponse.data.payment_data);
-            
-            checkout.onError = (error: any) => {
-              console.error("CinetPay Error:", error);
-              toast({
-                title: "Erreur de paiement",
-                description: "Une erreur est survenue lors du paiement. Veuillez réessayer.",
-                variant: "destructive",
-              });
-              setIsProcessing(false);
-            };
-            
-            checkout.onClose = () => {
-              console.log("Fenêtre de paiement fermée par l'utilisateur");
-              toast({
-                title: "Paiement annulé",
-                description: "Vous avez fermé la fenêtre de paiement.",
-                variant: "default",
-              });
-              setIsProcessing(false);
-            };
-            
-            checkout.onComplete = (data: any) => {
-              console.log("Paiement complété:", data);
-              handleCinetPayCallback({
-                ...data,
-                transaction_id: paymentResponse.data.payment_token,
-                api_response_id: paymentResponse.api_response_id
-              });
-            };
-            
-            // Lancer la fenêtre de paiement
-            checkout.launch();
-            return; // Arrêter l'exécution ici car le callback gérera la suite
-          } else {
-            throw new Error("Le module CinetPay n'est pas disponible. Veuillez actualiser la page et réessayer.");
-          }
+          // Rediriger vers la page de paiement CinetPay
+          window.location.href = paymentResponse.data.payment_url;
+          return;
         } catch (cinetpayError: any) {
           console.error("PaymentForm: Erreur CinetPay:", cinetpayError);
           toast({
