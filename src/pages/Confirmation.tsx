@@ -1,11 +1,12 @@
-
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, ArrowLeft, CheckCircle, Download } from "lucide-react";
 import { checkCinetPayPayment } from "@/integrations/cinetpay/api";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const Confirmation = () => {
   const { participantId } = useParams();
@@ -16,6 +17,8 @@ const Confirmation = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -104,6 +107,61 @@ const Confirmation = () => {
 
   const handleBackToHome = () => {
     navigate("/");
+  };
+
+  // Fonction pour télécharger le reçu en PDF
+  const handleDownloadReceipt = async () => {
+    if (!receiptRef.current || isGeneratingPdf) return;
+    
+    try {
+      setIsGeneratingPdf(true);
+      
+      // Créer un clone de l'élément pour le manipuler sans affecter l'affichage
+      const receiptElement = receiptRef.current.cloneNode(true) as HTMLElement;
+      
+      // Modifier le style pour l'impression
+      const container = document.createElement('div');
+      container.style.padding = '20px';
+      container.style.backgroundColor = 'white';
+      container.appendChild(receiptElement);
+      document.body.appendChild(container);
+      
+      // Générer le canvas à partir de l'élément
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+      
+      // Supprimer l'élément temporaire
+      document.body.removeChild(container);
+      
+      // Créer le PDF
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      // Dimensions du PDF
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const ratio = canvas.width / canvas.height;
+      const imgWidth = pdfWidth - 20; // marges
+      const imgHeight = imgWidth / ratio;
+      
+      pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+      
+      // Télécharger le PDF
+      const fileName = `recu-paiement-${participant?.last_name}-${participant?.first_name}.pdf`;
+      pdf.save(fileName);
+    } catch (err) {
+      console.error("Erreur lors de la génération du PDF:", err);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   // Fonction pour formater la méthode de paiement
@@ -202,8 +260,8 @@ const Confirmation = () => {
           )}
         </div>
 
-        {/* Carte de confirmation */}
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+        {/* Carte de confirmation - référencée pour le PDF */}
+        <div ref={receiptRef} className="bg-white shadow overflow-hidden sm:rounded-lg">
           <div className="px-4 py-5 sm:px-6 bg-indigo-50">
             <h2 className="text-lg leading-6 font-medium text-gray-900">
               Détails de votre inscription
@@ -294,17 +352,17 @@ const Confirmation = () => {
             <Button 
               variant="outline" 
               className="flex items-center gap-2 w-full md:w-auto"
+              onClick={handleDownloadReceipt}
+              disabled={isGeneratingPdf}
             >
-              <Download className="h-4 w-4" />
-              Télécharger le reçu
+              {isGeneratingPdf ? (
+                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-700"></span>
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {isGeneratingPdf ? "Génération en cours..." : "Télécharger le reçu"}
             </Button>
           )}
-          <Button 
-            className="w-full md:w-auto"
-            onClick={handleBackToHome}
-          >
-            Retourner à l'accueil
-          </Button>
         </div>
 
         {/* Instructions */}
