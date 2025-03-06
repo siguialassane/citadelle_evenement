@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,7 +39,6 @@ import {
   XCircle, 
   AlertTriangle,
   FileText,
-  FilePdf,
   Info
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -399,7 +397,7 @@ const AdminDashboard = () => {
                 className="flex items-center gap-2"
                 onClick={handleExportPDF}
               >
-                <FilePdf className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 PDF
               </Button>
             </div>
