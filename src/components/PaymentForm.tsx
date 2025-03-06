@@ -1,5 +1,6 @@
 
 // Commentaires: Ce fichier gère la simulation du paiement et l'envoi d'emails de confirmation via EmailJS
+// Dernière modification: Correction de l'erreur d'envoi d'email et adaptation du template personnalisé
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
     }
   });
 
-  // Fonction pour envoyer un email de confirmation
+  // Fonction pour envoyer un email de confirmation avec le template personnalisé
   const sendConfirmationEmail = async (participantData: any, paymentData: any, qrCodeId: string) => {
     try {
       console.log("Préparation de l'envoi d'email de confirmation via EmailJS");
@@ -70,18 +71,36 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       // Log plus détaillé de l'objet participant pour le débogage
       console.log("Données du participant:", JSON.stringify(participantData));
       
+      // Déterminer le statut du participant
+      const statut = participantData.is_member ? "Membre" : "Non-membre";
+      
+      // Créer l'URL du badge (simulée pour le moment)
+      const badgeUrl = `${window.location.origin}/badge/${qrCodeId}`;
+      
+      // Adapter les paramètres pour correspondre au nouveau template
       const templateParams = {
+        // Variables du nouveau template
+        nom: participantData.last_name,
+        prenom: participantData.first_name,
+        email: participantData.email.trim(),
+        tel: participantData.contact_number,
+        status: statut,
+        badge_url: badgeUrl,
+        
+        // Variables nécessaires pour EmailJS
         to_name: `${participantData.first_name} ${participantData.last_name}`,
-        to_email: participantData.email.trim(), // S'assurer qu'il n'y a pas d'espaces
+        to_email: participantData.email.trim(),
         from_name: "La Citadelle",
-        from_email: "no-reply@lacitadelle.ci", // Email d'expéditeur (peut être fictif pour les tests)
+        from_email: "no-reply@lacitadelle.ci",
+        reply_to: "info@lacitadelle.ci",
+        
+        // Informations de paiement (peut-être utilisées dans d'autres parties du template)
         payment_amount: `${PAYMENT_AMOUNT.toLocaleString()} XOF`,
         payment_method: paymentData.payment_method,
         transaction_id: paymentData.transaction_id,
         payment_date: new Date().toLocaleString(),
         qr_code_id: qrCodeId,
-        event_name: "Conférence La Citadelle",
-        reply_to: "info@lacitadelle.ci" // Adresse pour les réponses
+        event_name: "Conférence La Citadelle"
       };
 
       console.log("Paramètres du template EmailJS:", JSON.stringify(templateParams));
