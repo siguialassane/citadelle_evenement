@@ -1,4 +1,6 @@
 
+// Commentaires: Ce fichier traite les notifications (webhooks) de CinetPay
+// Dernières modifications: Ajout de logs détaillés pour faciliter le diagnostic des erreurs
 import { supabase } from "../supabase/client";
 import { CINETPAY_API_KEY, CINETPAY_SITE_ID } from "./config";
 
@@ -9,7 +11,11 @@ import { CINETPAY_API_KEY, CINETPAY_SITE_ID } from "./config";
  */
 export const handleCinetPayWebhook = async (payload: any) => {
   try {
-    console.log("Webhook CinetPay reçu:", JSON.stringify(payload, null, 2));
+    // Logging initial détaillé
+    console.log("=== DÉBUT TRAITEMENT WEBHOOK CINETPAY ===");
+    console.log("Payload complet CinetPay:", JSON.stringify(payload, null, 2));
+    console.log("Type de payload:", typeof payload);
+    console.log("Timestamp:", new Date().toISOString());
 
     // Vérifier les données obligatoires
     const transactionId = payload.cpm_trans_id;
@@ -22,12 +28,14 @@ export const handleCinetPayWebhook = async (payload: any) => {
     const apiResponseId = payload.api_response_id || ""; // Récupération de l'api_response_id s'il existe
 
     // Journal détaillé des identifiants reçus
-    console.log("Webhook CinetPay - Identifiants:", {
+    console.log("Webhook CinetPay - Identifiants principaux:", {
       transactionId,
       siteId,
       operatorId,
       apiResponseId,
-      status
+      status,
+      amount,
+      paymentMethod
     });
 
     if (!transactionId || !siteId) {
@@ -55,22 +63,25 @@ export const handleCinetPayWebhook = async (payload: any) => {
     
     if (!result.error && result.data) {
       payment = result.data;
-      console.log("Webhook CinetPay - Paiement trouvé par transaction_id exact");
+      console.log("Webhook CinetPay - Paiement trouvé par transaction_id exact:", payment.id);
     } else {
       fetchError = result.error;
+      console.log("Webhook CinetPay - Erreur ou paiement non trouvé par transaction_id exact:", fetchError);
       
       // 2. Essai avec cinetpay_api_response_id exact
-      console.log("Webhook CinetPay - Recherche par cinetpay_api_response_id:", transactionId);
+      console.log("Webhook CinetPay - Recherche par cinetpay_api_response_id:", apiResponseId || transactionId);
       result = await supabase
         .from('payments')
         .select('*')
-        .eq('cinetpay_api_response_id', transactionId)
+        .eq('cinetpay_api_response_id', apiResponseId || transactionId)
         .maybeSingle();
       
       if (!result.error && result.data) {
         payment = result.data;
-        console.log("Webhook CinetPay - Paiement trouvé par cinetpay_api_response_id exact");
+        console.log("Webhook CinetPay - Paiement trouvé par cinetpay_api_response_id exact:", payment.id);
       } else {
+        console.log("Webhook CinetPay - Erreur ou paiement non trouvé par cinetpay_api_response_id:", result.error);
+        
         // 3. Recherche par transaction_id partiel (peut contenir des préfixes/suffixes)
         console.log("Webhook CinetPay - Recherche par transaction_id partiel");
         const { data: allPayments, error } = await supabase
@@ -79,19 +90,30 @@ export const handleCinetPayWebhook = async (payload: any) => {
         
         if (!error && allPayments && allPayments.length > 0) {
           console.log(`Webhook CinetPay - ${allPayments.length} paiements récupérés pour recherche approfondie`);
+          console.log("Identifiants à rechercher:", { 
+            transactionId, 
+            apiResponseId, 
+            operatorId 
+          });
           
           // Fonction pour vérifier si deux chaînes ont une partie commune
           const haveCommonSubstring = (str1: string, str2: string): boolean => {
             if (!str1 || !str2) return false;
             
             // Si l'une est contenue dans l'autre
-            if (str1.includes(str2) || str2.includes(str1)) return true;
+            if (str1.includes(str2) || str2.includes(str1)) {
+              console.log(`Match partiel trouvé: '${str1}' et '${str2}'`);
+              return true;
+            }
             
             // Vérifier des segments communs d'au moins 8 caractères
             const minLength = 8;
             for (let i = 0; i <= str1.length - minLength; i++) {
               const segment = str1.substring(i, i + minLength);
-              if (str2.includes(segment)) return true;
+              if (str2.includes(segment)) {
+                console.log(`Match par segment commun trouvé: '${segment}' entre '${str1}' et '${str2}'`);
+                return true;
+              }
             }
             
             return false;
@@ -99,11 +121,17 @@ export const handleCinetPayWebhook = async (payload: any) => {
           
           // Rechercher un paiement avec un ID qui partage une partie commune
           const matchingPayment = allPayments.find(p => {
+            console.log(`Vérification du paiement ID: ${p.id}, transaction_id: ${p.transaction_id}, api_response_id: ${p.cinetpay_api_response_id}`);
+            
             const matchTrans = haveCommonSubstring(p.transaction_id || "", transactionId);
-            const matchApi = haveCommonSubstring(p.cinetpay_api_response_id || "", transactionId);
+            const matchApi = haveCommonSubstring(p.cinetpay_api_response_id || "", apiResponseId || transactionId);
             const matchOperator = operatorId ? haveCommonSubstring(p.cinetpay_operator_id || "", operatorId) : false;
             
-            return matchTrans || matchApi || matchOperator;
+            const isMatch = matchTrans || matchApi || matchOperator;
+            if (isMatch) {
+              console.log(`Match trouvé pour le paiement ${p.id} (${isMatch ? 'OUI' : 'NON'})`);
+            }
+            return isMatch;
           });
           
           if (matchingPayment) {
@@ -116,6 +144,8 @@ export const handleCinetPayWebhook = async (payload: any) => {
             console.log("Liste des transaction_id dans la base:");
             allPayments.forEach(p => console.log(`ID: ${p.id}, transaction_id: ${p.transaction_id}, api_response_id: ${p.cinetpay_api_response_id}, operator_id: ${p.cinetpay_operator_id}`));
           }
+        } else {
+          console.error("Webhook CinetPay - Erreur lors de la récupération de tous les paiements:", error);
         }
       }
     }
@@ -138,7 +168,7 @@ export const handleCinetPayWebhook = async (payload: any) => {
     const newStatus = status === "ACCEPTED" ? "success" : 
                      status === "REFUSED" ? "failed" : "pending";
 
-    console.log(`Webhook CinetPay - Mise à jour du statut du paiement ${payment.id} vers '${newStatus}'`);
+    console.log(`Webhook CinetPay - Mise à jour du statut du paiement ${payment.id} vers '${newStatus}' (ancien statut: '${payment.status}')`);
 
     // Mettre à jour avec le plus d'informations possible
     const updateData: any = {
@@ -148,12 +178,16 @@ export const handleCinetPayWebhook = async (payload: any) => {
     // Ajouter l'identifiant de l'opérateur s'il existe
     if (operatorId) {
       updateData.cinetpay_operator_id = operatorId;
+      console.log(`Webhook CinetPay - Ajout de l'opérateur ID: ${operatorId}`);
     }
     
     // Ajouter l'identifiant de réponse API s'il existe
     if (apiResponseId) {
       updateData.cinetpay_api_response_id = apiResponseId;
+      console.log(`Webhook CinetPay - Ajout de l'API response ID: ${apiResponseId}`);
     }
+
+    console.log("Webhook CinetPay - Données de mise à jour:", updateData);
 
     const { error: updateError } = await supabase
       .from('payments')
@@ -191,6 +225,7 @@ export const handleCinetPayWebhook = async (payload: any) => {
       }
     }
 
+    console.log("=== FIN TRAITEMENT WEBHOOK CINETPAY ===");
     return { 
       success: true, 
       message: "Notification traitée avec succès",
@@ -201,6 +236,7 @@ export const handleCinetPayWebhook = async (payload: any) => {
   } catch (error: any) {
     console.error("Webhook CinetPay - Erreur lors du traitement de la notification:", error);
     console.error("Webhook CinetPay - Stack trace:", error.stack);
+    console.log("=== ERREUR TRAITEMENT WEBHOOK CINETPAY ===");
     return { 
       success: false, 
       message: "Erreur interne", 
