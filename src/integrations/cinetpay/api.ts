@@ -1,5 +1,5 @@
 
-// Ce fichier contient l'API d'intégration avec CinetPay qui utilise le SDK
+// Ce fichier contient l'API d'intégration avec CinetPay qui utilise le SDK Seamless
 import { CINETPAY_API_KEY, CINETPAY_SITE_ID, CINETPAY_API_URL, PAYMENT_CHANNELS, PAYMENT_METHOD_MAP } from './config';
 import { initiatePaymentWithSDK, checkPaymentStatusWithSDK } from './sdk';
 import type { Database } from '../supabase/types';
@@ -12,7 +12,8 @@ interface CinetPayInitResponse {
   description: string;
   data: {
     payment_token: string;
-    payment_url: string;
+    payment_data?: any; // Données pour l'approche Seamless
+    payment_url?: string; // URL pour l'approche de redirection
   };
   api_response_id: string;
 }
@@ -32,7 +33,7 @@ export const initiateCinetPayPayment = async (
   console.log("CinetPayAPI: Début de l'initialisation du paiement");
   
   try {
-    // Utiliser le SDK CinetPay pour initialiser le paiement
+    // Utiliser le SDK CinetPay Seamless pour initialiser le paiement
     const sdkResponse = await initiatePaymentWithSDK(participant, amount, paymentMethod);
     
     // Transformer la réponse du SDK au format attendu par l'application
@@ -42,7 +43,7 @@ export const initiateCinetPayPayment = async (
       description: sdkResponse.description || '',
       data: {
         payment_token: sdkResponse.data?.payment_token || '',
-        payment_url: sdkResponse.data?.payment_url || ''
+        payment_data: sdkResponse.data?.payment_data || null
       },
       api_response_id: sdkResponse.api_response_id || ''
     };

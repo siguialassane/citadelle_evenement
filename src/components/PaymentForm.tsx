@@ -1,6 +1,7 @@
-// Commentaires: Ce fichier gère la simulation du paiement et l'envoi d'emails de confirmation via EmailJS
-// Dernière modification: Intégration du SDK CinetPay pour les paiements réels
-import { useState } from "react";
+
+// Commentaires: Ce fichier gère l'intégration du paiement CinetPay Seamless et l'envoi d'emails de confirmation
+// Dernière modification: Implémentation du SDK CinetPay Seamless pour les paiements sans redirection
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,9 +44,30 @@ type PaymentFormProps = {
   participant: any;
 };
 
+// Charger le script CinetPay Seamless
+const loadCinetPayScript = () => {
+  return new Promise<void>((resolve, reject) => {
+    // Vérifier si le script est déjà chargé
+    if (document.getElementById('cinetpay-script')) {
+      resolve();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'cinetpay-script';
+    script.src = 'https://cdn.cinetpay.com/seamless/latest/cinetpay.prod.min.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Impossible de charger le script CinetPay"));
+    
+    document.head.appendChild(script);
+  });
+};
+
 export function PaymentForm({ participant }: PaymentFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSimulationMode, setIsSimulationMode] = useState(false); // Mode test/production
+  const [isCinetPayLoaded, setIsCinetPayLoaded] = useState(false);
   const navigate = useNavigate();
 
   console.log("PaymentForm: Initialisation pour le participant ID:", participant.id);
@@ -57,6 +79,23 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       paymentMethod: "MOBILE_MONEY"
     }
   });
+
+  // Charger le script CinetPay au chargement du composant
+  useEffect(() => {
+    loadCinetPayScript()
+      .then(() => {
+        console.log("Script CinetPay chargé avec succès");
+        setIsCinetPayLoaded(true);
+      })
+      .catch(error => {
+        console.error("Erreur lors du chargement du script CinetPay:", error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger le module de paiement. Veuillez réessayer.",
+          variant: "destructive",
+        });
+      });
+  }, []);
 
   // Fonction pour générer un QR code avec l'API QR Code Generator
   const generateQRCode = (url: string) => {
@@ -141,6 +180,102 @@ export function PaymentForm({ participant }: PaymentFormProps) {
     }
   };
 
+  // Fonction pour traiter le paiement une fois complété avec CinetPay Seamless
+  const handleCinetPayCallback = async (data: any) => {
+    console.log("PaymentForm: Callback CinetPay reçu:", data);
+    
+    try {
+      // Déterminer le statut du paiement
+      const paymentStatus = data.status === "ACCEPTED" ? "completed" : 
+                           data.status === "REFUSED" ? "failed" : "pending";
+      
+      // Enregistrer le paiement dans Supabase
+      const { data: paymentRecord, error } = await supabase
+        .from('payments')
+        .insert({
+          participant_id: participant.id,
+          amount: PAYMENT_AMOUNT,
+          payment_method: form.getValues().paymentMethod,
+          status: paymentStatus,
+          transaction_id: data.transaction_id,
+          cinetpay_operator_id: data.operator_id || null,
+          cinetpay_api_response_id: data.api_response_id || data.transaction_id,
+          currency: "XOF"
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("PaymentForm: Erreur lors de l'enregistrement du paiement:", error);
+        throw error;
+      }
+
+      console.log("PaymentForm: Paiement enregistré avec succès:", paymentRecord);
+
+      // Si le paiement est réussi, générer un QR code et envoyer un email
+      if (paymentStatus === "completed") {
+        // Générer un QR code pour le participant
+        const qrCodeId = `QR-${participant.id}-${Date.now()}`;
+        
+        // Mettre à jour le participant avec le QR code
+        const { error: participantUpdateError } = await supabase
+          .from('participants')
+          .update({
+            qr_code_id: qrCodeId
+          })
+          .eq('id', participant.id);
+
+        if (participantUpdateError) {
+          console.error("Erreur lors de la mise à jour du participant:", participantUpdateError);
+        } else {
+          console.log("QR code généré et participant mis à jour avec succès");
+        }
+
+        // Envoyer un email de confirmation
+        const emailSent = await sendConfirmationEmail(participant, paymentRecord, qrCodeId);
+        
+        if (emailSent) {
+          console.log("Email de confirmation envoyé avec succès");
+        } else {
+          console.warn("L'email de confirmation n'a pas pu être envoyé, mais le paiement a été enregistré");
+        }
+
+        // Afficher un message de succès
+        toast({
+          title: "Paiement réussi",
+          description: "Votre paiement a été traité avec succès. Un email de confirmation a été envoyé.",
+          variant: "default",
+        });
+
+        // Rediriger vers la page de confirmation
+        navigate(`/confirmation/${participant.id}`);
+      } else if (paymentStatus === "failed") {
+        // Afficher un message d'erreur
+        toast({
+          title: "Paiement échoué",
+          description: "Votre paiement n'a pas pu être traité. Veuillez réessayer.",
+          variant: "destructive",
+        });
+      } else {
+        // Paiement en attente
+        toast({
+          title: "Paiement en attente",
+          description: "Votre paiement est en cours de traitement. Nous vous informerons une fois terminé.",
+          variant: "default",
+        });
+      }
+    } catch (error: any) {
+      console.error("PaymentForm: Erreur lors du traitement du callback CinetPay:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors du traitement du paiement.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   async function onSubmit(values: PaymentFormValues) {
     try {
       setIsProcessing(true);
@@ -205,8 +340,12 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         // Rediriger vers la page de confirmation
         navigate(`/confirmation/${participant.id}`);
       } else {
-        // Mode production - utiliser CinetPay SDK
-        console.log("PaymentForm: Début du paiement réel avec CinetPay");
+        // Mode production - utiliser CinetPay SDK Seamless
+        console.log("PaymentForm: Début du paiement réel avec CinetPay Seamless");
+        
+        if (!isCinetPayLoaded) {
+          throw new Error("Le module de paiement CinetPay n'est pas encore chargé. Veuillez réessayer.");
+        }
         
         try {
           // Initialiser le paiement avec CinetPay
@@ -222,7 +361,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
           if (
             paymentResponse.code !== '201' || 
             !paymentResponse.data || 
-            !paymentResponse.data.payment_url
+            !paymentResponse.data.payment_data
           ) {
             throw new Error(`Erreur lors de l'initialisation du paiement: ${paymentResponse.message}`);
           }
@@ -249,9 +388,47 @@ export function PaymentForm({ participant }: PaymentFormProps) {
           
           console.log("PaymentForm: Paiement enregistré avec succès:", paymentRecord);
           
-          // Rediriger vers la page de paiement CinetPay
-          window.location.href = paymentResponse.data.payment_url;
-          return; // Arrêter l'exécution ici car nous redirigeons
+          // Utiliser le SDK CinetPay Seamless pour afficher la fenêtre de paiement
+          // @ts-ignore - CinetPay est chargé dynamiquement
+          if (window.CinetPay) {
+            // @ts-ignore
+            const checkout = new window.CinetPay(paymentResponse.data.payment_data);
+            
+            checkout.onError = (error: any) => {
+              console.error("CinetPay Error:", error);
+              toast({
+                title: "Erreur de paiement",
+                description: "Une erreur est survenue lors du paiement. Veuillez réessayer.",
+                variant: "destructive",
+              });
+              setIsProcessing(false);
+            };
+            
+            checkout.onClose = () => {
+              console.log("Fenêtre de paiement fermée par l'utilisateur");
+              toast({
+                title: "Paiement annulé",
+                description: "Vous avez fermé la fenêtre de paiement.",
+                variant: "default",
+              });
+              setIsProcessing(false);
+            };
+            
+            checkout.onComplete = (data: any) => {
+              console.log("Paiement complété:", data);
+              handleCinetPayCallback({
+                ...data,
+                transaction_id: paymentResponse.data.payment_token,
+                api_response_id: paymentResponse.api_response_id
+              });
+            };
+            
+            // Lancer la fenêtre de paiement
+            checkout.launch();
+            return; // Arrêter l'exécution ici car le callback gérera la suite
+          } else {
+            throw new Error("Le module CinetPay n'est pas disponible. Veuillez actualiser la page et réessayer.");
+          }
         } catch (cinetpayError: any) {
           console.error("PaymentForm: Erreur CinetPay:", cinetpayError);
           toast({
@@ -356,7 +533,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={isProcessing}
+              disabled={isProcessing || (!isSimulationMode && !isCinetPayLoaded)}
             >
               {isProcessing ? (
                 <>
@@ -376,7 +553,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         <p>
           {isSimulationMode 
             ? "Mode test : La simulation créera un paiement réussi dans la base de données et enverra un email de confirmation."
-            : "Votre paiement sera traité de manière sécurisée par CinetPay."
+            : "Votre paiement sera traité de manière sécurisée par CinetPay avec l'intégration Seamless."
           }
         </p>
       </CardFooter>

@@ -17,10 +17,13 @@ export const PAYMENT_CURRENCY = "XOF";
 
 // Correspondance entre les méthodes de paiement internes et les canaux CinetPay
 export const PAYMENT_METHOD_MAP: Record<string, string> = {
+  "MOBILE_MONEY": "ALL", // Tous les moyens de paiement mobile
   "wave": "WAVE",
   "orange_money": "OM",
   "moov_money": "MOOV",
-  "mtn_money": "MTN"
+  "mtn_money": "MTN",
+  "CREDIT_CARD": "CREDIT_CARD",
+  "ALL": "ALL"
 };
 
 // Configuration pour le transfert d'argent (si besoin futur)
