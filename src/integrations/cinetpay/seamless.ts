@@ -1,11 +1,10 @@
 
 // Ce fichier contient l'intégration avec le SDK CinetPay Seamless
 // Modifications:
-// - Ajout du paramètre type: "WEB" dans setConfig
-// - Amélioration du formatage des numéros de téléphone pour TOUJOURS supprimer le code pays
-// - Ajout de typages pour les données de callback
-// - Ajout de logs détaillés pour mieux tracer les opérations
-// - Correction des vérifications de types pour TypeScript
+// - Ajout de logs détaillés pour le débogage des interactions CinetPay
+// - Amélioration des logs de suivi pour identifier la source des problèmes
+// - Ajout de vérifications supplémentaires pour éviter les erreurs TypeScript
+// - Ajout de logs de tous les événements CinetPay
 
 import { CINETPAY_API_KEY, CINETPAY_SITE_ID } from './config';
 
@@ -37,8 +36,18 @@ export const isCinetPaySDKLoaded = (): boolean => {
     console.log(`[CinetPay Seamless] Propriétés globales:`, {
       hasCinetPay: typeof window.CinetPay !== 'undefined',
       hasGetCheckout: typeof window.getCheckout !== 'undefined',
-      hasCheckoutData: typeof window.checkoutData !== 'undefined'
+      hasCheckoutData: typeof window.checkoutData !== 'undefined',
+      cinetPayFunctions: window.CinetPay ? Object.keys(window.CinetPay) : 'aucune' // Liste des fonctions disponibles
     });
+    
+    // Vérifier si les méthodes requises sont disponibles
+    if (window.CinetPay) {
+      console.log(`[CinetPay Seamless] Méthodes CinetPay disponibles:`, {
+        hasSetConfig: typeof window.CinetPay.setConfig === 'function',
+        hasGetCheckout: typeof window.CinetPay.getCheckout === 'function', 
+        hasWaitResponse: typeof window.CinetPay.waitResponse === 'function'
+      });
+    }
   } else {
     console.warn(`[CinetPay Seamless] ${new Date().toISOString()} - Le SDK n'est pas chargé!`);
   }
@@ -64,6 +73,13 @@ export const initCinetPaySDK = (notifyUrl: string): boolean => {
       return false;
     }
     
+    // DEBUG: Afficher l'état actuel des fonctions CinetPay
+    console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Configuration du SDK avec:`, {
+      apikey: CINETPAY_API_KEY.substring(0, 5) + '...',
+      site_id: CINETPAY_SITE_ID,
+      notify_url: notifyUrl
+    });
+    
     // Configuration du SDK
     window.CinetPay.setConfig({
       apikey: CINETPAY_API_KEY,
@@ -74,6 +90,16 @@ export const initCinetPaySDK = (notifyUrl: string): boolean => {
     });
     
     console.log(`[CinetPay Seamless] ${new Date().toISOString()} - CinetPay SDK initialisé avec succès`);
+    
+    // Vérifier à nouveau si les fonctions sont disponibles après initialisation
+    if (window.CinetPay) {
+      console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Méthodes CinetPay après initialisation:`, {
+        hasSetConfig: typeof window.CinetPay.setConfig === 'function',
+        hasGetCheckout: typeof window.CinetPay.getCheckout === 'function', 
+        hasWaitResponse: typeof window.CinetPay.waitResponse === 'function'
+      });
+    }
+    
     return true;
   } catch (error) {
     console.error(`[CinetPay Seamless] ${new Date().toISOString()} - Erreur lors de l'initialisation du SDK CinetPay:`, error);
@@ -156,10 +182,59 @@ export const startCinetPayPayment = (paymentData: {
     console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Démarrage du paiement avec CinetPay SDK:`, formattedData);
     console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Numéro formaté pour CinetPay:`, formattedData.customer_phone_number);
     
-    // Appel à la méthode getCheckout de CinetPay
-    window.CinetPay.getCheckout(formattedData);
-    console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Appel à getCheckout effectué avec succès`);
-    return true;
+    // Vérifier que getCheckout est bien une fonction
+    if (typeof window.CinetPay.getCheckout !== 'function') {
+      console.error(`[CinetPay Seamless] ${new Date().toISOString()} - La méthode getCheckout n'est pas une fonction!`, 
+                   typeof window.CinetPay.getCheckout);
+      return false;
+    }
+    
+    // Capturer tous les événements CinetPay disponibles
+    // Cette section ajoute des écouteurs d'événements pour tous les événements possibles
+    try {
+      if (typeof document !== 'undefined') {
+        const possibleEvents = [
+          'cinetpay-payment-success', 'cinetpay-payment-error', 
+          'cinetpay-payment-cancelled', 'cinetpay-window-closed',
+          'cinetpay-response-received'
+        ];
+        
+        possibleEvents.forEach(eventName => {
+          document.addEventListener(eventName, (event) => {
+            console.log(`[CinetPay Seamless] ÉVÉNEMENT DÉTECTÉ: ${eventName}`, event);
+          });
+          console.log(`[CinetPay Seamless] Écouteur ajouté pour l'événement ${eventName}`);
+        });
+        
+        // Ajouter un écouteur générique pour tous les événements non standard
+        document.addEventListener('DOMContentLoaded', () => {
+          console.log(`[CinetPay Seamless] Document chargé, observant les événements CinetPay`);
+        });
+      }
+    } catch (eventError) {
+      console.error(`[CinetPay Seamless] Erreur lors de l'ajout des écouteurs d'événements:`, eventError);
+    }
+    
+    // Appel à la méthode getCheckout de CinetPay avec try-catch pour capturer les erreurs
+    try {
+      console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Juste avant l'appel à getCheckout`);
+      window.CinetPay.getCheckout(formattedData);
+      console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Appel à getCheckout effectué avec succès`);
+      
+      // Vérifier si des objets globaux ont été créés après l'appel
+      setTimeout(() => {
+        console.log(`[CinetPay Seamless] État global après getCheckout:`, {
+          hasGetCheckout: typeof window.getCheckout !== 'undefined',
+          hasCheckoutData: typeof window.checkoutData !== 'undefined',
+          windowElements: Object.keys(window).filter(k => k.toLowerCase().includes('cinetpay') || k.toLowerCase().includes('checkout'))
+        });
+      }, 1000);
+      
+      return true;
+    } catch (getCheckoutError) {
+      console.error(`[CinetPay Seamless] ${new Date().toISOString()} - Erreur lors de l'appel à getCheckout:`, getCheckoutError);
+      return false;
+    }
   } catch (error) {
     console.error(`[CinetPay Seamless] ${new Date().toISOString()} - Erreur lors du démarrage du paiement CinetPay:`, error);
     return false;
@@ -184,25 +259,92 @@ export const setupCinetPayCallback = (callback: (data: CinetPayCallbackData) => 
       return false;
     }
     
+    // Vérifier que waitResponse est bien une fonction
+    if (typeof window.CinetPay.waitResponse !== 'function') {
+      console.error(`[CinetPay Seamless] ${new Date().toISOString()} - La méthode waitResponse n'est pas une fonction!`,
+                    typeof window.CinetPay.waitResponse);
+      return false;
+    }
+    
     // Configuration de la callback
+    console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Installation du listener waitResponse`);
     window.CinetPay.waitResponse((data: CinetPayCallbackData) => {
+      console.log(`[CinetPay Seamless] ${new Date().toISOString()} - CALLBACK REÇU de CinetPay!`);
       console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Réponse du paiement CinetPay reçue:`, data);
+      console.log(`[CinetPay Seamless] Type de données reçues:`, typeof data, Array.isArray(data) ? 'array' : 'non-array');
       
       // Gestion similaire à l'exemple de la documentation
       if (data.status === "REFUSED") {
         console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Paiement refusé`);
       } else if (data.status === "ACCEPTED") {
         console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Paiement accepté`);
+      } else {
+        console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Statut de paiement non reconnu:`, data.status);
       }
       
       // Appel du callback personnalisé pour traitement supplémentaire
       console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Exécution du callback utilisateur`);
       callback(data);
     });
+    
+    // Double vérification pour s'assurer que le callback est bien configuré
     console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Callback CinetPay configuré avec succès`);
+    
     return true;
   } catch (error) {
     console.error(`[CinetPay Seamless] ${new Date().toISOString()} - Erreur lors de la configuration de la callback CinetPay:`, error);
+    console.error(`[CinetPay Seamless] Stack trace:`, error instanceof Error ? error.stack : 'Pas de stack trace disponible');
     return false;
+  }
+};
+
+// Fonction pour surveiller les changements dans le DOM qui pourraient indiquer une fenêtre CinetPay
+export const monitorCinetPayIntegration = (): void => {
+  console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Démarrage de la surveillance de l'intégration CinetPay`);
+  
+  // Observer les modifications du DOM pour détecter les iframes de CinetPay
+  if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach(mutation => {
+        if (mutation.type === 'childList') {
+          mutation.addedNodes.forEach(node => {
+            if (node instanceof HTMLElement) {
+              // Rechercher les iframes qui pourraient être liés à CinetPay
+              const iframes = node.querySelectorAll('iframe');
+              iframes.forEach(iframe => {
+                console.log(`[CinetPay Seamless] Iframe détecté:`, {
+                  src: iframe.src,
+                  id: iframe.id,
+                  name: iframe.name,
+                  classList: Array.from(iframe.classList)
+                });
+              });
+              
+              // Rechercher d'autres éléments qui pourraient être liés à CinetPay
+              if (node.id?.includes('cinetpay') || 
+                  node.className?.includes('cinetpay') || 
+                  node.innerHTML?.includes('cinetpay')) {
+                console.log(`[CinetPay Seamless] Élément potentiellement lié à CinetPay détecté:`, {
+                  id: node.id,
+                  className: node.className,
+                  tagName: node.tagName
+                });
+              }
+            }
+          });
+        }
+      });
+    });
+    
+    // Observer le document entier
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true
+    });
+    
+    console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Observateur de mutations configuré pour surveiller l'intégration CinetPay`);
+  } else {
+    console.log(`[CinetPay Seamless] ${new Date().toISOString()} - MutationObserver non disponible, surveillance limitée`);
   }
 };
