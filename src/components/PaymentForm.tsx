@@ -1,5 +1,5 @@
 
-// Commentaires: Ce fichier simule temporairement le paiement pour les tests
+// Commentaires: Ce fichier gère la simulation du paiement et l'envoi d'emails de confirmation via EmailJS
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,16 @@ import { useForm } from "react-hook-form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import emailjs from '@emailjs/browser';
 
 // Définition des constantes
 const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
+
+// Configuration EmailJS
+const EMAILJS_SERVICE_ID = "service_is5645q";
+const EMAILJS_TEMPLATE_ID = "template_dwx7qnw"; // Template standard
+const EMAILJS_PAYMENT_TEMPLATE_ID = "template_xvdr1iq"; // Template de paiement
+const EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
 
 // Schéma de validation pour le formulaire de paiement
 const paymentFormSchema = z.object({
@@ -48,6 +55,39 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       paymentMethod: "MOBILE_MONEY"
     }
   });
+
+  // Fonction pour envoyer un email de confirmation
+  const sendConfirmationEmail = async (participantData: any, paymentData: any, qrCodeId: string) => {
+    try {
+      console.log("Préparation de l'envoi d'email de confirmation via EmailJS");
+      
+      const templateParams = {
+        to_name: `${participantData.first_name} ${participantData.last_name}`,
+        to_email: participantData.email,
+        payment_amount: `${PAYMENT_AMOUNT.toLocaleString()} XOF`,
+        payment_method: paymentData.payment_method,
+        transaction_id: paymentData.transaction_id,
+        payment_date: new Date().toLocaleString(),
+        qr_code_id: qrCodeId,
+        event_name: "Conférence La Citadelle"
+      };
+
+      console.log("Paramètres du template EmailJS:", templateParams);
+      
+      const response = await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_PAYMENT_TEMPLATE_ID,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      );
+
+      console.log("Email envoyé avec succès:", response);
+      return true;
+    } catch (error) {
+      console.error("Erreur lors de l'envoi de l'email:", error);
+      return false;
+    }
+  };
 
   async function onSubmit(values: PaymentFormValues) {
     try {
@@ -91,10 +131,19 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         console.error("Erreur lors de la mise à jour du participant:", participantUpdateError);
       }
 
+      // Envoyer un email de confirmation
+      const emailSent = await sendConfirmationEmail(participant, paymentRecord, qrCodeId);
+      
+      if (emailSent) {
+        console.log("Email de confirmation envoyé avec succès");
+      } else {
+        console.warn("L'email de confirmation n'a pas pu être envoyé, mais le paiement a été enregistré");
+      }
+
       // Afficher un message de succès
       toast({
         title: "Paiement simulé réussi",
-        description: "Le paiement a été simulé avec succès pour les tests.",
+        description: "Le paiement a été simulé avec succès. Un email de confirmation a été envoyé.",
         variant: "default",
       });
       
@@ -191,7 +240,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         </Form>
       </CardContent>
       <CardFooter className="flex flex-col items-start text-xs text-gray-500">
-        <p>Mode test : La simulation créera un paiement réussi dans la base de données.</p>
+        <p>Mode test : La simulation créera un paiement réussi dans la base de données et enverra un email de confirmation.</p>
       </CardFooter>
     </Card>
   );
