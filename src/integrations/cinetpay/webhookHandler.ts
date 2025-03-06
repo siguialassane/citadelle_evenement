@@ -73,12 +73,11 @@ export const handleCinetPayWebhook = async (payload: any) => {
       } else {
         // 3. Recherche par transaction_id partiel (peut contenir des préfixes/suffixes)
         console.log("Webhook CinetPay - Recherche par transaction_id partiel");
-        result = await supabase
+        const { data: allPayments, error } = await supabase
           .from('payments')
           .select('*');
         
-        if (!result.error && result.data) {
-          const allPayments = result.data;
+        if (!error && allPayments && allPayments.length > 0) {
           console.log(`Webhook CinetPay - ${allPayments.length} paiements récupérés pour recherche approfondie`);
           
           // Fonction pour vérifier si deux chaînes ont une partie commune
