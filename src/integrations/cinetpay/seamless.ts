@@ -4,6 +4,8 @@
 // - Ajout du paramètre type: "WEB" dans setConfig
 // - Amélioration du formatage des numéros de téléphone pour TOUJOURS supprimer le code pays
 // - Ajout de typages pour les données de callback
+// - Ajout de logs détaillés pour mieux tracer les opérations
+// - Correction des vérifications de types pour TypeScript
 
 import { CINETPAY_API_KEY, CINETPAY_SITE_ID } from './config';
 
@@ -28,7 +30,20 @@ export interface CinetPayCallbackData {
  * Vérifie si le SDK CinetPay est disponible
  */
 export const isCinetPaySDKLoaded = (): boolean => {
-  return typeof window !== 'undefined' && 'CinetPay' in window;
+  const isLoaded = typeof window !== 'undefined' && 'CinetPay' in window;
+  console.log(`[CinetPay Seamless] ${new Date().toISOString()} - SDK chargé:`, isLoaded);
+  
+  if (isLoaded) {
+    console.log(`[CinetPay Seamless] Propriétés globales:`, {
+      hasCinetPay: typeof window.CinetPay !== 'undefined',
+      hasGetCheckout: typeof window.getCheckout !== 'undefined',
+      hasCheckoutData: typeof window.checkoutData !== 'undefined'
+    });
+  } else {
+    console.warn(`[CinetPay Seamless] ${new Date().toISOString()} - Le SDK n'est pas chargé!`);
+  }
+  
+  return isLoaded;
 };
 
 /**
@@ -36,13 +51,20 @@ export const isCinetPaySDKLoaded = (): boolean => {
  * Conforme à la documentation: https://docs.cinetpay.com/integration/integrate/sdk-javascript/seamless-sdk
  */
 export const initCinetPaySDK = (notifyUrl: string): boolean => {
+  console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Tentative d'initialisation du SDK avec URL de notification:`, notifyUrl);
+  
   if (!isCinetPaySDKLoaded()) {
-    console.error("CinetPay SDK n'est pas chargé");
+    console.error(`[CinetPay Seamless] ${new Date().toISOString()} - CinetPay SDK n'est pas chargé`);
     return false;
   }
 
   try {
-    // @ts-ignore - CinetPay est défini globalement par le script
+    if (!window.CinetPay) {
+      console.error(`[CinetPay Seamless] ${new Date().toISOString()} - L'objet CinetPay n'est pas disponible sur window`);
+      return false;
+    }
+    
+    // Configuration du SDK
     window.CinetPay.setConfig({
       apikey: CINETPAY_API_KEY,
       site_id: CINETPAY_SITE_ID,
@@ -51,10 +73,10 @@ export const initCinetPaySDK = (notifyUrl: string): boolean => {
       close_after_response: false // Ne pas fermer automatiquement pour gérer nous-mêmes la redirection
     });
     
-    console.log("CinetPay SDK initialisé avec succès");
+    console.log(`[CinetPay Seamless] ${new Date().toISOString()} - CinetPay SDK initialisé avec succès`);
     return true;
   } catch (error) {
-    console.error("Erreur lors de l'initialisation du SDK CinetPay:", error);
+    console.error(`[CinetPay Seamless] ${new Date().toISOString()} - Erreur lors de l'initialisation du SDK CinetPay:`, error);
     return false;
   }
 };
@@ -67,13 +89,16 @@ export const initCinetPaySDK = (notifyUrl: string): boolean => {
 export const formatPhoneForCinetPay = (phoneNumber: string): string => {
   if (!phoneNumber) return "";
   
+  console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Formatage du numéro de téléphone:`, phoneNumber);
+  
   // Retirer tous les caractères non numériques
   let cleaned = phoneNumber.replace(/\D/g, '');
+  console.log(`[CinetPay Seamless] Après nettoyage des caractères non numériques:`, cleaned);
   
   // Si le numéro commence par 225, on retire le code pays
   if (cleaned.startsWith('225')) {
     cleaned = cleaned.substring(3);
-    console.log("Numéro après suppression du code pays:", cleaned);
+    console.log(`[CinetPay Seamless] Numéro après suppression du code pays 225:`, cleaned);
   }
   
   // Si le numéro a plus de 10 chiffres et ne commence pas par 225
@@ -81,9 +106,10 @@ export const formatPhoneForCinetPay = (phoneNumber: string): string => {
   if (cleaned.length > 10 && cleaned.length <= 13) {
     // On garde seulement les 10 derniers chiffres maximum
     cleaned = cleaned.substring(cleaned.length - 10);
-    console.log("Numéro tronqué aux 10 derniers chiffres:", cleaned);
+    console.log(`[CinetPay Seamless] Numéro tronqué aux 10 derniers chiffres:`, cleaned);
   }
   
+  console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Numéro formaté final:`, cleaned);
   return cleaned;
 };
 
@@ -108,26 +134,34 @@ export const startCinetPayPayment = (paymentData: {
   customer_zip_code: string;
   metadata: string;
 }): boolean => {
+  console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Démarrage du paiement avec les données:`, paymentData);
+  
   if (!isCinetPaySDKLoaded()) {
-    console.error("CinetPay SDK n'est pas chargé");
+    console.error(`[CinetPay Seamless] ${new Date().toISOString()} - CinetPay SDK n'est pas chargé`);
     return false;
   }
 
   try {
+    if (!window.CinetPay) {
+      console.error(`[CinetPay Seamless] ${new Date().toISOString()} - L'objet CinetPay n'est pas disponible sur window`);
+      return false;
+    }
+    
     // Formater le numéro de téléphone pour CinetPay
     const formattedData = {
       ...paymentData,
       customer_phone_number: formatPhoneForCinetPay(paymentData.customer_phone_number)
     };
     
-    console.log("Démarrage du paiement avec CinetPay SDK:", formattedData);
-    console.log("Numéro formaté pour CinetPay:", formattedData.customer_phone_number);
+    console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Démarrage du paiement avec CinetPay SDK:`, formattedData);
+    console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Numéro formaté pour CinetPay:`, formattedData.customer_phone_number);
     
-    // @ts-ignore - CinetPay est défini globalement par le script
+    // Appel à la méthode getCheckout de CinetPay
     window.CinetPay.getCheckout(formattedData);
+    console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Appel à getCheckout effectué avec succès`);
     return true;
   } catch (error) {
-    console.error("Erreur lors du démarrage du paiement CinetPay:", error);
+    console.error(`[CinetPay Seamless] ${new Date().toISOString()} - Erreur lors du démarrage du paiement CinetPay:`, error);
     return false;
   }
 };
@@ -137,29 +171,38 @@ export const startCinetPayPayment = (paymentData: {
  * Conforme à la documentation: https://docs.cinetpay.com/integration/integrate/sdk-javascript/seamless-sdk
  */
 export const setupCinetPayCallback = (callback: (data: CinetPayCallbackData) => void): boolean => {
+  console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Configuration du callback CinetPay`);
+  
   if (!isCinetPaySDKLoaded()) {
-    console.error("CinetPay SDK n'est pas chargé");
+    console.error(`[CinetPay Seamless] ${new Date().toISOString()} - CinetPay SDK n'est pas chargé`);
     return false;
   }
 
   try {
-    // @ts-ignore - CinetPay est défini globalement par le script
+    if (!window.CinetPay) {
+      console.error(`[CinetPay Seamless] ${new Date().toISOString()} - L'objet CinetPay n'est pas disponible sur window`);
+      return false;
+    }
+    
+    // Configuration de la callback
     window.CinetPay.waitResponse((data: CinetPayCallbackData) => {
-      console.log("Réponse du paiement CinetPay reçue:", data);
+      console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Réponse du paiement CinetPay reçue:`, data);
       
       // Gestion similaire à l'exemple de la documentation
       if (data.status === "REFUSED") {
-        console.log("Paiement refusé");
+        console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Paiement refusé`);
       } else if (data.status === "ACCEPTED") {
-        console.log("Paiement accepté");
+        console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Paiement accepté`);
       }
       
       // Appel du callback personnalisé pour traitement supplémentaire
+      console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Exécution du callback utilisateur`);
       callback(data);
     });
+    console.log(`[CinetPay Seamless] ${new Date().toISOString()} - Callback CinetPay configuré avec succès`);
     return true;
   } catch (error) {
-    console.error("Erreur lors de la configuration de la callback CinetPay:", error);
+    console.error(`[CinetPay Seamless] ${new Date().toISOString()} - Erreur lors de la configuration de la callback CinetPay:`, error);
     return false;
   }
 };

@@ -1,5 +1,7 @@
 // Commentaires: Ce fichier gère l'intégration du paiement CinetPay Seamless
-// Dernière modification: Ajout de logs détaillés dans le formulaire de paiement pour faciliter le débogage
+// Dernière modification: 
+// - Ajout de logs détaillés dans le formulaire de paiement pour faciliter le débogage
+// - Correction des vérifications de type pour les propriétés du SDK CinetPay
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from 'uuid';
@@ -81,7 +83,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       const sdkLoaded = isCinetPaySDKLoaded();
       console.log(`PaymentForm ${new Date().toISOString()}: Vérification du SDK CinetPay:`, sdkLoaded ? "Chargé" : "Non chargé");
       
-      if (sdkLoaded) {
+      if (sdkLoaded && window.CinetPay) {
         console.log("PaymentForm: SDK CinetPay disponible - Variables globales:", {
           CinetPay: typeof window.CinetPay !== 'undefined',
           getCheckout: typeof window.getCheckout !== 'undefined',
