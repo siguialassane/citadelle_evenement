@@ -1,15 +1,11 @@
 
-// Commentaires: Ce fichier a été mis à jour pour améliorer la gestion des erreurs 
-// et le débogage avec CinetPay Seamless SDK
-
-import { useState, useEffect } from "react";
+// Commentaires: Ce fichier simule temporairement le paiement pour les tests
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   Form,
   FormControl,
@@ -22,7 +18,6 @@ import { useForm } from "react-hook-form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CINETPAY_API_KEY, CINETPAY_SITE_ID, PAYMENT_METHOD_MAP } from "@/integrations/cinetpay/config";
 
 // Définition des constantes
 const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
@@ -40,256 +35,80 @@ type PaymentFormProps = {
   participant: any;
 };
 
-// Vérification que l'objet CinetPay est disponible
-declare global {
-  interface Window {
-    CinetPay: any;
-  }
-}
-
 export function PaymentForm({ participant }: PaymentFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  console.log("PaymentForm: Mounted with participant ID:", participant.id);
+  console.log("PaymentForm: Simulation de paiement pour le participant ID:", participant.id);
 
   // Initialiser le formulaire avec react-hook-form et zod
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
-      paymentMethod: "MOBILE_MONEY" // Par défaut, mobile money (plus adapté pour la Côte d'Ivoire)
+      paymentMethod: "MOBILE_MONEY"
     }
   });
 
-  // Initialiser CinetPay une fois au chargement du composant
-  useEffect(() => {
-    if (window.CinetPay) {
-      console.log("PaymentForm: Initialisation de CinetPay Seamless");
-      console.log("PaymentForm: CINETPAY_API_KEY:", CINETPAY_API_KEY ? "Défini" : "Non défini");
-      console.log("PaymentForm: CINETPAY_SITE_ID:", CINETPAY_SITE_ID);
-      
-      // Vérification des prérequis
-      if (!CINETPAY_API_KEY || !CINETPAY_SITE_ID) {
-        const errorMsg = "Configuration CinetPay incomplète (API_KEY ou SITE_ID manquant)";
-        console.error("PaymentForm: " + errorMsg);
-        setPaymentError(errorMsg);
-        return;
-      }
-      
-      try {
-        // Configuration de CinetPay avec le mode TEST pour éviter des frais réels
-        window.CinetPay.setConfig({
-          apikey: CINETPAY_API_KEY,
-          site_id: CINETPAY_SITE_ID,
-          notify_url: `${window.location.origin}/api/webhooks/cinetpay/notification`,
-          mode: 'TEST', // Utiliser TEST plutôt que PRODUCTION pour les tests
-          close_after_response: true
-        });
-        console.log("PaymentForm: CinetPay Seamless initialisé avec succès");
-        
-        // Afficher la version du SDK pour débogage
-        if (window.CinetPay.version) {
-          setDebugInfo(`Version SDK CinetPay: ${window.CinetPay.version}`);
-        }
-      } catch (error: any) {
-        console.error("PaymentForm: Erreur lors de l'initialisation de CinetPay Seamless:", error);
-        setPaymentError(`Erreur d'initialisation CinetPay: ${error.message || 'Erreur inconnue'}`);
-      }
-    } else {
-      console.error("PaymentForm: CinetPay Seamless SDK n'est pas chargé");
-      setPaymentError("Le SDK CinetPay n'est pas correctement chargé. Veuillez rafraîchir la page.");
-    }
-
-    // Nettoyer les éventuels scripts CinetPay lors du démontage
-    return () => {
-      console.log("PaymentForm: Nettoyage des ressources CinetPay");
-    };
-  }, []);
-
   async function onSubmit(values: PaymentFormValues) {
     try {
-      // Réinitialiser les erreurs précédentes
-      setPaymentError(null);
-      console.log("PaymentForm: Processus de paiement démarré");
+      console.log("PaymentForm: Début de la simulation du paiement");
       setIsProcessing(true);
 
-      // Générer un ID de transaction unique
-      const transactionId = `TX-${participant.id.slice(0, 8)}-${Date.now()}`;
+      // Simuler un délai de traitement
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Générer un ID de transaction simulé
+      const transactionId = `SIM-${participant.id.slice(0, 8)}-${Date.now()}`;
       
-      console.log("PaymentForm: Préparation du paiement avec CinetPay Seamless");
-      console.log("PaymentForm: Pour le participant:", participant.id);
-      console.log("PaymentForm: Nom complet:", participant.first_name, participant.last_name);
-      console.log("PaymentForm: Email:", participant.email);
-      console.log("PaymentForm: Numéro de téléphone:", participant.contact_number);
-      console.log("PaymentForm: Montant:", PAYMENT_AMOUNT, "XOF");
-      console.log("PaymentForm: Méthode de paiement sélectionnée:", values.paymentMethod);
-      console.log("PaymentForm: Transaction ID:", transactionId);
-
-      // Formater le numéro de téléphone (supprimez les espaces et le préfixe "+")
-      const formattedPhoneNumber = participant.contact_number
-        .replace(/\s+/g, '')  // Supprimer tous les espaces
-        .replace(/^\+/, '');  // Supprimer le préfixe "+"
-
-      // Enregistrer la transaction dans Supabase avant d'afficher le guichet
-      try {
-        console.log("PaymentForm: Enregistrement du paiement dans Supabase");
-        const { data: paymentRecord, error } = await supabase
-          .from('payments')
-          .insert({
-            participant_id: participant.id,
-            amount: PAYMENT_AMOUNT,
-            payment_method: values.paymentMethod,
-            status: 'pending',
-            transaction_id: transactionId,
-            currency: "XOF"
-          })
-          .select()
-          .single();
-
-        if (error) {
-          console.error("PaymentForm: Erreur Supabase lors de l'insertion du paiement:", error);
-          throw error;
-        }
-
-        console.log("PaymentForm: Paiement enregistré avec succès. ID:", paymentRecord.id);
-      } catch (dbError: any) {
-        console.error("PaymentForm: Erreur de base de données:", dbError);
-        // Ne pas bloquer le flux de paiement si l'enregistrement en base échoue
-        toast({
-          title: "Attention",
-          description: "Le paiement peut continuer mais nous avons rencontré un problème pour enregistrer les détails.",
-          variant: "destructive",
-        });
-      }
-
-      // Vérification que le SDK CinetPay est disponible
-      if (!window.CinetPay) {
-        throw new Error("Le SDK CinetPay n'est pas chargé. Veuillez rafraîchir la page.");
-      }
-
-      // Vérification supplémentaire que CinetPay est correctement configuré
-      if (!window.CinetPay.getCheckout) {
-        throw new Error("Le SDK CinetPay n'est pas correctement initialisé. Veuillez rafraîchir la page.");
-      }
-
-      // Appel au SDK Seamless pour afficher le guichet de paiement
-      console.log("PaymentForm: Affichage du guichet CinetPay Seamless");
-      
-      const checkoutConfig = {
-        transaction_id: transactionId,
-        amount: PAYMENT_AMOUNT,
-        currency: 'XOF',
-        channels: values.paymentMethod,
-        description: `Paiement inscription - ${participant.first_name} ${participant.last_name}`,
-        // Informations du client pour le paiement
-        customer_name: participant.first_name,
-        customer_surname: participant.last_name,
-        customer_email: participant.email,
-        customer_phone_number: formattedPhoneNumber,
-        customer_address: "Adresse non spécifiée",
-        customer_city: "Abidjan",
-        customer_country: "CI", // Code ISO pour la Côte d'Ivoire
-        customer_state: "CI",
-        customer_zip_code: "00000",
-        // Métadonnées pour identification ultérieure
-        metadata: JSON.stringify({
-          participant_id: participant.id
+      // Simuler l'enregistrement du paiement dans Supabase
+      const { data: paymentRecord, error } = await supabase
+        .from('payments')
+        .insert({
+          participant_id: participant.id,
+          amount: PAYMENT_AMOUNT,
+          payment_method: values.paymentMethod,
+          status: 'completed', // Simuler un paiement réussi
+          transaction_id: transactionId,
+          currency: "XOF"
         })
-      };
-      
-      console.log("PaymentForm: Configuration du checkout:", checkoutConfig);
-      
-      try {
-        window.CinetPay.getCheckout(checkoutConfig);
-        console.log("PaymentForm: getCheckout appelé avec succès");
-      } catch (checkoutError: any) {
-        console.error("PaymentForm: Erreur lors de l'appel à getCheckout:", checkoutError);
-        throw new Error(`Erreur lors de l'affichage du guichet de paiement: ${checkoutError.message || 'Erreur inconnue'}`);
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
       }
 
-      // Configurer le callback pour gérer la réponse de paiement
-      window.CinetPay.waitResponse(function(data: any) {
-        console.log("PaymentForm: Réponse reçue de CinetPay:", data);
-        setIsProcessing(false);
-        
-        if (data.status === "REFUSED") {
-          console.log("PaymentForm: Paiement refusé");
-          setPaymentError("Votre paiement a été refusé. Veuillez réessayer ou choisir un autre moyen de paiement.");
-          toast({
-            title: "Paiement refusé",
-            description: "Votre paiement n'a pas pu être effectué. Veuillez réessayer.",
-            variant: "destructive",
-          });
-        } 
-        else if (data.status === "ACCEPTED") {
-          console.log("PaymentForm: Paiement accepté");
-          toast({
-            title: "Paiement réussi",
-            description: "Votre paiement a été effectué avec succès!",
-            variant: "default",
-          });
-          
-          // Mettre à jour le statut du paiement dans Supabase
-          supabase
-            .from('payments')
-            .update({ 
-              status: 'completed',
-              operator_id: data.operator_id || null,
-              payment_date: data.payment_date || new Date().toISOString(),
-              payment_method: data.payment_method || values.paymentMethod
-            })
-            .eq('transaction_id', transactionId)
-            .then(({ error }) => {
-              if (error) {
-                console.error("PaymentForm: Erreur lors de la mise à jour du paiement:", error);
-              } else {
-                console.log("PaymentForm: Statut du paiement mis à jour avec succès");
-              }
-            });
-          
-          // Rediriger vers la page de confirmation
-          navigate(`/confirmation/${participant.id}`);
-        }
-      });
+      // Générer un QR code pour le participant
+      const qrCodeId = `QR-${participant.id}-${Date.now()}`;
+      const { error: participantUpdateError } = await supabase
+        .from('participants')
+        .update({
+          qr_code_id: qrCodeId
+        })
+        .eq('id', participant.id);
 
-      // Configurer le callback d'erreur
-      window.CinetPay.onError(function(error: any) {
-        console.error("PaymentForm: Erreur CinetPay:", error);
-        setIsProcessing(false);
-        
-        // Message d'erreur plus détaillé pour aider au diagnostic
-        let errorMessage = "Une erreur est survenue avec le service de paiement.";
-        if (error && typeof error === 'object') {
-          if (error.message) {
-            errorMessage += ` Message: ${error.message}`;
-          }
-          if (error.code) {
-            errorMessage += ` Code: ${error.code}`;
-          }
-        }
-        
-        setPaymentError(errorMessage + " Veuillez réessayer.");
-        toast({
-          title: "Erreur de paiement",
-          description: errorMessage,
-          variant: "destructive",
-        });
+      if (participantUpdateError) {
+        console.error("Erreur lors de la mise à jour du participant:", participantUpdateError);
+      }
+
+      // Afficher un message de succès
+      toast({
+        title: "Paiement simulé réussi",
+        description: "Le paiement a été simulé avec succès pour les tests.",
+        variant: "default",
       });
+      
+      // Rediriger vers la page de confirmation
+      navigate(`/confirmation/${participant.id}`);
       
     } catch (error: any) {
-      console.error("PaymentForm: Erreur lors du traitement du paiement:", error);
-      console.error("PaymentForm: Stack trace:", error.stack);
-      
-      // Capturer le message d'erreur pour l'afficher dans l'interface
-      setPaymentError(error.message || "Une erreur est survenue lors du traitement de votre paiement.");
-      
+      console.error("PaymentForm: Erreur lors de la simulation:", error);
       toast({
-        title: "Erreur de paiement",
-        description: error.message || "Une erreur est survenue lors du traitement de votre paiement.",
+        title: "Erreur de simulation",
+        description: error.message || "Une erreur est survenue lors de la simulation du paiement.",
         variant: "destructive",
       });
+    } finally {
       setIsProcessing(false);
     }
   }
@@ -297,31 +116,16 @@ export function PaymentForm({ participant }: PaymentFormProps) {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-2xl">Paiement</CardTitle>
+        <CardTitle className="text-2xl">Simulation de Paiement</CardTitle>
       </CardHeader>
       <CardContent>
-        {paymentError && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Erreur de paiement</AlertTitle>
-            <AlertDescription>{paymentError}</AlertDescription>
-          </Alert>
-        )}
-        
-        {debugInfo && (
-          <div className="bg-gray-100 p-2 rounded text-xs mb-4">
-            <p className="font-mono">{debugInfo}</p>
-          </div>
-        )}
-        
         <div className="bg-gray-50 p-4 rounded-md mb-6">
           <div className="flex justify-between mb-2">
             <span className="font-medium">Montant à payer:</span>
             <span className="font-bold">{PAYMENT_AMOUNT.toLocaleString()} XOF</span>
           </div>
           <p className="text-sm text-gray-600 mt-4">
-            Choisissez votre méthode de paiement préférée et cliquez sur le bouton ci-dessous 
-            pour procéder au paiement sécurisé.
+            Mode test : Le paiement sera simulé automatiquement comme réussi.
           </p>
         </div>
 
@@ -332,7 +136,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
               name="paymentMethod"
               render={({ field }) => (
                 <FormItem className="space-y-3">
-                  <FormLabel>Méthode de paiement</FormLabel>
+                  <FormLabel>Méthode de paiement (simulation)</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -372,23 +176,22 @@ export function PaymentForm({ participant }: PaymentFormProps) {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={isProcessing || !!paymentError}
+              disabled={isProcessing}
             >
               {isProcessing ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Traitement en cours...
+                  Simulation en cours...
                 </>
               ) : (
-                `Payer ${PAYMENT_AMOUNT.toLocaleString()} XOF`
+                `Simuler le paiement de ${PAYMENT_AMOUNT.toLocaleString()} XOF`
               )}
             </Button>
           </form>
         </Form>
       </CardContent>
       <CardFooter className="flex flex-col items-start text-xs text-gray-500">
-        <p>Vous serez redirigé vers le guichet de paiement CinetPay après avoir cliqué sur le bouton.</p>
-        <p className="mt-1">En cas de problème, veuillez contacter le support.</p>
+        <p>Mode test : La simulation créera un paiement réussi dans la base de données.</p>
       </CardFooter>
     </Card>
   );
