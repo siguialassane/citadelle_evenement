@@ -13,6 +13,23 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import { 
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { 
   LogOut, 
@@ -22,9 +39,13 @@ import {
   CheckCircle2, 
   XCircle, 
   AlertTriangle,
-  UserCheck
+  FileText,
+  FilePdf,
+  Info
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 // Type pour les participants
 type Participant = {
@@ -46,6 +67,8 @@ type Payment = {
   amount: number;
   payment_method: string;
   payment_date: string;
+  currency: string;
+  transaction_id?: string;
 };
 
 const AdminDashboard = () => {
@@ -55,6 +78,8 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     // Vérifier si l'admin est connecté
@@ -106,7 +131,9 @@ const AdminDashboard = () => {
             status,
             amount,
             payment_method,
-            payment_date
+            payment_date,
+            currency,
+            transaction_id
           )
         `)
         .order('created_at', { ascending: false });
@@ -190,6 +217,44 @@ const AdminDashboard = () => {
     navigate("/");
   };
 
+  // Ouvrir la modal avec les détails du participant
+  const handleViewDetails = (participant: Participant) => {
+    setSelectedParticipant(participant);
+    setDetailsOpen(true);
+  };
+
+  // Formatage de la date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Obtenir le statut du paiement avec une couleur appropriée
+  const getPaymentStatusBadge = (payment?: Payment) => {
+    if (!payment) {
+      return <Badge variant="outline" className="bg-gray-100 text-gray-800">Non payé</Badge>;
+    }
+    
+    switch (payment.status.toUpperCase()) {
+      case "APPROVED":
+      case "SUCCESS":
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Confirmé</Badge>;
+      case "PENDING":
+        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">En cours</Badge>;
+      case "FAILED":
+      case "CANCELLED":
+      case "REJECTED":
+        return <Badge variant="destructive">Rejeté</Badge>;
+      default:
+        return <Badge variant="outline">{payment.status}</Badge>;
+    }
+  };
+
   // Exporter les données au format CSV
   const handleExportCSV = () => {
     const headers = [
@@ -213,7 +278,7 @@ const AdminDashboard = () => {
       participant.check_in_status ? "Oui" : "Non",
       new Date(participant.created_at).toLocaleDateString(),
       participant.payments?.[0]?.status || "Non payé",
-      participant.payments?.[0]?.amount ? `${participant.payments[0].amount} XOF` : "N/A"
+      participant.payments?.[0]?.amount ? `${participant.payments[0].amount} ${participant.payments[0].currency || 'XOF'}` : "N/A"
     ]);
     
     const csvContent = [
@@ -231,23 +296,53 @@ const AdminDashboard = () => {
     document.body.removeChild(link);
   };
 
-  // Obtenir le statut du paiement avec une couleur appropriée
-  const getPaymentStatusBadge = (payment?: Payment) => {
-    if (!payment) {
-      return <Badge variant="outline" className="bg-gray-100 text-gray-800">Non payé</Badge>;
-    }
-    
-    switch (payment.status) {
-      case "APPROVED":
-      case "SUCCESS":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Payé</Badge>;
-      case "PENDING":
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">En attente</Badge>;
-      case "FAILED":
-      case "CANCELLED":
-        return <Badge variant="destructive">Échoué</Badge>;
-      default:
-        return <Badge variant="outline">{payment.status}</Badge>;
+  // Exporter les données au format PDF
+  const handleExportPDF = async () => {
+    const tableElement = document.getElementById('participants-table');
+    if (!tableElement) return;
+
+    toast({
+      title: "Génération du PDF",
+      description: "Veuillez patienter pendant la création du PDF...",
+    });
+
+    try {
+      const pdf = new jsPDF('l', 'mm', 'a4');
+      
+      // Ajouter un titre
+      pdf.setFontSize(18);
+      pdf.text('Liste des participants', 15, 15);
+      
+      // Ajouter la date d'extraction
+      pdf.setFontSize(10);
+      pdf.text(`Extrait le: ${new Date().toLocaleDateString('fr-FR')}`, 15, 22);
+      
+      // Capturer le tableau en image
+      const canvas = await html2canvas(tableElement, {
+        scale: 1,
+        useCORS: true,
+        logging: false
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Ajouter l'image du tableau
+      pdf.addImage(imgData, 'PNG', 10, 30, 280, 0);
+      
+      // Sauvegarder le PDF
+      pdf.save(`participants-${new Date().toISOString().slice(0,10)}.pdf`);
+      
+      toast({
+        title: "PDF généré",
+        description: "Le fichier PDF a été téléchargé avec succès.",
+      });
+    } catch (error) {
+      console.error("Erreur lors de la génération du PDF:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le PDF.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -293,11 +388,19 @@ const AdminDashboard = () => {
                 Actualiser
               </Button>
               <Button 
+                variant="outline"
                 className="flex items-center gap-2"
                 onClick={handleExportCSV}
               >
                 <Download className="h-4 w-4" />
-                Exporter CSV
+                CSV
+              </Button>
+              <Button 
+                className="flex items-center gap-2"
+                onClick={handleExportPDF}
+              >
+                <FilePdf className="h-4 w-4" />
+                PDF
               </Button>
             </div>
           </div>
@@ -311,7 +414,7 @@ const AdminDashboard = () => {
             <div className="bg-green-50 p-4 rounded-lg">
               <p className="text-green-800 font-medium">Paiements confirmés</p>
               <p className="text-2xl font-bold">
-                {participants.filter(p => p.payments?.[0]?.status === "SUCCESS" || p.payments?.[0]?.status === "APPROVED").length}
+                {participants.filter(p => p.payments?.[0]?.status?.toUpperCase() === "SUCCESS" || p.payments?.[0]?.status?.toUpperCase() === "APPROVED").length}
               </p>
             </div>
             <div className="bg-blue-50 p-4 rounded-lg">
@@ -325,7 +428,7 @@ const AdminDashboard = () => {
 
         {/* Tableau des participants */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <Table>
+          <Table id="participants-table">
             <TableCaption>Liste des participants à l'événement</TableCaption>
             <TableHeader>
               <TableRow>
@@ -336,13 +439,14 @@ const AdminDashboard = () => {
                 <TableHead>Date d'inscription</TableHead>
                 <TableHead>Paiement</TableHead>
                 <TableHead>Présence</TableHead>
+                <TableHead className="text-center">Détails</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10">
+                  <TableCell colSpan={9} className="text-center py-10">
                     <div className="flex justify-center items-center">
                       <RefreshCw className="animate-spin h-5 w-5 mr-2" />
                       Chargement des participants...
@@ -351,7 +455,7 @@ const AdminDashboard = () => {
                 </TableRow>
               ) : filteredParticipants.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10">
+                  <TableCell colSpan={9} className="text-center py-10">
                     {searchTerm ? (
                       <div className="flex flex-col items-center">
                         <AlertTriangle className="h-8 w-8 text-yellow-500 mb-2" />
@@ -393,6 +497,17 @@ const AdminDashboard = () => {
                         <Badge variant="outline">Non enregistré</Badge>
                       )}
                     </TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex items-center gap-1"
+                        onClick={() => handleViewDetails(participant)}
+                      >
+                        <Info className="h-3 w-3" />
+                        <span className="hidden sm:inline">Détails</span>
+                      </Button>
+                    </TableCell>
                     <TableCell className="text-right">
                       <Button
                         size="sm"
@@ -424,6 +539,105 @@ const AdminDashboard = () => {
           </Table>
         </div>
       </main>
+
+      {/* Modal de détails du participant */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              Détails du participant
+            </DialogTitle>
+            <DialogDescription>
+              Informations complètes et détails de paiement
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedParticipant && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Informations personnelles */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Informations personnelles</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Nom complet</p>
+                    <p className="font-medium">{selectedParticipant.last_name} {selectedParticipant.first_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{selectedParticipant.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Téléphone</p>
+                    <p className="font-medium">{selectedParticipant.contact_number}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Statut</p>
+                    <div className="flex items-center mt-1 gap-2">
+                      {selectedParticipant.is_member && <Badge className="bg-purple-100 text-purple-800">Membre</Badge>}
+                      {selectedParticipant.check_in_status ? 
+                        <Badge className="bg-green-100 text-green-800">Présent</Badge> : 
+                        <Badge variant="outline">Non enregistré</Badge>
+                      }
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Date d'inscription</p>
+                    <p className="font-medium">{formatDate(selectedParticipant.created_at)}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Détails du paiement */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Détails du paiement</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {selectedParticipant.payments && selectedParticipant.payments.length > 0 ? (
+                    <>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Statut</p>
+                        <div className="mt-1">{getPaymentStatusBadge(selectedParticipant.payments[0])}</div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Montant</p>
+                        <p className="font-medium">{selectedParticipant.payments[0].amount} {selectedParticipant.payments[0].currency || 'XOF'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Méthode de paiement</p>
+                        <p className="font-medium">{selectedParticipant.payments[0].payment_method || 'Non spécifiée'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Date de paiement</p>
+                        <p className="font-medium">{formatDate(selectedParticipant.payments[0].payment_date)}</p>
+                      </div>
+                      {selectedParticipant.payments[0].transaction_id && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">ID de transaction</p>
+                          <p className="font-medium">{selectedParticipant.payments[0].transaction_id}</p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-2" />
+                      <p className="text-muted-foreground">Aucun paiement enregistré</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Fermer</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
