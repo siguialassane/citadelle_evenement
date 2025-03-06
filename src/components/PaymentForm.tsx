@@ -1,5 +1,5 @@
 // Commentaires: Ce fichier gère l'intégration du paiement CinetPay Seamless
-// Dernière modification: Mise à jour pour utiliser UUID comme identifiant de transaction
+// Dernière modification: Mise à jour pour utiliser UUID sans préfixe comme identifiant de transaction
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from 'uuid';
@@ -323,10 +323,9 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         // Simuler un délai de traitement
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Générer un ID de transaction simulé en utilisant UUID
-        const uuid = uuidv4();
-        const transactionId = `SIM-${uuid}`;
-        console.log("Simulation: ID de transaction généré:", transactionId);
+        // Générer un UUID pour simulation (garder préfixe SIM pour distinguer des vrais paiements)
+        const simTransactionId = `SIM-${uuidv4()}`;
+        console.log("Simulation: ID de transaction généré:", simTransactionId);
         
         // Simuler l'enregistrement du paiement dans Supabase
         const { data: paymentRecord, error } = await supabase
@@ -336,7 +335,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
             amount: PAYMENT_AMOUNT,
             payment_method: values.paymentMethod,
             status: 'completed', // Simuler un paiement réussi
-            transaction_id: transactionId,
+            transaction_id: simTransactionId,
             currency: "XOF"
           })
           .select()
@@ -381,9 +380,8 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         // Mode production - tenter d'utiliser le SDK Seamless, sinon utiliser l'API directe
         console.log("PaymentForm: Début du paiement réel");
         
-        // Générer un ID de transaction unique avec UUID
-        const uuid = uuidv4();
-        const transactionId = `TR-${uuid}`;
+        // Générer un ID de transaction unique avec UUID (sans préfixe)
+        const transactionId = uuidv4();
         console.log("PaymentForm: ID de transaction généré:", transactionId);
         
         // Tenter d'utiliser le SDK Seamless

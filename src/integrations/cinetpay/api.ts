@@ -1,7 +1,6 @@
-
 // Ce fichier contient l'API d'intégration avec CinetPay qui utilise des appels POST directs
 // Modifications: 
-// - Utilisation d'UUID pour les identifiants de transaction
+// - Utilisation d'UUID brut sans préfixe pour les identifiants de transaction
 // - Simplification du format de métadonnées pour suivre la documentation CinetPay
 // - Utilisation de la fonction de formatage des numéros de téléphone SANS code pays
 // - Ajout du paramètre type: "WEB" dans les requêtes API
@@ -36,9 +35,8 @@ export const initiateCinetPayPayment = async (
   console.log("CinetPayAPI: Début de l'initialisation du paiement via POST");
   
   try {
-    // Générer un ID de transaction unique en utilisant UUID
-    const uuid = uuidv4();
-    const transactionId = `TR-${uuid}`;
+    // Générer un ID de transaction unique en utilisant UUID (sans préfixe)
+    const transactionId = uuidv4();
     console.log("CinetPayAPI: ID de transaction généré:", transactionId);
     
     // URL de base de l'application pour les redirections
