@@ -65,6 +65,8 @@ export const initCinetPaySDK = (notifyUrl: string): boolean => {
  * Format attendu: "088767611" (sans code pays)
  */
 export const formatPhoneForCinetPay = (phoneNumber: string): string => {
+  if (!phoneNumber) return "";
+  
   // Retirer tous les caractères non numériques
   let cleaned = phoneNumber.replace(/\D/g, '');
   

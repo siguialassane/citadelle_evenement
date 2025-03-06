@@ -59,7 +59,10 @@ serve(async (req) => {
       console.log("CinetPay Webhook: Payload JSON parsé:", JSON.stringify(payload, null, 2));
     } catch (jsonError) {
       console.error("CinetPay Webhook: Erreur lors du parsing du JSON:", jsonError);
-      return new Response(JSON.stringify({ error: "Format JSON invalide" }), {
+      return new Response(JSON.stringify({ 
+        error: "Format JSON invalide",
+        raw_body: reqBody 
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
@@ -69,11 +72,13 @@ serve(async (req) => {
     const transactionId = payload.cpm_trans_id;
     const siteId = payload.cpm_site_id;
     const status = payload.status;
+    const apiResponseId = payload.api_response_id || "";
 
     console.log("CinetPay Webhook: Données extraites:", {
       transactionId,
       siteId,
       status,
+      apiResponseId,
       paymentMethod: payload.payment_method,
       paymentStatus: status,
       additionalData: payload
@@ -96,18 +101,23 @@ serve(async (req) => {
       });
     }
 
-    // Recherche du paiement - méthode améliorée pour gérer les IDs sans préfixe
+    // Recherche du paiement - méthodes multiples et plus précises
     console.log("CinetPay Webhook: Début de la recherche du paiement");
+    let payment = null;
     
     // 1. D'abord, recherche exacte par transaction_id
-    let { data: payment, error: fetchError } = await supabase
+    console.log("CinetPay Webhook: Recherche par transaction_id:", transactionId);
+    let { data: paymentResult, error: fetchError } = await supabase
       .from('payments')
       .select('*')
       .eq('transaction_id', transactionId)
       .maybeSingle();
 
     // 2. Si non trouvé, essayer avec cinetpay_api_response_id
-    if (fetchError || !payment) {
+    if (!fetchError && paymentResult) {
+      payment = paymentResult;
+      console.log("CinetPay Webhook: Paiement trouvé par transaction_id exact");
+    } else {
       console.log("CinetPay Webhook: Paiement non trouvé par transaction_id, tentative avec cinetpay_api_response_id");
       
       const { data: paymentAlt, error: fetchAltError } = await supabase
@@ -130,7 +140,7 @@ serve(async (req) => {
         if (!fetchAllError && allPayments) {
           console.log(`CinetPay Webhook: ${allPayments.length} paiements récupérés pour recherche approfondie`);
           
-          // Fonction pour vérifier si deux chaînes ont une partie en commun
+          // Fonction pour vérifier si deux chaînes ont une partie commune
           const haveCommonSubstring = (str1: string, str2: string): boolean => {
             if (!str1 || !str2) return false;
             
@@ -149,8 +159,12 @@ serve(async (req) => {
           
           // Rechercher un paiement avec un ID qui partage une partie commune
           const matchingPayment = allPayments.find(p => {
-            return haveCommonSubstring(p.transaction_id, transactionId) || 
-                  haveCommonSubstring(p.cinetpay_api_response_id, transactionId);
+            const matchTrans = haveCommonSubstring(p.transaction_id || "", transactionId);
+            const matchApi = haveCommonSubstring(p.cinetpay_api_response_id || "", transactionId);
+            const matchOperator = payload.operator_id ? 
+              haveCommonSubstring(p.cinetpay_operator_id || "", payload.operator_id) : false;
+            
+            return matchTrans || matchApi || matchOperator;
           });
           
           if (matchingPayment) {
@@ -161,7 +175,7 @@ serve(async (req) => {
             
             // Log tous les IDs pour débogage
             console.log("Liste des transaction_id dans la base:");
-            allPayments.forEach(p => console.log(`ID: ${p.id}, transaction_id: ${p.transaction_id}, api_response_id: ${p.cinetpay_api_response_id}`));
+            allPayments.forEach(p => console.log(`ID: ${p.id}, transaction_id: ${p.transaction_id}, api_response_id: ${p.cinetpay_api_response_id}, operator_id: ${p.cinetpay_operator_id}`));
             
             return new Response(JSON.stringify({ 
               error: "Paiement non trouvé malgré la recherche approfondie", 
@@ -169,7 +183,8 @@ serve(async (req) => {
               available_transactions: allPayments.map(p => ({ 
                 id: p.id, 
                 transaction_id: p.transaction_id, 
-                api_response_id: p.cinetpay_api_response_id 
+                api_response_id: p.cinetpay_api_response_id,
+                operator_id: p.cinetpay_operator_id
               }))
             }), {
               headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -183,7 +198,12 @@ serve(async (req) => {
     // Si aucun paiement n'a été trouvé après toutes les tentatives
     if (!payment) {
       console.error("CinetPay Webhook: Aucun paiement trouvé après toutes les tentatives de recherche");
-      return new Response(JSON.stringify({ error: "Paiement introuvable" }), {
+      return new Response(JSON.stringify({ 
+        error: "Paiement introuvable",
+        transaction_id: transactionId,
+        api_response_id: apiResponseId,
+        all_data: payload
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 404,
       });
@@ -195,12 +215,24 @@ serve(async (req) => {
 
     console.log(`CinetPay Webhook: Mise à jour du statut du paiement ${payment.id} vers '${newStatus}'`);
 
+    // Mettre à jour avec le plus d'informations possible
+    const updateData: any = {
+      status: newStatus,
+    };
+    
+    // Ajouter l'identifiant de l'opérateur s'il existe
+    if (payload.operator_id) {
+      updateData.cinetpay_operator_id = payload.operator_id;
+    }
+    
+    // Ajouter l'identifiant de réponse API s'il existe
+    if (apiResponseId) {
+      updateData.cinetpay_api_response_id = apiResponseId;
+    }
+
     const { error: updateError } = await supabase
       .from('payments')
-      .update({
-        status: newStatus,
-        cinetpay_operator_id: payload.operator_id || null,
-      })
+      .update(updateData)
       .eq('id', payment.id);
 
     if (updateError) {
@@ -238,12 +270,13 @@ serve(async (req) => {
       success: true,
       transaction_id: transactionId,
       payment_id: payment.id,
-      new_status: newStatus
+      new_status: newStatus,
+      message: "Notification traitée avec succès"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("CinetPay Webhook: Erreur lors du traitement de la notification CinetPay:", error);
     console.error("CinetPay Webhook: Stack trace:", error.stack);
     return new Response(JSON.stringify({ 
