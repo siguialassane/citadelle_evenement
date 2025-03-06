@@ -1,7 +1,7 @@
-
 // Ce fichier contient l'API d'intégration avec CinetPay qui utilise des appels POST directs
 // Modifications: 
 // - Utilisation de la fonction de formatage des numéros de téléphone
+// - Ajout de log détaillé pour le numéro de téléphone
 
 import { CINETPAY_API_KEY, CINETPAY_SITE_ID, CINETPAY_API_URL, CINETPAY_CHECK_URL, PAYMENT_CHANNELS, PAYMENT_METHOD_MAP } from './config';
 import { formatPhoneForCinetPay } from './seamless';
@@ -47,6 +47,8 @@ export const initiateCinetPayPayment = async (
     
     // Formater le numéro de téléphone pour CinetPay
     const formattedPhoneNumber = formatPhoneForCinetPay(participant.contact_number);
+    console.log("CinetPayAPI: Numéro original:", participant.contact_number);
+    console.log("CinetPayAPI: Numéro formaté pour CinetPay:", formattedPhoneNumber);
     
     // Trouver le canal CinetPay correspondant
     const paymentChannel = PAYMENT_METHOD_MAP[paymentMethod] || "ALL";

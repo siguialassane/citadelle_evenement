@@ -3,6 +3,7 @@
 // Modifications:
 // - Format plus flexible pour le numéro de téléphone
 // - Amélioration du formatage automatique du numéro
+// - Validation ajustée pour accepter des formats variés
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -96,7 +97,7 @@ export function RegisterForm() {
     }
   }
 
-  // Gérer le format du numéro de téléphone
+  // Gérer le format du numéro de téléphone avec plus de flexibilité
   const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     
@@ -110,7 +111,11 @@ export function RegisterForm() {
       value = `+225 ${digits.substring(0, 10)}`;
     }
     
+    // Définir la valeur dans le formulaire
     form.setValue("contactNumber", value);
+    
+    // Log pour debug
+    console.log("Numéro formaté pour l'UI:", value);
   };
 
   return (

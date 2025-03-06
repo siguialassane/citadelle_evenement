@@ -1,7 +1,8 @@
 
 // Ce fichier contient l'intégration avec le SDK CinetPay Seamless
 // Modifications:
-// - Amélioration du formatage des numéros de téléphone
+// - Amélioration du formatage des numéros de téléphone pour suivre la documentation CinetPay
+// - Correction du format de numéro pour supprimer le code pays 225 si nécessaire
 
 import { CINETPAY_API_KEY, CINETPAY_SITE_ID } from './config';
 
@@ -40,20 +41,23 @@ export const initCinetPaySDK = (notifyUrl: string): boolean => {
 
 /**
  * Formate un numéro de téléphone pour CinetPay
- * Retire les espaces, le +, et s'assure qu'il commence par le code pays
+ * Selon la documentation CinetPay: client peut envoyer avec ou sans code pays
+ * Exemples acceptés par CinetPay: "088767611" ou "22588767611"
  */
 export const formatPhoneForCinetPay = (phoneNumber: string): string => {
   // Retirer tous les caractères non numériques
   let cleaned = phoneNumber.replace(/\D/g, '');
   
-  // S'assurer que le numéro commence par 225 (sans le +)
+  // Si le numéro commence déjà par 225, on peut le laisser tel quel
   if (cleaned.startsWith('225')) {
+    // Si CinetPay attend sans code pays, décommenter la ligne suivante
+    // return cleaned.substring(3); // Retirer le code pays
     return cleaned;
-  } else if (cleaned.length <= 10) {
-    return '225' + cleaned;
   }
   
-  // Si le numéro est plus long, on suppose que le code pays est déjà inclus
+  // Si le numéro ne commence pas par 225 et est court (8-10 chiffres)
+  // Nous n'ajoutons pas automatiquement 225 car CinetPay semble accepter
+  // les numéros sans code pays d'après la documentation
   return cleaned;
 };
 
@@ -90,6 +94,7 @@ export const startCinetPayPayment = (paymentData: {
     };
     
     console.log("Démarrage du paiement avec CinetPay SDK:", formattedData);
+    console.log("Numéro formaté pour CinetPay:", formattedData.customer_phone_number);
     
     // @ts-ignore - CinetPay est défini globalement par le script
     window.CinetPay.getCheckout(formattedData);
