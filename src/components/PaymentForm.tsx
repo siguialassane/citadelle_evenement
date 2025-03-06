@@ -1,6 +1,5 @@
-
 // Commentaires: Ce fichier gère l'intégration du paiement CinetPay Seamless
-// Dernière modification: Suppression du mode simulation pour utiliser uniquement le SDK CinetPay
+// Dernière modification: Ajout d'un rechargement de la page après le paiement pour réinitialiser l'objet CinetPay
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from 'uuid';
@@ -235,8 +234,13 @@ export function PaymentForm({ participant }: PaymentFormProps) {
           variant: "default",
         });
 
-        // Rediriger vers la page de confirmation
-        navigate(`/confirmation/${participant.id}`);
+        // Réinitialiser l'état de CinetPay en rechargeant la page
+        // puis stocker les données de redirection dans sessionStorage
+        sessionStorage.setItem('paymentSuccess', 'true');
+        sessionStorage.setItem('redirectTo', `/confirmation/${participant.id}`);
+        
+        // Recharger la page pour réinitialiser l'objet CinetPay
+        window.location.reload();
       } else if (paymentStatus === "failed") {
         // Afficher un message d'erreur
         toast({
@@ -244,6 +248,9 @@ export function PaymentForm({ participant }: PaymentFormProps) {
           description: "Votre paiement n'a pas pu être traité. Veuillez réessayer.",
           variant: "destructive",
         });
+        
+        // Réinitialiser l'état de CinetPay en rechargeant la page
+        window.location.reload();
       } else {
         // Paiement en attente
         toast({
@@ -251,6 +258,9 @@ export function PaymentForm({ participant }: PaymentFormProps) {
           description: "Votre paiement est en cours de traitement. Nous vous informerons une fois terminé.",
           variant: "default",
         });
+        
+        // Réinitialiser l'état de CinetPay en rechargeant la page
+        window.location.reload();
       }
     } catch (error: any) {
       console.error("PaymentForm: Erreur lors du traitement du callback CinetPay:", error);
@@ -259,6 +269,10 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         description: error.message || "Une erreur est survenue lors du traitement du paiement.",
         variant: "destructive",
       });
+      setIsProcessing(false);
+      
+      // Réinitialiser l'état de CinetPay en rechargeant la page en cas d'erreur
+      window.location.reload();
     } finally {
       setIsProcessing(false);
     }
@@ -400,6 +414,25 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       setIsProcessing(false);
     }
   }
+
+  // Effet pour vérifier si on revient d'un rechargement après paiement
+  useEffect(() => {
+    const checkPaymentRedirect = () => {
+      const paymentSuccess = sessionStorage.getItem('paymentSuccess');
+      const redirectTo = sessionStorage.getItem('redirectTo');
+      
+      if (paymentSuccess && redirectTo) {
+        // Nettoyer les données de session
+        sessionStorage.removeItem('paymentSuccess');
+        sessionStorage.removeItem('redirectTo');
+        
+        // Rediriger vers la page de confirmation
+        navigate(redirectTo);
+      }
+    };
+    
+    checkPaymentRedirect();
+  }, [navigate]);
 
   return (
     <Card className="w-full">
