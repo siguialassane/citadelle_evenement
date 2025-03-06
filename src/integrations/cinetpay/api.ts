@@ -1,6 +1,5 @@
-
 // Ce fichier contient l'API d'intégration avec CinetPay qui utilise des appels POST directs
-import { CINETPAY_API_KEY, CINETPAY_SITE_ID, CINETPAY_API_URL, PAYMENT_CHANNELS, PAYMENT_METHOD_MAP } from './config';
+import { CINETPAY_API_KEY, CINETPAY_SITE_ID, CINETPAY_API_URL, CINETPAY_CHECK_URL, PAYMENT_CHANNELS, PAYMENT_METHOD_MAP } from './config';
 import type { Database } from '../supabase/types';
 
 type Participant = Database['public']['Tables']['participants']['Row'];
@@ -107,3 +106,35 @@ export const initiateCinetPayPayment = async (
   }
 };
 
+/**
+ * Vérifie le statut d'un paiement CinetPay via appel POST direct
+ */
+export const checkCinetPayPayment = async (paymentToken: string) => {
+  console.log("CinetPayAPI: Vérification du statut du paiement:", paymentToken);
+  
+  try {
+    const response = await fetch(CINETPAY_CHECK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        apikey: CINETPAY_API_KEY,
+        site_id: CINETPAY_SITE_ID,
+        transaction_id: paymentToken
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erreur HTTP: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("CinetPayAPI: Réponse de la vérification:", data);
+
+    return data;
+  } catch (error) {
+    console.error("CinetPayAPI: Erreur lors de la vérification du paiement:", error);
+    throw error;
+  }
+};
