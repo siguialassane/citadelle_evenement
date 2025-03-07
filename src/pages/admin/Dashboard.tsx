@@ -39,7 +39,8 @@ import {
   XCircle, 
   AlertTriangle,
   FileText,
-  Info
+  Info,
+  Trash2
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import html2canvas from "html2canvas";
@@ -76,6 +77,13 @@ const AdminDashboard = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  
+  // Nouveaux états pour la fonctionnalité de suppression
+  const [pdfDownloaded, setPdfDownloaded] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteCode, setDeleteCode] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const SECURITY_CODE = "010203"; // Code de sécurité pour la suppression
 
   useEffect(() => {
     const checkAuth = () => {
@@ -425,6 +433,9 @@ const AdminDashboard = () => {
       
       pdf.save(`participants-${new Date().toISOString().slice(0,10)}.pdf`);
       
+      // Marquer que le PDF a été téléchargé
+      setPdfDownloaded(true);
+      
       toast({
         title: "PDF généré",
         description: "Le fichier PDF a été téléchargé avec succès.",
@@ -436,6 +447,59 @@ const AdminDashboard = () => {
         description: "Impossible de générer le PDF. Veuillez réessayer.",
         variant: "destructive",
       });
+    }
+  };
+
+  // Nouvelle fonction pour gérer la suppression des participants
+  const handleDeleteAllParticipants = async () => {
+    if (deleteCode !== SECURITY_CODE) {
+      toast({
+        title: "Code incorrect",
+        description: "Le code de sécurité saisi est incorrect.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Supprimer d'abord les paiements (en raison des contraintes de clé étrangère)
+      const { error: paymentsError } = await supabase
+        .from('payments')
+        .delete()
+        .neq('id', ''); // Condition toujours vraie pour supprimer tous les enregistrements
+
+      if (paymentsError) throw paymentsError;
+
+      // Supprimer ensuite les participants
+      const { error: participantsError } = await supabase
+        .from('participants')
+        .delete()
+        .neq('id', ''); // Condition toujours vraie pour supprimer tous les enregistrements
+
+      if (participantsError) throw participantsError;
+
+      // Mise à jour de l'état local
+      setParticipants([]);
+      setFilteredParticipants([]);
+      
+      setDeleteDialogOpen(false);
+      setDeleteCode("");
+      setPdfDownloaded(false);
+      
+      toast({
+        title: "Base de données vidée",
+        description: "Tous les participants ont été supprimés avec succès.",
+      });
+    } catch (error) {
+      console.error("Erreur lors de la suppression des participants:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer les participants. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -492,6 +556,18 @@ const AdminDashboard = () => {
                 <FileText className="h-4 w-4" />
                 PDF
               </Button>
+              
+              {/* Nouveau bouton pour supprimer tous les participants, visible uniquement après le téléchargement du PDF */}
+              {pdfDownloaded && (
+                <Button 
+                  variant="destructive"
+                  className="flex items-center gap-2 ml-2"
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Vider
+                </Button>
+              )}
             </div>
           </div>
           
@@ -628,6 +704,7 @@ const AdminDashboard = () => {
         </div>
       </main>
 
+      {/* Dialog pour les détails d'un participant */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -720,6 +797,68 @@ const AdminDashboard = () => {
             <DialogClose asChild>
               <Button variant="outline">Fermer</Button>
             </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Nouvelle boîte de dialogue pour la confirmation de suppression */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Confirmation de suppression</DialogTitle>
+            <DialogDescription>
+              Cette action supprimera <strong>tous les participants</strong> de la base de données. 
+              Cette opération est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <p className="mb-4 text-sm text-muted-foreground">
+              Pour confirmer cette action, veuillez saisir le code de sécurité :
+            </p>
+            <Input
+              value={deleteCode}
+              onChange={(e) => setDeleteCode(e.target.value)}
+              placeholder="Entrez le code de sécurité"
+              className="mb-2"
+              type="password"
+            />
+            <p className="text-xs text-destructive">
+              Attention : Tous les participants et leurs données de paiement seront définitivement supprimés.
+            </p>
+          </div>
+          
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setDeleteCode("");
+              }}
+              className="sm:order-1"
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteAllParticipants}
+              disabled={isDeleting}
+              className="sm:order-2"
+            >
+              {isDeleting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Suppression...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Confirmer la suppression
+                </>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
