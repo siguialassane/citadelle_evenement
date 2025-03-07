@@ -7,6 +7,7 @@ import { AlertCircle, ArrowLeft, CheckCircle, Download } from "lucide-react";
 import { checkCinetPayPayment } from "@/integrations/cinetpay/api";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import EventLogo from "@/components/EventLogo";
 
 const Confirmation = () => {
   const { participantId } = useParams();
@@ -30,7 +31,6 @@ const Confirmation = () => {
           return;
         }
 
-        // Récupérer les informations du participant
         const { data: participantData, error: participantError } = await supabase
           .from('participants')
           .select('*')
@@ -41,7 +41,6 @@ const Confirmation = () => {
           throw participantError;
         }
 
-        // Récupérer les informations de paiement
         const { data: paymentData, error: paymentError } = await supabase
           .from('payments')
           .select('*')
@@ -57,15 +56,12 @@ const Confirmation = () => {
         setParticipant(participantData);
         setPayment(paymentData);
 
-        // Vérifier le statut de paiement dans CinetPay si nécessaire
-        // Cela peut être nécessaire si le webhook n'a pas encore mis à jour le statut
         if (paymentData.status === 'pending' && paymentData.cinetpay_token) {
           setIsVerifying(true);
           try {
             const cinetPayStatus = await checkCinetPayPayment(paymentData.cinetpay_token);
             
             if (cinetPayStatus.code === "00" && cinetPayStatus.data.status === "ACCEPTED") {
-              // Mettre à jour le statut du paiement dans Supabase
               const { error: updateError } = await supabase
                 .from('payments')
                 .update({
@@ -75,7 +71,6 @@ const Confirmation = () => {
                 .eq('id', paymentData.id);
 
               if (!updateError) {
-                // Rafraîchir les données de paiement
                 const { data: refreshedPayment } = await supabase
                   .from('payments')
                   .select('*')
@@ -109,24 +104,20 @@ const Confirmation = () => {
     navigate("/");
   };
 
-  // Fonction pour télécharger le reçu en PDF
   const handleDownloadReceipt = async () => {
     if (!receiptRef.current || isGeneratingPdf) return;
     
     try {
       setIsGeneratingPdf(true);
       
-      // Créer un clone de l'élément pour le manipuler sans affecter l'affichage
       const receiptElement = receiptRef.current.cloneNode(true) as HTMLElement;
       
-      // Modifier le style pour l'impression
       const container = document.createElement('div');
       container.style.padding = '20px';
       container.style.backgroundColor = 'white';
       container.appendChild(receiptElement);
       document.body.appendChild(container);
       
-      // Générer le canvas à partir de l'élément
       const canvas = await html2canvas(container, {
         scale: 2,
         logging: false,
@@ -134,10 +125,8 @@ const Confirmation = () => {
         backgroundColor: '#ffffff'
       });
       
-      // Supprimer l'élément temporaire
       document.body.removeChild(container);
       
-      // Créer le PDF
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -145,16 +134,14 @@ const Confirmation = () => {
         format: 'a4'
       });
       
-      // Dimensions du PDF
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const ratio = canvas.width / canvas.height;
-      const imgWidth = pdfWidth - 20; // marges
+      const imgWidth = pdfWidth - 20;
       const imgHeight = imgWidth / ratio;
       
       pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
       
-      // Télécharger le PDF
       const fileName = `recu-paiement-${participant?.last_name}-${participant?.first_name}.pdf`;
       pdf.save(fileName);
     } catch (err) {
@@ -164,7 +151,6 @@ const Confirmation = () => {
     }
   };
 
-  // Fonction pour formater la méthode de paiement
   const formatPaymentMethod = (method: string) => {
     const methods: Record<string, string> = {
       wave: "Wave",
@@ -178,10 +164,22 @@ const Confirmation = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+      <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+        <div className="fixed top-0 left-0 w-full h-2 flex">
+          <div className="bg-black w-1/3 h-full"></div>
+          <div className="bg-yellow-400 w-1/3 h-full"></div>
+          <div className="bg-red-600 w-1/3 h-full"></div>
+        </div>
+        
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
-          <p className="mt-4 text-indigo-600">Chargement...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-green-700">Chargement...</p>
+        </div>
+        
+        <div className="fixed bottom-0 left-0 w-full h-2 flex">
+          <div className="bg-black w-1/3 h-full"></div>
+          <div className="bg-yellow-400 w-1/3 h-full"></div>
+          <div className="bg-red-600 w-1/3 h-full"></div>
         </div>
       </div>
     );
@@ -189,11 +187,19 @@ const Confirmation = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+        <div className="fixed top-0 left-0 w-full h-2 flex">
+          <div className="bg-black w-1/3 h-full"></div>
+          <div className="bg-yellow-400 w-1/3 h-full"></div>
+          <div className="bg-red-600 w-1/3 h-full"></div>
+        </div>
+        
         <div className="max-w-3xl mx-auto">
+          <EventLogo size="medium" className="mb-6" />
+          
           <Button 
             variant="outline" 
-            className="mb-6 flex items-center gap-2"
+            className="mb-6 flex items-center gap-2 border-green-200 text-green-700"
             onClick={handleBackToHome}
           >
             <ArrowLeft className="h-4 w-4" />
@@ -207,36 +213,50 @@ const Confirmation = () => {
           </Alert>
           
           <div className="text-center">
-            <Button onClick={handleBackToHome}>
+            <Button onClick={handleBackToHome} className="bg-green-700 hover:bg-green-800 text-white">
               Retourner à la page d'accueil
             </Button>
           </div>
+        </div>
+        
+        <div className="fixed bottom-0 left-0 w-full h-2 flex">
+          <div className="bg-black w-1/3 h-full"></div>
+          <div className="bg-yellow-400 w-1/3 h-full"></div>
+          <div className="bg-red-600 w-1/3 h-full"></div>
         </div>
       </div>
     );
   }
 
-  // Vérifier si le paiement est toujours en attente
   const isPending = payment?.status === 'pending';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="fixed top-0 left-0 w-full h-2 flex">
+        <div className="bg-black w-1/3 h-full"></div>
+        <div className="bg-yellow-400 w-1/3 h-full"></div>
+        <div className="bg-red-600 w-1/3 h-full"></div>
+      </div>
+      
       <div className="max-w-3xl mx-auto space-y-10">
-        <Button 
-          variant="outline" 
-          className="mb-6 flex items-center gap-2"
-          onClick={handleBackToHome}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Retour à l'accueil
-        </Button>
+        <div className="flex justify-between items-center">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2 border-green-200 text-green-700"
+            onClick={handleBackToHome}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour à l'accueil
+          </Button>
+          
+          <EventLogo size="medium" />
+        </div>
         
-        {/* En-tête de la page */}
         <div className="text-center space-y-4">
           {isPending ? (
             <>
               <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500"></div>
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-700"></div>
               </div>
               <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
                 <span className="block">Paiement en cours de traitement</span>
@@ -248,28 +268,31 @@ const Confirmation = () => {
           ) : (
             <>
               <div className="flex justify-center">
-                <CheckCircle className="h-16 w-16 text-green-500" />
+                <CheckCircle className="h-16 w-16 text-green-700" />
               </div>
               <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
-                <span className="block">Inscription confirmée</span>
+                <span className="block text-green-700">Inscription confirmée</span>
               </h1>
-              <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-                Merci pour votre inscription! Votre paiement a été traité avec succès.
+              <p className="mt-3 max-w-md mx-auto text-base text-gray-600 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+                Merci pour votre inscription à l'IFTAR 2025! Votre paiement a été traité avec succès.
               </p>
             </>
           )}
         </div>
 
-        {/* Carte de confirmation - référencée pour le PDF */}
-        <div ref={receiptRef} className="bg-white shadow overflow-hidden sm:rounded-lg">
-          <div className="px-4 py-5 sm:px-6 bg-indigo-50">
-            <h2 className="text-lg leading-6 font-medium text-gray-900">
-              Détails de votre inscription
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">
-              Référence de transaction: {payment?.transaction_id || payment?.cinetpay_api_response_id}
-            </p>
+        <div ref={receiptRef} className="bg-white shadow-md overflow-hidden sm:rounded-lg border border-green-100">
+          <div className="px-4 py-5 sm:px-6 bg-green-50 flex justify-between items-center">
+            <div>
+              <h2 className="text-lg leading-6 font-medium text-gray-900">
+                Détails de votre inscription
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                Référence de transaction: {payment?.transaction_id || payment?.cinetpay_api_response_id}
+              </p>
+            </div>
+            <EventLogo size="small" />
           </div>
+          
           <div className="border-t border-gray-200">
             <dl>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -346,7 +369,6 @@ const Confirmation = () => {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex flex-col md:flex-row items-center justify-center gap-4">
           {!isPending && (
             <Button 
@@ -365,7 +387,6 @@ const Confirmation = () => {
           )}
         </div>
 
-        {/* Instructions */}
         {!isPending && (
           <Alert className="bg-blue-50 border-blue-200">
             <AlertTitle className="text-blue-800">Instructions importantes</AlertTitle>
@@ -376,7 +397,6 @@ const Confirmation = () => {
           </Alert>
         )}
 
-        {/* Message en cas de paiement en cours */}
         {isPending && (
           <Alert className="bg-yellow-50 border-yellow-200">
             <AlertTitle className="text-yellow-800">Paiement en cours de traitement</AlertTitle>
@@ -386,6 +406,12 @@ const Confirmation = () => {
             </AlertDescription>
           </Alert>
         )}
+      </div>
+      
+      <div className="fixed bottom-0 left-0 w-full h-2 flex">
+        <div className="bg-black w-1/3 h-full"></div>
+        <div className="bg-yellow-400 w-1/3 h-full"></div>
+        <div className="bg-red-600 w-1/3 h-full"></div>
       </div>
     </div>
   );

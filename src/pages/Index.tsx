@@ -1,49 +1,131 @@
 
+// Ce fichier contient la page principale d'inscription à l'événement
+// Modifications:
+// - Refonte complète de la page avec les informations de l'événement Iftar 2025
+// - Intégration des couleurs belges/islamiques
+// - Ajout du logo et d'illustrations adaptées
+// - Design responsive amélioré
+
+import React from "react";
 import { RegisterForm } from "@/components/RegisterForm";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Info, Lock } from "lucide-react";
+import { Info, Lock, Calendar, MapPin, Clock, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import EventLogo from "@/components/EventLogo";
 
 const Index = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8 relative">
-      <div className="max-w-3xl mx-auto space-y-10">
-        {/* En-tête de la page */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
-            <span className="block">Bienvenue à notre</span>
-            <span className="block text-indigo-600">Événement Exclusif</span>
+    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8 relative">
+      {/* Bande décorative aux couleurs belges en haut de la page */}
+      <div className="fixed top-0 left-0 w-full h-2 flex">
+        <div className="bg-black w-1/3 h-full"></div>
+        <div className="bg-yellow-400 w-1/3 h-full"></div>
+        <div className="bg-red-600 w-1/3 h-full"></div>
+      </div>
+      
+      <div className="max-w-5xl mx-auto">
+        {/* En-tête avec logo et titre */}
+        <div className="text-center mb-12">
+          <EventLogo size="large" />
+          
+          <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
+            <span className="block text-green-700">IFTAR 2025</span>
+            <span className="block text-orange-500 text-3xl sm:text-4xl">14e Édition</span>
           </h1>
-          <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-            Rejoignez-nous pour une expérience inoubliable. Complétez le formulaire ci-dessous pour réserver votre place.
-          </p>
         </div>
-
+        
+        {/* Informations de l'événement */}
+        <div className="bg-gray-50 rounded-xl shadow-md p-6 mb-12">
+          <h2 className="text-2xl font-bold text-green-700 mb-4">Informations de l'événement</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex items-start space-x-3">
+              <Calendar className="h-6 w-6 text-orange-500 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="font-semibold text-gray-800">Date</h3>
+                <p className="text-gray-600">15 Mars 2025</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-3">
+              <Clock className="h-6 w-6 text-orange-500 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="font-semibold text-gray-800">Heure</h3>
+                <p className="text-gray-600">16h00</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-3">
+              <MapPin className="h-6 w-6 text-orange-500 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="font-semibold text-gray-800">Lieu</h3>
+                <p className="text-gray-600">NOOM HOTEL, Plateau</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-3">
+              <Users className="h-6 w-6 text-orange-500 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="font-semibold text-gray-800">Participation</h3>
+                <p className="text-gray-600">30 000 FCFA</p>
+                <p className="text-sm text-green-700">incluant 5 plats chauds à offrir aux familles en difficulté</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <h3 className="font-semibold text-xl text-green-700 mb-2">Au programme:</h3>
+            <ul className="list-disc ml-6 space-y-2 text-gray-700">
+              <li>Conférence sur le thème: <span className="text-green-700 font-medium">Préservation de la paix et de la cohésion sociale: quelle contribution du cadre musulman</span></li>
+              <li>Avec Imam YAO DIARRASSOUBA Mamadou</li>
+              <li>Iftar & dîner en buffet</li>
+              <li>Prière & Zikr</li>
+            </ul>
+          </div>
+        </div>
+        
         {/* Alerte d'information */}
-        <Alert className="bg-indigo-50 border-indigo-200">
-          <Info className="h-4 w-4 text-indigo-500" />
-          <AlertTitle>Information importante</AlertTitle>
-          <AlertDescription>
+        <Alert className="bg-green-50 border-green-200 mb-10">
+          <Info className="h-4 w-4 text-green-700" />
+          <AlertTitle className="text-green-800">Information importante</AlertTitle>
+          <AlertDescription className="text-green-700">
             Tous les champs du formulaire sont obligatoires. Après votre inscription, vous serez dirigé vers la page de paiement.
           </AlertDescription>
         </Alert>
 
         {/* Formulaire d'inscription */}
-        <RegisterForm />
+        <div className="mb-16">
+          <h2 className="text-2xl font-bold text-center text-green-700 mb-6">Inscription à l'événement</h2>
+          <RegisterForm />
+        </div>
+        
+        {/* Motif islamique décoratif en bas de page */}
+        <div className="w-full flex justify-center my-10">
+          <div className="h-8 w-64 bg-contain bg-center bg-no-repeat" 
+               style={{ backgroundImage: "url('https://i.pinimg.com/originals/3e/0a/d7/3e0ad78af1ba7e3870f73f7694f30fb7.png')" }}>
+          </div>
+        </div>
         
         {/* Bouton d'accès admin */}
         <div className="fixed bottom-5 right-5">
           <Button 
             onClick={() => navigate("/admin/login")}
-            className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+            className="bg-green-700 hover:bg-green-800 text-white flex items-center gap-2"
           >
             <Lock className="h-4 w-4" />
             Accès Admin
           </Button>
         </div>
+      </div>
+      
+      {/* Bande décorative aux couleurs belges en bas de la page */}
+      <div className="fixed bottom-0 left-0 w-full h-2 flex">
+        <div className="bg-black w-1/3 h-full"></div>
+        <div className="bg-yellow-400 w-1/3 h-full"></div>
+        <div className="bg-red-600 w-1/3 h-full"></div>
       </div>
     </div>
   );

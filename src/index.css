@@ -1,3 +1,6 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Noto+Sans:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -97,5 +100,26 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Noto Sans', sans-serif;
   }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Amiri', serif;
+  }
+}
+
+/* Motifs islamiques pour divider */
+.islamic-divider {
+  height: 20px;
+  background-size: contain;
+  background-repeat: repeat-x;
+  background-position: center;
+  opacity: 0.7;
+}
+
+#root {
+  margin: 0 auto;
+  padding: 0;
+  max-width: 100%;
+  text-align: center;
 }
