@@ -2,14 +2,14 @@
 // Ce fichier gère la page de paiement pour finaliser l'inscription
 // Modifications:
 // - Remplacement du système CinetPay par un système de paiement manuel
-// - Ajout d'un formulaire pour télécharger la preuve de paiement
+// - Mise à jour des imports pour utiliser le composant ManualPaymentForm refactorisé
 // - Notification par email à l'administrateur pour la validation
 
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ManualPaymentForm } from "@/components/ManualPaymentForm";
+import { ManualPaymentForm } from "@/components/manual-payment/ManualPaymentForm";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EventLogo from "@/components/EventLogo";

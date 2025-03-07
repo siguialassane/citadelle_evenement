@@ -1,0 +1,167 @@
+
+// Ce hook gère toute la logique du paiement manuel
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { v4 as uuidv4 } from 'uuid';
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import emailjs from '@emailjs/browser';
+import { 
+  PAYMENT_AMOUNT,
+  ADMIN_EMAILJS_SERVICE_ID, 
+  ADMIN_EMAILJS_TEMPLATE_ID, 
+  ADMIN_EMAILJS_PUBLIC_KEY,
+  ADMIN_EMAIL
+} from "./config";
+import { PaymentMethod, Participant, CopyStates } from "./types";
+
+export function useManualPayment(participant: Participant) {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("MTN");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [comments, setComments] = useState("");
+  const [isCopied, setIsCopied] = useState<CopyStates>({});
+  const navigate = useNavigate();
+
+  // Fonction pour générer une référence de transaction unique
+  const generateTransactionReference = () => {
+    const prefix = "PAY";
+    const participantInitials = `${participant.first_name.charAt(0)}${participant.last_name.charAt(0)}`;
+    const randomDigits = Math.floor(10000 + Math.random() * 90000);
+    return `${prefix}-${participantInitials}-${randomDigits}`;
+  };
+
+  // Référence de transaction (générée une seule fois)
+  const [transactionReference] = useState(generateTransactionReference());
+
+  // Fonction pour copier du texte dans le presse-papier
+  const copyToClipboard = (text: string, key: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setIsCopied({ ...isCopied, [key]: true });
+      setTimeout(() => {
+        setIsCopied({ ...isCopied, [key]: false });
+      }, 2000);
+    });
+  };
+
+  // Fonction pour envoyer l'email de notification à l'administrateur
+  const sendAdminNotification = async (manualPaymentId: string) => {
+    try {
+      console.log("Envoi de notification à l'administrateur...");
+      
+      const adminLink = `${window.location.origin}/admin/payment-validation/${manualPaymentId}`;
+
+      const templateParams = {
+        to_email: ADMIN_EMAIL,
+        from_name: "Système d'Inscription IFTAR",
+        participant_name: `${participant.first_name} ${participant.last_name}`,
+        participant_email: participant.email,
+        participant_phone: participant.contact_number,
+        payment_amount: `${PAYMENT_AMOUNT} XOF`,
+        payment_method: paymentMethod,
+        transaction_reference: transactionReference,
+        payment_phone: phoneNumber,
+        comments: comments || "Aucun commentaire",
+        validation_link: adminLink,
+        // Variables requises par EmailJS
+        reply_to: "ne-pas-repondre@lacitadelle.ci"
+      };
+
+      console.log("Paramètres pour EmailJS (admin):", templateParams);
+
+      const response = await emailjs.send(
+        ADMIN_EMAILJS_SERVICE_ID,
+        ADMIN_EMAILJS_TEMPLATE_ID,
+        templateParams,
+        ADMIN_EMAILJS_PUBLIC_KEY
+      );
+
+      console.log("Email de notification admin envoyé avec succès:", response);
+      return true;
+    } catch (error) {
+      console.error("Erreur lors de l'envoi de l'email à l'administrateur:", error);
+      return false;
+    }
+  };
+
+  // Fonction pour gérer la soumission du formulaire
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      setIsProcessing(true);
+
+      // Validation des champs
+      if (!phoneNumber) {
+        toast({
+          title: "Champ requis",
+          description: "Veuillez saisir le numéro utilisé pour le paiement",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Enregistrer le paiement manuel dans la base de données
+      console.log("Enregistrement du paiement manuel...");
+      const { data: manualPayment, error: paymentError } = await supabase
+        .from('manual_payments')
+        .insert({
+          participant_id: participant.id,
+          amount: PAYMENT_AMOUNT,
+          payment_method: paymentMethod,
+          phone_number: phoneNumber,
+          comments: comments,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (paymentError) {
+        console.error("Erreur lors de l'enregistrement du paiement:", paymentError);
+        throw new Error("Échec de l'enregistrement du paiement. Veuillez réessayer.");
+      }
+
+      console.log("Paiement manuel enregistré:", manualPayment);
+
+      // Envoyer une notification à l'administrateur
+      await sendAdminNotification(manualPayment.id);
+
+      // Afficher un message de succès
+      toast({
+        title: "Paiement soumis avec succès",
+        description: "Votre demande est en attente de validation par un administrateur. Vous recevrez un email de confirmation une fois validée.",
+        variant: "default",
+      });
+
+      // Rediriger vers une page d'attente
+      setTimeout(() => {
+        navigate(`/payment-pending/${participant.id}`);
+      }, 2000);
+
+    } catch (error: any) {
+      console.error("Erreur lors du traitement du paiement manuel:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors du traitement de votre paiement. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return {
+    isProcessing,
+    paymentMethod,
+    setPaymentMethod,
+    phoneNumber,
+    setPhoneNumber,
+    comments,
+    setComments,
+    transactionReference,
+    isCopied,
+    copyToClipboard,
+    handleSubmit
+  };
+}
