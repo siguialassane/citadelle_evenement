@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PaymentForm } from "@/components/PaymentForm";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import EventLogo from "@/components/EventLogo";
 
 const Payment = () => {
   const { participantId } = useParams();
@@ -15,14 +15,12 @@ const Payment = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Logger les informations de navigation pour le débogage
   useEffect(() => {
     console.log("Payment Page: Rendu avec URL:", window.location.href);
     console.log("Payment Page: participantId:", participantId);
     console.log("Payment Page: Location pathname:", location.pathname);
     console.log("Payment Page: Query params:", location.search);
     
-    // Vérifier les paramètres d'URL pour détecter un retour de CinetPay
     const urlParams = new URLSearchParams(location.search);
     if (urlParams.has('transaction_id') || urlParams.has('token') || urlParams.has('status')) {
       console.log("Payment Page: Paramètres de retour CinetPay détectés:", 
@@ -76,16 +74,13 @@ const Payment = () => {
     navigate("/");
   };
 
-  // Vérifier si l'utilisateur revient de CinetPay
   useEffect(() => {
     const checkReturnFromCinetPay = () => {
       const urlParams = new URLSearchParams(location.search);
-      // Si on détecte des paramètres de retour CinetPay
       if (urlParams.has('transaction_id') || urlParams.has('token') || urlParams.has('status')) {
         console.log("Payment Page: Retour détecté de CinetPay avec paramètres:", 
           Object.fromEntries(urlParams.entries()));
         
-        // Si le statut indique un succès, rediriger vers la page de confirmation
         if (participantId && (urlParams.get('status') === 'ACCEPTED' || urlParams.get('status') === 'SUCCESS')) {
           console.log("Payment Page: Redirection vers la page de confirmation après paiement réussi");
           navigate(`/confirmation/${participantId}`);
@@ -95,7 +90,6 @@ const Payment = () => {
       return false;
     };
     
-    // Exécuter la vérification seulement si le participant est chargé
     if (participant && !loading) {
       checkReturnFromCinetPay();
     }
@@ -105,8 +99,8 @@ const Payment = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
-          <p className="mt-4 text-indigo-600">Chargement...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-green-700">Chargement...</p>
         </div>
       </div>
     );
@@ -115,6 +109,12 @@ const Payment = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8">
+        <div className="fixed top-0 left-0 w-full h-2 flex">
+          <div className="bg-black w-1/3 h-full"></div>
+          <div className="bg-yellow-400 w-1/3 h-full"></div>
+          <div className="bg-red-600 w-1/3 h-full"></div>
+        </div>
+        
         <div className="max-w-3xl mx-auto">
           <Button 
             variant="outline" 
@@ -137,12 +137,24 @@ const Payment = () => {
             </Button>
           </div>
         </div>
+        
+        <div className="fixed bottom-0 left-0 w-full h-2 flex">
+          <div className="bg-black w-1/3 h-full"></div>
+          <div className="bg-yellow-400 w-1/3 h-full"></div>
+          <div className="bg-red-600 w-1/3 h-full"></div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="fixed top-0 left-0 w-full h-2 flex">
+        <div className="bg-black w-1/3 h-full"></div>
+        <div className="bg-yellow-400 w-1/3 h-full"></div>
+        <div className="bg-red-600 w-1/3 h-full"></div>
+      </div>
+    
       <div className="max-w-3xl mx-auto space-y-10">
         <Button 
           variant="outline" 
@@ -153,47 +165,49 @@ const Payment = () => {
           Retour à l'accueil
         </Button>
         
-        {/* En-tête de la page */}
         <div className="text-center space-y-4">
+          <EventLogo size="medium" />
+          
           <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
-            <span className="block">Finaliser votre inscription</span>
+            <span className="block text-green-700">Finaliser votre inscription</span>
+            <span className="block text-orange-500 text-2xl sm:text-3xl">IFTAR 2025 - 14e Édition</span>
           </h1>
+          
           <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
             Choisissez votre méthode de paiement et complétez votre inscription.
           </p>
         </div>
 
-        {/* Résumé de l'inscription */}
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-          <div className="px-4 py-5 sm:px-6">
-            <h2 className="text-lg leading-6 font-medium text-gray-900">
+        <div className="bg-white shadow-md rounded-xl overflow-hidden border border-green-100">
+          <div className="px-4 py-5 sm:px-6 bg-green-50">
+            <h2 className="text-lg leading-6 font-medium text-green-700">
               Résumé de l'inscription
             </h2>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">
+            <p className="mt-1 max-w-2xl text-sm text-green-600">
               Informations personnelles
             </p>
           </div>
-          <div className="border-t border-gray-200">
+          <div className="border-t border-green-100">
             <dl>
-              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Nom complet</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                   {participant.first_name} {participant.last_name}
                 </dd>
               </div>
-              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Email</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                   {participant.email}
                 </dd>
               </div>
-              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Numéro de contact</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                   {participant.contact_number}
                 </dd>
               </div>
-              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Membre de la Citadelle</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                   {participant.is_member ? "Oui" : "Non"}
@@ -203,8 +217,19 @@ const Payment = () => {
           </div>
         </div>
 
-        {/* Formulaire de paiement */}
         <PaymentForm participant={participant} />
+        
+        <div className="w-full flex justify-center my-10">
+          <div className="h-8 w-64 bg-contain bg-center bg-no-repeat islamic-divider" 
+               style={{ backgroundImage: "url('https://i.pinimg.com/originals/3e/0a/d7/3e0ad78af1ba7e3870f73f7694f30fb7.png')" }}>
+          </div>
+        </div>
+      </div>
+      
+      <div className="fixed bottom-0 left-0 w-full h-2 flex">
+        <div className="bg-black w-1/3 h-full"></div>
+        <div className="bg-yellow-400 w-1/3 h-full"></div>
+        <div className="bg-red-600 w-1/3 h-full"></div>
       </div>
     </div>
   );
