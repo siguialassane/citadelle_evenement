@@ -48,6 +48,59 @@ export type Database = {
           },
         ]
       }
+      manual_payments: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          comments: string | null
+          created_at: string
+          id: string
+          participant_id: string
+          payment_method: string
+          phone_number: string
+          screenshot_url: string | null
+          status: string
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          comments?: string | null
+          created_at?: string
+          id?: string
+          participant_id: string
+          payment_method: string
+          phone_number: string
+          screenshot_url?: string | null
+          status?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          comments?: string | null
+          created_at?: string
+          id?: string
+          participant_id?: string
+          payment_method?: string
+          phone_number?: string
+          screenshot_url?: string | null
+          status?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_payments_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       participants: {
         Row: {
           check_in_status: boolean | null

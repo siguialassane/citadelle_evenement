@@ -1,14 +1,15 @@
 
 // Ce fichier gère la page de paiement pour finaliser l'inscription
 // Modifications:
-// - Changement des couleurs belges par celles de la Côte d'Ivoire (orange, blanc, vert)
-// - Adaptation du style pour correspondre au reste du site
+// - Remplacement du système CinetPay par un système de paiement manuel
+// - Ajout d'un formulaire pour télécharger la preuve de paiement
+// - Notification par email à l'administrateur pour la validation
 
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { PaymentForm } from "@/components/PaymentForm";
+import { ManualPaymentForm } from "@/components/ManualPaymentForm";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EventLogo from "@/components/EventLogo";
@@ -26,12 +27,6 @@ const Payment = () => {
     console.log("Payment Page: participantId:", participantId);
     console.log("Payment Page: Location pathname:", location.pathname);
     console.log("Payment Page: Query params:", location.search);
-    
-    const urlParams = new URLSearchParams(location.search);
-    if (urlParams.has('transaction_id') || urlParams.has('token') || urlParams.has('status')) {
-      console.log("Payment Page: Paramètres de retour CinetPay détectés:", 
-        Object.fromEntries(urlParams.entries()));
-    }
   }, [location, participantId]);
 
   useEffect(() => {
@@ -79,27 +74,6 @@ const Payment = () => {
   const handleBackToHome = () => {
     navigate("/");
   };
-
-  useEffect(() => {
-    const checkReturnFromCinetPay = () => {
-      const urlParams = new URLSearchParams(location.search);
-      if (urlParams.has('transaction_id') || urlParams.has('token') || urlParams.has('status')) {
-        console.log("Payment Page: Retour détecté de CinetPay avec paramètres:", 
-          Object.fromEntries(urlParams.entries()));
-        
-        if (participantId && (urlParams.get('status') === 'ACCEPTED' || urlParams.get('status') === 'SUCCESS')) {
-          console.log("Payment Page: Redirection vers la page de confirmation après paiement réussi");
-          navigate(`/confirmation/${participantId}`);
-          return true;
-        }
-      }
-      return false;
-    };
-    
-    if (participant && !loading) {
-      checkReturnFromCinetPay();
-    }
-  }, [participant, loading, location, navigate, participantId]);
 
   if (loading) {
     return (
@@ -180,7 +154,7 @@ const Payment = () => {
           </h1>
           
           <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-            Choisissez votre méthode de paiement et complétez votre inscription.
+            Effectuez votre paiement et soumettez votre preuve de transfert pour compléter votre inscription.
           </p>
         </div>
 
@@ -223,7 +197,7 @@ const Payment = () => {
           </div>
         </div>
 
-        <PaymentForm participant={participant} />
+        <ManualPaymentForm participant={participant} />
         
         <div className="w-full flex justify-center my-10">
           <div className="h-8 w-64 bg-contain bg-center bg-no-repeat islamic-divider" 

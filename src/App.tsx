@@ -6,10 +6,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Payment from "./pages/Payment";
+import PaymentPending from "./pages/PaymentPending";
 import Confirmation from "./pages/Confirmation";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
+import PaymentValidation from "./pages/admin/PaymentValidation";
 import { AdminRoute } from "./components/admin/AdminRoute";
 import { handleCinetPayWebhook } from "./integrations/cinetpay/webhookHandler";
 
@@ -24,6 +26,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/payment/:participantId" element={<Payment />} />
+          <Route path="/payment-pending/:participantId" element={<PaymentPending />} />
           <Route path="/confirmation/:participantId" element={<Confirmation />} />
           
           {/* Routes administrateur */}
@@ -33,6 +36,22 @@ const App = () => (
             element={
               <AdminRoute>
                 <AdminDashboard />
+              </AdminRoute>
+            } 
+          />
+          <Route 
+            path="/admin/payment-validation" 
+            element={
+              <AdminRoute>
+                <PaymentValidation />
+              </AdminRoute>
+            } 
+          />
+          <Route 
+            path="/admin/payment-validation/:paymentId" 
+            element={
+              <AdminRoute>
+                <PaymentValidation />
               </AdminRoute>
             } 
           />
