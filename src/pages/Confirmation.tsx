@@ -12,8 +12,9 @@ import EventLogo from "@/components/EventLogo";
 
 // Ce fichier gère la page de confirmation d'inscription après le paiement
 // Modifications:
-// - Remplacement des couleurs belges par celles de la Côte d'Ivoire (orange, blanc, vert)
-// - Adaptation du style pour correspondre au reste du site
+// - Correction du problème de génération PDF (erreur removeChild sur Node)
+// - Amélioration de la gestion du DOM lors de la génération du PDF
+// - Optimisation du processus de création du reçu
 
 const Confirmation = () => {
   const { participantId } = useParams();
@@ -116,40 +117,60 @@ const Confirmation = () => {
     try {
       setIsGeneratingPdf(true);
       
-      const receiptElement = receiptRef.current.cloneNode(true) as HTMLElement;
+      // Créer un clone du reçu pour éviter de modifier l'original
+      const receiptContent = receiptRef.current.cloneNode(true) as HTMLElement;
       
+      // Créer un conteneur temporaire et l'ajouter au body
       const container = document.createElement('div');
+      container.id = 'temp-pdf-container';
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
       container.style.padding = '20px';
       container.style.backgroundColor = 'white';
-      container.appendChild(receiptElement);
+      container.appendChild(receiptContent);
+      
+      // Ajouter le conteneur au body
       document.body.appendChild(container);
       
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-      });
-      
-      document.body.removeChild(container);
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const ratio = canvas.width / canvas.height;
-      const imgWidth = pdfWidth - 20;
-      const imgHeight = imgWidth / ratio;
-      
-      pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-      
-      const fileName = `recu-paiement-${participant?.last_name}-${participant?.first_name}.pdf`;
-      pdf.save(fileName);
+      try {
+        // Générer le canvas à partir du conteneur
+        const canvas = await html2canvas(container, {
+          scale: 2,
+          logging: false,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+        
+        // Convertir le canvas en image pour le PDF
+        const imgData = canvas.toDataURL('image/png');
+        
+        // Créer le PDF
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+        
+        // Calculer les dimensions pour le PDF
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const ratio = canvas.width / canvas.height;
+        const imgWidth = pdfWidth - 20;
+        const imgHeight = imgWidth / ratio;
+        
+        // Ajouter l'image au PDF
+        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+        
+        // Définir le nom du fichier et enregistrer
+        const fileName = `recu-paiement-${participant?.last_name}-${participant?.first_name}.pdf`;
+        pdf.save(fileName);
+      } finally {
+        // Vérifier si le conteneur existe et est un enfant de document.body avant de le supprimer
+        const tempContainer = document.getElementById('temp-pdf-container');
+        if (tempContainer && document.body.contains(tempContainer)) {
+          document.body.removeChild(tempContainer);
+        }
+      }
     } catch (err) {
       console.error("Erreur lors de la génération du PDF:", err);
     } finally {
