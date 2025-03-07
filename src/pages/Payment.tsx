@@ -1,3 +1,9 @@
+
+// Ce fichier gère la page de paiement pour finaliser l'inscription
+// Modifications:
+// - Changement des couleurs belges par celles de la Côte d'Ivoire (orange, blanc, vert)
+// - Adaptation du style pour correspondre au reste du site
+
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,9 +116,9 @@ const Payment = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8">
         <div className="fixed top-0 left-0 w-full h-2 flex">
-          <div className="bg-black w-1/3 h-full"></div>
-          <div className="bg-yellow-400 w-1/3 h-full"></div>
-          <div className="bg-red-600 w-1/3 h-full"></div>
+          <div className="bg-orange-500 w-1/3 h-full"></div>
+          <div className="bg-white w-1/3 h-full"></div>
+          <div className="bg-green-600 w-1/3 h-full"></div>
         </div>
         
         <div className="max-w-3xl mx-auto">
@@ -139,9 +145,9 @@ const Payment = () => {
         </div>
         
         <div className="fixed bottom-0 left-0 w-full h-2 flex">
-          <div className="bg-black w-1/3 h-full"></div>
-          <div className="bg-yellow-400 w-1/3 h-full"></div>
-          <div className="bg-red-600 w-1/3 h-full"></div>
+          <div className="bg-orange-500 w-1/3 h-full"></div>
+          <div className="bg-white w-1/3 h-full"></div>
+          <div className="bg-green-600 w-1/3 h-full"></div>
         </div>
       </div>
     );
@@ -150,9 +156,9 @@ const Payment = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="fixed top-0 left-0 w-full h-2 flex">
-        <div className="bg-black w-1/3 h-full"></div>
-        <div className="bg-yellow-400 w-1/3 h-full"></div>
-        <div className="bg-red-600 w-1/3 h-full"></div>
+        <div className="bg-orange-500 w-1/3 h-full"></div>
+        <div className="bg-white w-1/3 h-full"></div>
+        <div className="bg-green-600 w-1/3 h-full"></div>
       </div>
     
       <div className="max-w-3xl mx-auto space-y-10">
@@ -227,9 +233,9 @@ const Payment = () => {
       </div>
       
       <div className="fixed bottom-0 left-0 w-full h-2 flex">
-        <div className="bg-black w-1/3 h-full"></div>
-        <div className="bg-yellow-400 w-1/3 h-full"></div>
-        <div className="bg-red-600 w-1/3 h-full"></div>
+        <div className="bg-orange-500 w-1/3 h-full"></div>
+        <div className="bg-white w-1/3 h-full"></div>
+        <div className="bg-green-600 w-1/3 h-full"></div>
       </div>
     </div>
   );
