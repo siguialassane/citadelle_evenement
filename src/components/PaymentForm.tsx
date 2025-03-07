@@ -1,5 +1,6 @@
 // Commentaires: Ce fichier gère l'intégration du paiement CinetPay Seamless
 // Dernière modification: 
+// - Ajout d'un bouton de mode simulation de paiement
 // - Amélioration de la vérification du SDK avec Promise basée sur des retries
 // - Simplification stricte selon la documentation CinetPay
 // - Ajout d'un délai d'attente pour l'initialisation complète
@@ -61,6 +62,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
   const [isCinetPayLoaded, setIsCinetPayLoaded] = useState(false);
   const [useOldMethod, setUseOldMethod] = useState(false); // Utiliser l'ancienne méthode d'API si le SDK échoue
   const [sdkLoadError, setSdkLoadError] = useState<string | null>(null);
+  const [simulationMode, setSimulationMode] = useState(false); // État pour le mode simulation
   const navigate = useNavigate();
 
   console.log(`PaymentForm: Initialisation pour le participant ID:`, participant.id);
@@ -405,7 +407,100 @@ export function PaymentForm({ participant }: PaymentFormProps) {
     return paymentStarted;
   };
 
+  // Fonction pour simuler un paiement réussi
+  const handleSimulatePayment = async () => {
+    try {
+      setIsProcessing(true);
+      console.log("PaymentForm: Simulation d'un paiement réussi");
+      
+      // Générer un ID de transaction fictif
+      const transactionId = `SIM-${uuidv4()}`;
+      
+      // Enregistrer le paiement simulé dans Supabase
+      const paymentData = {
+        participant_id: participant.id,
+        amount: PAYMENT_AMOUNT,
+        payment_method: form.getValues().paymentMethod,
+        status: "completed",
+        transaction_id: transactionId,
+        cinetpay_operator_id: `SIM-OP-${Date.now()}`,
+        cinetpay_api_response_id: `SIM-API-${Date.now()}`,
+        currency: "XOF"
+      };
+      
+      console.log("PaymentForm: Données de paiement simulé à enregistrer:", paymentData);
+      
+      const { data: paymentRecord, error } = await supabase
+        .from('payments')
+        .insert(paymentData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("PaymentForm: Erreur lors de l'enregistrement du paiement simulé:", error);
+        throw error;
+      }
+
+      console.log("PaymentForm: Paiement simulé enregistré avec succès:", paymentRecord);
+      
+      // Générer un QR code pour le participant
+      const qrCodeId = `QR-${participant.id}-${Date.now()}`;
+      console.log(`PaymentForm: Génération du QR code ${qrCodeId}`);
+      
+      // Mettre à jour le participant avec le QR code
+      const { error: participantUpdateError } = await supabase
+        .from('participants')
+        .update({
+          qr_code_id: qrCodeId
+        })
+        .eq('id', participant.id);
+
+      if (participantUpdateError) {
+        console.error("PaymentForm: Erreur lors de la mise à jour du participant:", participantUpdateError);
+      } else {
+        console.log("PaymentForm: QR code généré et participant mis à jour avec succès");
+      }
+
+      // Envoyer un email de confirmation
+      console.log("PaymentForm: Tentative d'envoi d'email de confirmation");
+      const emailSent = await sendConfirmationEmail(participant, paymentRecord, qrCodeId);
+      
+      if (emailSent) {
+        console.log("PaymentForm: Email de confirmation envoyé avec succès");
+      } else {
+        console.warn("PaymentForm: L'email de confirmation n'a pas pu être envoyé, mais le paiement a été enregistré");
+      }
+
+      // Afficher un message de succès
+      toast({
+        title: "Paiement simulé réussi",
+        description: "Le paiement simulé a été traité avec succès. Un email de confirmation a été envoyé.",
+        variant: "default",
+      });
+
+      // Rediriger vers la page de confirmation
+      console.log("PaymentForm: Redirection vers la page de confirmation");
+      navigate(`/confirmation/${participant.id}`);
+      
+    } catch (error: any) {
+      console.error("PaymentForm: Erreur lors de la simulation du paiement:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors de la simulation du paiement.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   async function onSubmit(values: PaymentFormValues) {
+    // Si en mode simulation, utiliser la fonction de simulation
+    if (simulationMode) {
+      await handleSimulatePayment();
+      return;
+    }
+    
     try {
       setIsProcessing(true);
       console.log(`PaymentForm: Début du paiement réel`);
@@ -545,18 +640,40 @@ export function PaymentForm({ participant }: PaymentFormProps) {
             <span className="font-medium">Montant à payer:</span>
             <span className="font-bold">{PAYMENT_AMOUNT.toLocaleString()} XOF</span>
           </div>
-          <div className="flex items-center mt-2">
-            <input
-              type="checkbox"
-              id="apiToggle"
-              checked={useOldMethod}
-              onChange={() => setUseOldMethod(!useOldMethod)}
-              className="mr-2"
-            />
-            <label htmlFor="apiToggle" className="text-sm text-gray-600">
-              Utiliser l'API directe (sans SDK Seamless)
-            </label>
+          <div className="flex flex-col space-y-2 mt-2">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="apiToggle"
+                checked={useOldMethod}
+                onChange={() => setUseOldMethod(!useOldMethod)}
+                className="mr-2"
+              />
+              <label htmlFor="apiToggle" className="text-sm text-gray-600">
+                Utiliser l'API directe (sans SDK Seamless)
+              </label>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="simulationToggle"
+                checked={simulationMode}
+                onChange={() => setSimulationMode(!simulationMode)}
+                className="mr-2"
+              />
+              <label htmlFor="simulationToggle" className="text-sm text-gray-600 font-medium">
+                Mode simulation de paiement
+              </label>
+            </div>
           </div>
+          
+          {simulationMode && (
+            <div className="mt-2 p-2 bg-yellow-50 border-l-4 border-yellow-400 text-sm text-yellow-800">
+              <p className="font-medium">Mode simulation activé</p>
+              <p>Ce mode permet de tester le processus sans effectuer un vrai paiement.</p>
+            </div>
+          )}
           
           {sdkLoadError && (
             <div className="text-red-500 text-sm mt-2 p-2 bg-red-50 rounded-md">
@@ -617,10 +734,12 @@ export function PaymentForm({ participant }: PaymentFormProps) {
               {isProcessing ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Traitement en cours...
+                  {simulationMode ? "Simulation en cours..." : "Traitement en cours..."}
                 </>
               ) : (
-                `Payer ${PAYMENT_AMOUNT.toLocaleString()} XOF avec CinetPay`
+                simulationMode 
+                  ? `Simuler un paiement de ${PAYMENT_AMOUNT.toLocaleString()} XOF` 
+                  : `Payer ${PAYMENT_AMOUNT.toLocaleString()} XOF avec CinetPay`
               )}
             </Button>
           </form>
@@ -628,9 +747,11 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       </CardContent>
       <CardFooter className="flex flex-col items-start text-xs text-gray-500">
         <p>
-          {useOldMethod
-            ? "Paiement via API CinetPay : Vous serez redirigé vers la page de paiement CinetPay."
-            : "Paiement via SDK Seamless : Le paiement s'effectuera directement sur cette page."
+          {simulationMode 
+            ? "Mode simulation : Aucun paiement réel ne sera effectué." 
+            : useOldMethod
+              ? "Paiement via API CinetPay : Vous serez redirigé vers la page de paiement CinetPay."
+              : "Paiement via SDK Seamless : Le paiement s'effectuera directement sur cette page."
           }
         </p>
       </CardFooter>
