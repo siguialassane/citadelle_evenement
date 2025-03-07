@@ -3,7 +3,6 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { v4 as uuidv4 } from 'uuid';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import emailjs from '@emailjs/browser';
@@ -15,6 +14,7 @@ import {
   ADMIN_EMAIL
 } from "./config";
 import { PaymentMethod, Participant, CopyStates } from "./types";
+import { ADMIN_PAYMENT_VALIDATION_TEMPLATE } from "./EmailTemplates";
 
 export function useManualPayment(participant: Participant) {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -51,6 +51,7 @@ export function useManualPayment(participant: Participant) {
       console.log("Envoi de notification à l'administrateur...");
       
       const adminLink = `${window.location.origin}/admin/payment-validation/${manualPaymentId}`;
+      const currentDate = new Date().toLocaleString('fr-FR');
 
       const templateParams = {
         to_email: ADMIN_EMAIL,
@@ -64,6 +65,7 @@ export function useManualPayment(participant: Participant) {
         payment_phone: phoneNumber,
         comments: comments || "Aucun commentaire",
         validation_link: adminLink,
+        current_date: currentDate,
         // Variables requises par EmailJS
         reply_to: "ne-pas-repondre@lacitadelle.ci"
       };
