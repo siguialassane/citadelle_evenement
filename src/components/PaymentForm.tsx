@@ -165,6 +165,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
         badge_url: badgeUrl,
         qr_code_url: qrCodeUrl, // URL du QR code généré
         confirmation_url: confirmationUrl, // URL de confirmation
+        app_url: confirmationUrl, // URL pour accéder directement au reçu de paiement
         
         // Variables nécessaires pour EmailJS
         to_name: `${participantData.first_name} ${participantData.last_name}`,
