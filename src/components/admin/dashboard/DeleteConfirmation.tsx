@@ -44,7 +44,11 @@ export const DeleteConfirmation = ({
       const { error: paymentsError } = await supabase
         .from('payments')
         .delete()
-        .neq('id', ''); // Condition toujours vraie pour supprimer tous les enregistrements
+        .is('id', null) // Condition fausse pour exécuter une requête vide
+        .then(() => supabase // Puis exécuter la vraie requête
+          .from('payments')
+          .delete()
+        );
 
       if (paymentsError) throw paymentsError;
 
@@ -52,7 +56,11 @@ export const DeleteConfirmation = ({
       const { error: participantsError } = await supabase
         .from('participants')
         .delete()
-        .neq('id', ''); // Condition toujours vraie pour supprimer tous les enregistrements
+        .is('id', null) // Condition fausse pour exécuter une requête vide
+        .then(() => supabase // Puis exécuter la vraie requête
+          .from('participants')
+          .delete()
+        );
 
       if (participantsError) throw participantsError;
       
