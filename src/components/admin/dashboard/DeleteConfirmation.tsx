@@ -41,26 +41,19 @@ export const DeleteConfirmation = ({
     setIsDeleting(true);
     try {
       // Supprimer d'abord les paiements (en raison des contraintes de clé étrangère)
+      // Utiliser une condition WHERE qui sélectionne toutes les lignes
       const { error: paymentsError } = await supabase
         .from('payments')
         .delete()
-        .is('id', null) // Condition fausse pour exécuter une requête vide
-        .then(() => supabase // Puis exécuter la vraie requête
-          .from('payments')
-          .delete()
-        );
+        .gte('id', '00000000-0000-0000-0000-000000000000');
 
       if (paymentsError) throw paymentsError;
 
-      // Supprimer ensuite les participants
+      // Supprimer ensuite les participants avec une condition WHERE qui sélectionne toutes les lignes
       const { error: participantsError } = await supabase
         .from('participants')
         .delete()
-        .is('id', null) // Condition fausse pour exécuter une requête vide
-        .then(() => supabase // Puis exécuter la vraie requête
-          .from('participants')
-          .delete()
-        );
+        .gte('id', '00000000-0000-0000-0000-000000000000');
 
       if (participantsError) throw participantsError;
       
