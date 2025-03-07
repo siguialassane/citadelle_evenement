@@ -13,7 +13,6 @@ import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
 import PaymentValidation from "./pages/admin/PaymentValidation";
 import { AdminRoute } from "./components/admin/AdminRoute";
-import { handleCinetPayWebhook } from "./integrations/cinetpay/webhookHandler";
 
 const queryClient = new QueryClient();
 
@@ -54,12 +53,6 @@ const App = () => (
                 <PaymentValidation />
               </AdminRoute>
             } 
-          />
-          
-          {/* Route pour le webhook CinetPay */}
-          <Route 
-            path="/api/webhooks/cinetpay/notification" 
-            element={<div style={{ display: 'none' }}>Notification CinetPay reçue</div>} 
           />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

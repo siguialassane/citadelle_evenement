@@ -1,7 +1,7 @@
 
 // Ce composant affiche les instructions de paiement
 
-import { Button } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Info, Copy, Check } from "lucide-react";
 import { PaymentMethod, PaymentNumbers, CopyStates } from "./types";
 

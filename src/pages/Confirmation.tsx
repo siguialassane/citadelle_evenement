@@ -5,16 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, ArrowLeft, CheckCircle, Download } from "lucide-react";
-import { checkCinetPayPayment } from "@/integrations/cinetpay/api";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import EventLogo from "@/components/EventLogo";
 
 // Ce fichier gère la page de confirmation d'inscription après le paiement
 // Modifications:
-// - Correction du problème de génération PDF (erreur removeChild sur Node)
-// - Amélioration de la gestion du DOM lors de la génération du PDF
-// - Optimisation du processus de création du reçu
+// - Suppression des dépendances CinetPay
+// - Simplification du processus de vérification du paiement
+// - Conservation du processus de génération de reçu
 
 const Confirmation = () => {
   const { participantId } = useParams();
@@ -62,39 +61,6 @@ const Confirmation = () => {
 
         setParticipant(participantData);
         setPayment(paymentData);
-
-        if (paymentData.status === 'pending' && paymentData.cinetpay_token) {
-          setIsVerifying(true);
-          try {
-            const cinetPayStatus = await checkCinetPayPayment(paymentData.cinetpay_token);
-            
-            if (cinetPayStatus.code === "00" && cinetPayStatus.data.status === "ACCEPTED") {
-              const { error: updateError } = await supabase
-                .from('payments')
-                .update({
-                  status: 'success',
-                  cinetpay_operator_id: cinetPayStatus.data.operator_id
-                })
-                .eq('id', paymentData.id);
-
-              if (!updateError) {
-                const { data: refreshedPayment } = await supabase
-                  .from('payments')
-                  .select('*')
-                  .eq('id', paymentData.id)
-                  .single();
-                
-                if (refreshedPayment) {
-                  setPayment(refreshedPayment);
-                }
-              }
-            }
-          } catch (checkError) {
-            console.error("Erreur lors de la vérification du statut CinetPay:", checkError);
-          } finally {
-            setIsVerifying(false);
-          }
-        }
 
       } catch (err: any) {
         console.error("Erreur lors de la récupération des données:", err);
@@ -314,7 +280,7 @@ const Confirmation = () => {
                 Détails de votre inscription
               </h2>
               <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                Référence de transaction: {payment?.transaction_id || payment?.cinetpay_api_response_id}
+                Référence de transaction: {payment?.transaction_id}
               </p>
             </div>
             <EventLogo size="small" />
@@ -370,14 +336,6 @@ const Confirmation = () => {
                   }) : "En attente"}
                 </dd>
               </div>
-              {payment?.cinetpay_operator_id && (
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Identifiant de l'opération</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {payment.cinetpay_operator_id}
-                  </dd>
-                </div>
-              )}
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Statut</dt>
                 <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2">
