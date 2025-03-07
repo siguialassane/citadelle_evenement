@@ -1,6 +1,6 @@
 
 // Ce fichier gère la page d'administration pour la validation des paiements manuels
-// Il permet aux administrateurs de voir les paiements en attente, de consulter les preuves
+// Il permet aux administrateurs de voir les paiements en attente, de consulter les informations
 // et de valider ou rejeter les paiements
 
 import { useEffect, useState } from "react";
@@ -27,7 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, Copy, Download, ExternalLink, Eye, LogOut, Search, X } from "lucide-react";
+import { LogOut, Search, Eye, Check, X } from "lucide-react";
 import emailjs from '@emailjs/browser';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from "@/components/ui/input";
@@ -610,115 +610,69 @@ const PaymentValidation = () => {
                 </div>
               </div>
 
-              {/* Preuve de paiement */}
+              {/* Actions de validation */}
               <div className="space-y-4">
-                <h3 className="font-medium text-lg border-b pb-2">Preuve de paiement</h3>
+                <h3 className="font-medium text-lg border-b pb-2">Instructions de validation</h3>
                 
-                {selectedPayment.screenshot_url ? (
-                  <div className="space-y-2">
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <img 
-                        src={selectedPayment.screenshot_url} 
-                        alt="Preuve de paiement" 
-                        className="w-full object-contain"
-                        style={{ maxHeight: '400px' }}
-                      />
-                    </div>
-                    
-                    <div className="flex space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex items-center gap-1"
-                        onClick={() => window.open(selectedPayment.screenshot_url, '_blank')}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        Ouvrir en grand
-                      </Button>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex items-center gap-1"
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = selectedPayment.screenshot_url;
-                          link.download = `preuve-paiement-${participant.last_name}.jpg`;
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                        }}
-                      >
-                        <Download className="h-4 w-4" />
-                        Télécharger
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-gray-100 p-4 rounded-lg text-center text-gray-500">
-                    Aucune preuve de paiement disponible
-                  </div>
-                )}
-                
-                <div className="mt-6 bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400">
-                  <h4 className="font-medium text-yellow-800">Instructions pour la vérification :</h4>
-                  <ul className="mt-2 space-y-2 text-sm text-yellow-700">
-                    <li>1. Vérifiez que le montant correspond (1000 XOF)</li>
-                    <li>2. Vérifiez que le numéro utilisé pour le paiement correspond</li>
-                    <li>3. Vérifiez que la date et l'heure du transfert sont récentes</li>
-                    <li>4. Vérifiez que le numéro de transaction est visible et unique</li>
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <p className="text-sm text-yellow-800 mb-4">
+                    Avant de valider ce paiement, vérifiez les points suivants:
+                  </p>
+                  <ul className="list-disc list-inside text-sm text-yellow-800 space-y-2">
+                    <li>Le numéro de téléphone de paiement correspond à un numéro mobile money valide</li>
+                    <li>Le montant du paiement (1000 XOF) a bien été reçu sur ce numéro</li>
+                    <li>Vérifiez que le participant n'a pas déjà été validé</li>
+                    <li>Les commentaires du participant peuvent contenir des informations utiles</li>
                   </ul>
+                </div>
+                
+                <div className="mt-8 space-y-6">
+                  <h4 className="font-medium">Actions:</h4>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button
+                      variant="destructive"
+                      className="w-full flex items-center justify-center gap-2"
+                      onClick={rejectPayment}
+                      disabled={isProcessing}
+                    >
+                      <X className="h-4 w-4" />
+                      Rejeter
+                    </Button>
+                    
+                    <Button
+                      variant="default"
+                      className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
+                      onClick={validatePayment}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                      Valider
+                    </Button>
+                  </div>
+                  
+                  <div className="text-center mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={handleCloseDetails}
+                      className="w-full"
+                      disabled={isProcessing}
+                    >
+                      Fermer
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           )}
-
-          <DialogFooter>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:justify-between">
-              <Button
-                variant="outline"
-                onClick={handleCloseDetails}
-                disabled={isProcessing}
-              >
-                Annuler
-              </Button>
-              
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button
-                  variant="destructive"
-                  onClick={rejectPayment}
-                  disabled={isProcessing || selectedPayment?.status !== 'pending'}
-                  className="flex items-center gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Rejeter
-                </Button>
-                
-                <Button
-                  variant="default"
-                  onClick={validatePayment}
-                  disabled={isProcessing || selectedPayment?.status !== 'pending'}
-                  className="flex items-center gap-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Traitement...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="h-4 w-4" />
-                      Valider le paiement
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
-};
+}
 
 export default PaymentValidation;

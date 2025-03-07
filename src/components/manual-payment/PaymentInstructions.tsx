@@ -1,7 +1,7 @@
 
 // Ce composant affiche les instructions de paiement
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/card";
 import { Info, Copy, Check } from "lucide-react";
 import { PaymentMethod, PaymentNumbers, CopyStates } from "./types";
 
@@ -68,7 +68,7 @@ export function PaymentInstructions({
         <div className="flex items-start p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
           <Info className="h-5 w-5 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
           <div className="text-sm text-yellow-700">
-            <p><strong>Important:</strong> Veuillez inclure la référence exacte ci-dessus lors de votre paiement. Cette référence permet d'identifier votre transaction.</p>
+            <p><strong>Important:</strong> Veuillez indiquer cette référence comme <u>motif/commentaire</u> lors de votre transfert mobile money. Cette référence nous permettra d'identifier votre paiement.</p>
           </div>
         </div>
       </div>
