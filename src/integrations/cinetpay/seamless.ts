@@ -1,11 +1,10 @@
 
 // Ce fichier contient l'intégration avec le SDK CinetPay Seamless
 // Modifications:
-// - Mise en conformité avec la documentation officielle CinetPay
-// - Correction du format des données envoyées (amount en string)
-// - Simplification du callback selon l'exemple de la documentation
-// - Nettoyage des logs et ajout de logs pertinents
-// - Amélioration de la gestion des erreurs
+// - Ajout d'une vérification complète du SDK avec retry
+// - Correction de l'initialisation selon la documentation officielle
+// - Simplification du callback selon la documentation officielle
+// - Mise en place d'un délai d'attente pour l'initialisation complète
 
 import { CINETPAY_API_KEY, CINETPAY_SITE_ID } from './config';
 
@@ -27,44 +26,72 @@ export interface CinetPayCallbackData {
 }
 
 /**
- * Vérifie si le SDK CinetPay est disponible
+ * Vérifie si le SDK CinetPay est disponible avec retry automatique
  */
-export const isCinetPaySDKLoaded = (): boolean => {
-  const isLoaded = typeof window !== 'undefined' && 'CinetPay' in window;
-  console.log(`[CinetPay Seamless] SDK chargé:`, isLoaded);
+export const isCinetPaySDKLoaded = (maxRetries = 3, retryInterval = 1000): Promise<boolean> => {
+  console.log(`[CinetPay Seamless] Vérification du chargement du SDK (tentatives max: ${maxRetries})`);
   
-  if (isLoaded) {
-    console.log(`[CinetPay Seamless] Propriétés globales:`, {
-      hasCinetPay: typeof window.CinetPay !== 'undefined',
-      hasGetCheckout: typeof window.getCheckout !== 'undefined',
-      hasCheckoutData: typeof window.checkoutData !== 'undefined',
-      cinetPayFunctions: window.CinetPay ? Object.keys(window.CinetPay) : 'aucune'
-    });
+  return new Promise((resolve) => {
+    let retryCount = 0;
     
-    // Vérifier si les méthodes requises sont disponibles
-    if (window.CinetPay) {
-      console.log(`[CinetPay Seamless] Méthodes CinetPay disponibles:`, {
-        hasSetConfig: typeof window.CinetPay.setConfig === 'function',
-        hasGetCheckout: typeof window.CinetPay.getCheckout === 'function', 
-        hasWaitResponse: typeof window.CinetPay.waitResponse === 'function'
-      });
-    }
-  } else {
-    console.warn(`[CinetPay Seamless] Le SDK n'est pas chargé!`);
-  }
-  
-  return isLoaded;
+    const checkSDK = () => {
+      const isLoaded = typeof window !== 'undefined' && 
+                     window.CinetPay !== undefined && 
+                     typeof window.CinetPay.setConfig === 'function' &&
+                     typeof window.CinetPay.getCheckout === 'function' && 
+                     typeof window.CinetPay.waitResponse === 'function';
+      
+      console.log(`[CinetPay Seamless] Tentative ${retryCount + 1}/${maxRetries}: SDK chargé:`, isLoaded);
+      
+      if (isLoaded) {
+        console.log(`[CinetPay Seamless] SDK correctement chargé après ${retryCount} tentatives`);
+        console.log(`[CinetPay Seamless] Propriétés globales:`, {
+          hasCinetPay: typeof window.CinetPay !== 'undefined',
+          hasGetCheckout: typeof window.getCheckout !== 'undefined',
+          hasCheckoutData: typeof window.checkoutData !== 'undefined',
+          cinetPayFunctions: window.CinetPay ? Object.keys(window.CinetPay) : 'aucune'
+        });
+        
+        // Vérifier si les méthodes requises sont disponibles
+        if (window.CinetPay) {
+          console.log(`[CinetPay Seamless] Méthodes CinetPay disponibles:`, {
+            hasSetConfig: typeof window.CinetPay.setConfig === 'function',
+            hasGetCheckout: typeof window.CinetPay.getCheckout === 'function', 
+            hasWaitResponse: typeof window.CinetPay.waitResponse === 'function'
+          });
+        }
+        
+        // Attendre un peu plus pour s'assurer que l'objet est complètement initialisé
+        setTimeout(() => resolve(true), 500);
+        return;
+      }
+      
+      retryCount++;
+      if (retryCount < maxRetries) {
+        console.log(`[CinetPay Seamless] Nouvelle tentative dans ${retryInterval}ms...`);
+        setTimeout(checkSDK, retryInterval);
+      } else {
+        console.warn(`[CinetPay Seamless] Le SDK n'est pas chargé après ${maxRetries} tentatives!`);
+        resolve(false);
+      }
+    };
+    
+    // Démarrer la vérification
+    checkSDK();
+  });
 };
 
 /**
  * Initialise le SDK CinetPay avec les paramètres de base
  * Conforme à la documentation: https://docs.cinetpay.com/integration/integrate/sdk-javascript/seamless-sdk
  */
-export const initCinetPaySDK = (notifyUrl: string): boolean => {
+export const initCinetPaySDK = async (notifyUrl: string): Promise<boolean> => {
   console.log(`[CinetPay Seamless] Initialisation du SDK avec URL de notification:`, notifyUrl);
   
-  if (!isCinetPaySDKLoaded()) {
-    console.error(`[CinetPay Seamless] CinetPay SDK n'est pas chargé`);
+  // Vérifier que le SDK est chargé avec retries
+  const sdkLoaded = await isCinetPaySDKLoaded(5, 1000);
+  if (!sdkLoaded) {
+    console.error(`[CinetPay Seamless] CinetPay SDK n'est pas chargé, impossible d'initialiser`);
     return false;
   }
 
@@ -84,10 +111,16 @@ export const initCinetPaySDK = (notifyUrl: string): boolean => {
     window.CinetPay.setConfig({
       apikey: CINETPAY_API_KEY,
       site_id: CINETPAY_SITE_ID,
-      notify_url: notifyUrl
+      notify_url: notifyUrl,
+      lang: 'fr' // Ajouter une langue par défaut
     });
     
-    console.log(`[CinetPay Seamless] CinetPay SDK initialisé avec succès`);
+    // Vérification après initialisation
+    console.log(`[CinetPay Seamless] CinetPay SDK configuré. États des propriétés:`, {
+      config: !!window.CinetPay.config,
+      loaded: !!window.CinetPay.loaded
+    });
+    
     return true;
   } catch (error) {
     console.error(`[CinetPay Seamless] Erreur lors de l'initialisation du SDK CinetPay:`, error);
@@ -126,7 +159,7 @@ export const formatPhoneForCinetPay = (phoneNumber: string): string => {
 
 /**
  * Lance le processus de paiement avec le SDK CinetPay
- * Conforme à la documentation: https://docs.cinetpay.com/integration/integrate/sdk-javascript/seamless-sdk
+ * Strictement conforme à la documentation: https://docs.cinetpay.com/integration/integrate/sdk-javascript/seamless-sdk
  */
 export const startCinetPayPayment = (paymentData: {
   transaction_id: string;
@@ -147,38 +180,62 @@ export const startCinetPayPayment = (paymentData: {
 }): boolean => {
   console.log(`[CinetPay Seamless] Démarrage du paiement avec les données:`, paymentData);
   
-  if (!isCinetPaySDKLoaded()) {
-    console.error(`[CinetPay Seamless] CinetPay SDK n'est pas chargé`);
-    return false;
-  }
-
   try {
     if (!window.CinetPay) {
       console.error(`[CinetPay Seamless] L'objet CinetPay n'est pas disponible sur window`);
       return false;
     }
     
-    // Formater le numéro de téléphone pour CinetPay
-    const formattedPhoneNumber = formatPhoneForCinetPay(paymentData.customer_phone_number);
-    
-    // IMPORTANT: Convertir le montant en string comme indiqué dans la documentation
-    const checkoutData = {
-      ...paymentData,
-      amount: String(paymentData.amount), // Conversion en string selon la documentation
-      customer_phone_number: formattedPhoneNumber
-    };
-    
-    console.log(`[CinetPay Seamless] Appel à getCheckout avec:`, checkoutData);
-    
-    // Vérifier que getCheckout est bien une fonction
+    // Vérifier que toutes les méthodes nécessaires sont disponibles
     if (typeof window.CinetPay.getCheckout !== 'function') {
       console.error(`[CinetPay Seamless] La méthode getCheckout n'est pas une fonction!`);
       return false;
     }
     
-    // Appel à la méthode getCheckout de CinetPay
-    window.CinetPay.getCheckout(checkoutData);
-    console.log(`[CinetPay Seamless] Appel à getCheckout effectué avec succès`);
+    // Formater le numéro de téléphone pour CinetPay
+    const formattedPhoneNumber = formatPhoneForCinetPay(paymentData.customer_phone_number);
+    
+    // IMPORTANT: Préparer les données exactement comme dans la documentation
+    // avec amount en string et seulement les paramètres requis
+    const checkoutData = {
+      transaction_id: paymentData.transaction_id,
+      amount: String(paymentData.amount), // Conversion en string selon la documentation
+      currency: paymentData.currency,
+      channels: paymentData.channels,
+      description: paymentData.description,
+      // Paramètres obligatoires pour paiement par carte bancaire
+      customer_name: paymentData.customer_name,
+      customer_surname: paymentData.customer_surname,
+      customer_email: paymentData.customer_email,
+      customer_phone_number: formattedPhoneNumber,
+      customer_address: paymentData.customer_address,
+      customer_city: paymentData.customer_city,
+      customer_country: paymentData.customer_country,
+      customer_state: paymentData.customer_state,
+      customer_zip_code: paymentData.customer_zip_code,
+      metadata: paymentData.metadata
+    };
+    
+    console.log(`[CinetPay Seamless] Appel à getCheckout avec:`, checkoutData);
+    
+    // Petite attente pour s'assurer que le SDK est prêt
+    setTimeout(() => {
+      try {
+        // Appel à la méthode getCheckout de CinetPay
+        window.CinetPay.getCheckout(checkoutData);
+        console.log(`[CinetPay Seamless] Appel à getCheckout effectué avec succès`);
+        
+        // Vérification après appel
+        setTimeout(() => {
+          console.log(`[CinetPay Seamless] Vérification après appel getCheckout:`, {
+            hasGetCheckout: typeof window.getCheckout !== 'undefined',
+            hasCheckoutData: typeof window.checkoutData !== 'undefined'
+          });
+        }, 1000);
+      } catch (callError) {
+        console.error(`[CinetPay Seamless] Erreur lors de l'appel à getCheckout:`, callError);
+      }
+    }, 500);
     
     return true;
   } catch (error) {
@@ -189,34 +246,29 @@ export const startCinetPayPayment = (paymentData: {
 
 /**
  * Configure la callback pour recevoir le résultat du paiement
- * Conforme à la documentation: https://docs.cinetpay.com/integration/integrate/sdk-javascript/seamless-sdk
+ * Strictement conforme à la documentation: https://docs.cinetpay.com/integration/integrate/sdk-javascript/seamless-sdk
  */
 export const setupCinetPayCallback = (callback: (data: CinetPayCallbackData) => void): boolean => {
   console.log(`[CinetPay Seamless] Configuration du callback CinetPay`);
   
-  if (!isCinetPaySDKLoaded()) {
-    console.error(`[CinetPay Seamless] CinetPay SDK n'est pas chargé`);
+  if (!window.CinetPay) {
+    console.error(`[CinetPay Seamless] L'objet CinetPay n'est pas disponible sur window`);
     return false;
   }
-
+  
   try {
-    if (!window.CinetPay) {
-      console.error(`[CinetPay Seamless] L'objet CinetPay n'est pas disponible sur window`);
-      return false;
-    }
-    
     // Vérifier que waitResponse est bien une fonction
     if (typeof window.CinetPay.waitResponse !== 'function') {
       console.error(`[CinetPay Seamless] La méthode waitResponse n'est pas une fonction!`);
       return false;
     }
     
-    // Configuration de la callback selon la documentation
+    // Configuration de la callback exactement selon la documentation
     console.log(`[CinetPay Seamless] Installation du listener waitResponse`);
     window.CinetPay.waitResponse((data: CinetPayCallbackData) => {
       console.log(`[CinetPay Seamless] CALLBACK REÇU de CinetPay:`, data);
       
-      // Vérification du statut selon la documentation
+      // Suivre exactement l'exemple de la documentation
       if (data.status === "REFUSED") {
         console.log(`[CinetPay Seamless] Paiement refusé`);
       } else if (data.status === "ACCEPTED") {
@@ -226,6 +278,19 @@ export const setupCinetPayCallback = (callback: (data: CinetPayCallbackData) => 
       // Appel du callback personnalisé
       callback(data);
     });
+    
+    // Configuration des gestionnaires d'erreur et de fermeture si disponibles
+    if (typeof window.CinetPay.onError === 'function') {
+      window.CinetPay.onError(function(error: any) {
+        console.error('[CinetPay Seamless] Erreur CinetPay:', error);
+      });
+    }
+    
+    if (typeof window.CinetPay.onClose === 'function') {
+      window.CinetPay.onClose(function() {
+        console.log('[CinetPay Seamless] Fenêtre CinetPay fermée');
+      });
+    }
     
     console.log(`[CinetPay Seamless] Callback CinetPay configuré avec succès`);
     return true;

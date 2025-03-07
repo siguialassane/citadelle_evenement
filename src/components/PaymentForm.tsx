@@ -1,8 +1,8 @@
 // Commentaires: Ce fichier gère l'intégration du paiement CinetPay Seamless
 // Dernière modification: 
-// - Mise en conformité avec la documentation CinetPay
-// - Correction du format des données envoyées (amount en string)
-// - Amélioration de la gestion des callbacks
+// - Amélioration de la vérification du SDK avec Promise basée sur des retries
+// - Simplification stricte selon la documentation CinetPay
+// - Ajout d'un délai d'attente pour l'initialisation complète
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -60,18 +60,11 @@ export function PaymentForm({ participant }: PaymentFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCinetPayLoaded, setIsCinetPayLoaded] = useState(false);
   const [useOldMethod, setUseOldMethod] = useState(false); // Utiliser l'ancienne méthode d'API si le SDK échoue
+  const [sdkLoadError, setSdkLoadError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   console.log(`PaymentForm: Initialisation pour le participant ID:`, participant.id);
-  console.log("PaymentForm: Détails du participant:", {
-    id: participant.id,
-    nom: participant.last_name,
-    prenom: participant.first_name,
-    email: participant.email,
-    telephone: participant.contact_number,
-    is_member: participant.is_member
-  });
-
+  
   // Initialiser le formulaire avec react-hook-form et zod
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
@@ -82,57 +75,48 @@ export function PaymentForm({ participant }: PaymentFormProps) {
 
   // Vérifier si le SDK CinetPay est chargé au chargement du composant
   useEffect(() => {
-    const checkCinetPaySDK = () => {
-      const sdkLoaded = isCinetPaySDKLoaded();
-      console.log(`PaymentForm: Vérification du SDK CinetPay:`, sdkLoaded ? "Chargé" : "Non chargé");
+    const checkCinetPaySDK = async () => {
+      console.log(`PaymentForm: Vérification du chargement du SDK CinetPay...`);
       
-      if (sdkLoaded && window.CinetPay) {
-        console.log("PaymentForm: SDK CinetPay disponible - Variables globales:", {
-          CinetPay: typeof window.CinetPay !== 'undefined',
-          getCheckout: typeof window.getCheckout !== 'undefined',
-          checkoutData: typeof window.checkoutData !== 'undefined',
-          cinetPayFunctions: window.CinetPay ? Object.keys(window.CinetPay) : []
-        });
+      try {
+        // Utiliser la nouvelle fonction avec Promise et retries
+        const sdkLoaded = await isCinetPaySDKLoaded(5, 1000);
+        console.log(`PaymentForm: Résultat de la vérification du SDK:`, sdkLoaded ? "Chargé" : "Non chargé");
         
-        // Vérifier les fonctions disponibles dans l'objet CinetPay
-        console.log("PaymentForm: Fonctions CinetPay disponibles:", {
-          hasSetConfig: typeof window.CinetPay?.setConfig === 'function',
-          hasGetCheckout: typeof window.CinetPay?.getCheckout === 'function',
-          hasWaitResponse: typeof window.CinetPay?.waitResponse === 'function'
-        });
-      }
-      
-      setIsCinetPayLoaded(sdkLoaded);
-      
-      if (!sdkLoaded) {
-        console.warn("PaymentForm: Le SDK CinetPay n'est pas chargé. L'API direct sera utilisée.");
-        setUseOldMethod(true);
-      } else {
-        // Démarrer la surveillance des intégrations CinetPay
-        monitorCinetPayIntegration();
+        setIsCinetPayLoaded(sdkLoaded);
         
-        // Essayer d'ajouter des écouteurs d'événements pour les événements CinetPay standards
-        try {
-          window.addEventListener('message', (event) => {
-            console.log("PaymentForm: Event window.message reçu:", event.data);
-            
-            // Vérifier si le message provient de CinetPay
-            if (event.data && 
-                (typeof event.data === 'string' && event.data.includes('cinetpay')) || 
-                (typeof event.data === 'object' && JSON.stringify(event.data).includes('cinetpay'))) {
-              console.log("PaymentForm: Message potentiellement de CinetPay détecté:", event.data);
-            }
-          });
+        if (!sdkLoaded) {
+          console.warn("PaymentForm: Le SDK CinetPay n'est pas correctement chargé. L'API direct sera utilisée.");
+          setSdkLoadError("Le SDK CinetPay n'a pas pu être chargé correctement.");
+          setUseOldMethod(true);
+        } else {
+          // Démarrer la surveillance des intégrations CinetPay
+          monitorCinetPayIntegration();
           
-          console.log("PaymentForm: Écouteur window.message ajouté");
-        } catch (eventError) {
-          console.error("PaymentForm: Erreur lors de l'ajout de l'écouteur d'événement message:", eventError);
+          // Essayer d'ajouter des écouteurs d'événements pour les événements CinetPay standards
+          try {
+            window.addEventListener('message', (event) => {
+              console.log("PaymentForm: Event window.message reçu:", event.data);
+              
+              if (typeof event.data === 'object' && event.data !== null) {
+                console.log("PaymentForm: Message de type objet détecté:", JSON.stringify(event.data));
+              }
+            });
+            
+            console.log("PaymentForm: Écouteur window.message ajouté");
+          } catch (eventError) {
+            console.error("PaymentForm: Erreur lors de l'ajout de l'écouteur d'événement message:", eventError);
+          }
         }
+      } catch (error) {
+        console.error("PaymentForm: Erreur lors de la vérification du SDK:", error);
+        setSdkLoadError("Erreur lors de la vérification du SDK CinetPay.");
+        setUseOldMethod(true);
       }
     };
 
-    // Vérifier après un court délai pour s'assurer que le script a eu le temps de se charger
-    const timer = setTimeout(checkCinetPaySDK, 1000);
+    // Laisser un peu de temps au script de se charger complètement
+    const timer = setTimeout(checkCinetPaySDK, 2000);
     
     return () => clearTimeout(timer);
   }, []);
@@ -339,8 +323,6 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       
       // Réinitialiser l'état de CinetPay en rechargeant la page en cas d'erreur
       window.location.reload();
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -355,10 +337,17 @@ export function PaymentForm({ participant }: PaymentFormProps) {
     
     // Initialiser le SDK
     console.log("PaymentForm: Tentative d'initialisation du SDK CinetPay");
-    if (!initCinetPaySDK(notifyUrl)) {
+    if (!(await initCinetPaySDK(notifyUrl))) {
       console.error("PaymentForm: Échec de l'initialisation du SDK CinetPay");
+      toast({
+        title: "Erreur",
+        description: "Échec de l'initialisation du SDK CinetPay. Utilisation de l'API directe.",
+        variant: "destructive",
+      });
       return false;
     }
+    
+    await new Promise(resolve => setTimeout(resolve, 500)); // Petit délai pour s'assurer que l'initialisation est complète
     
     // Configurer le callback
     console.log("PaymentForm: Configuration du callback CinetPay");
@@ -367,10 +356,12 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       return false;
     }
     
+    await new Promise(resolve => setTimeout(resolve, 500)); // Petit délai avant de lancer le paiement
+    
     // Métadonnées selon documentation (format string)
     const metadata = `PARTICIPANT:${participant.id}`;
     
-    // Préparer les données de paiement selon la documentation
+    // Préparer les données de paiement STRICTEMENT selon la documentation
     const paymentData = {
       transaction_id: transactionId,
       amount: PAYMENT_AMOUNT, // Sera converti en string dans startCinetPayPayment
@@ -396,24 +387,20 @@ export function PaymentForm({ participant }: PaymentFormProps) {
     
     console.log("PaymentForm: Paiement via SDK Seamless initié:", paymentStarted ? "Succès" : "Échec");
     
-    // Ajouter une vérification après l'initialisation
-    if (paymentStarted) {
-      setTimeout(() => {
-        console.log("PaymentForm: Vérification de l'état de CinetPay après initiation (3s):");
-        
-        // Rechercher des indices dans le DOM
-        const iframes = document.querySelectorAll('iframe');
-        console.log(`PaymentForm: Nombre d'iframes dans le DOM: ${iframes.length}`);
-        iframes.forEach((iframe, index) => {
-          if (iframe.src?.includes('cinetpay') || iframe.id?.includes('cinetpay')) {
-            console.log(`PaymentForm: Iframe CinetPay détecté:`, {
-              src: iframe.src,
-              id: iframe.id
-            });
-          }
+    // Vérifier après l'initialisation du paiement
+    setTimeout(() => {
+      const cinetpayElements = document.querySelectorAll('[id*="cinetpay"], [class*="cinetpay"]');
+      console.log(`PaymentForm: Éléments CinetPay trouvés dans le DOM: ${cinetpayElements.length}`);
+      
+      if (cinetpayElements.length === 0) {
+        console.warn("PaymentForm: Aucun élément CinetPay trouvé dans le DOM après initialisation");
+        toast({
+          title: "Attention",
+          description: "Le paiement a été initié mais aucune interface n'est visible. Essayez de désactiver les bloqueurs de publicités.",
+          variant: "destructive",
         });
-      }, 3000);
-    }
+      }
+    }, 3000);
     
     return paymentStarted;
   };
@@ -428,35 +415,27 @@ export function PaymentForm({ participant }: PaymentFormProps) {
       const transactionId = uuidv4();
       console.log("PaymentForm: ID de transaction généré:", transactionId);
       
-      // Tenter d'utiliser le SDK Seamless
+      // Tenter d'utiliser le SDK Seamless si disponible et activé
       if (isCinetPayLoaded && !useOldMethod) {
         console.log("PaymentForm: Tentative d'utilisation du SDK Seamless");
-        const seamlessSuccess = await initializeSeamlessPayment(values, transactionId);
         
-        if (seamlessSuccess) {
-          console.log("PaymentForm: Paiement via SDK Seamless initié avec succès");
-          console.log("PaymentForm: En attente de la réponse de CinetPay via waitResponse...");
+        // Vérifier une dernière fois que l'objet CinetPay est disponible
+        if (window.CinetPay && typeof window.CinetPay.getCheckout === 'function') {
+          const seamlessSuccess = await initializeSeamlessPayment(values, transactionId);
           
-          // Vérifier l'état de la page après un court délai
-          setTimeout(() => {
-            console.log("PaymentForm: État de la page 2 secondes après initialisation du paiement:");
-            console.log("PaymentForm: Document ready state:", document.readyState);
-            console.log("PaymentForm: Éléments ajoutés par CinetPay:", 
-              Array.from(document.querySelectorAll('[id*="cinetpay"], [class*="cinetpay"], [id*="checkout"], [class*="checkout"]'))
-                .map(el => ({
-                  tagName: el.tagName,
-                  id: (el as HTMLElement).id,
-                  classes: (el as HTMLElement).className
-                }))
-            );
-          }, 2000);
-          
-          return; // Le traitement est géré par le callback
+          if (seamlessSuccess) {
+            console.log("PaymentForm: Paiement via SDK Seamless initié avec succès");
+            console.log("PaymentForm: En attente de la réponse de CinetPay via waitResponse...");
+            return; // Le traitement est géré par le callback
+          } else {
+            console.warn("PaymentForm: Échec de l'initialisation du paiement avec SDK Seamless, passage à l'API directe");
+          }
         } else {
-          console.warn("PaymentForm: Échec de l'initialisation du paiement avec SDK Seamless, passage à l'API directe");
+          console.warn("PaymentForm: L'objet CinetPay n'est pas correctement disponible, passage à l'API directe");
         }
       }
       
+      // Si on arrive ici, c'est que le SDK a échoué ou n'est pas disponible
       // Utiliser l'API directe en cas d'échec du SDK
       console.log("PaymentForm: Utilisation de l'API directe CinetPay");
       
@@ -578,6 +557,12 @@ export function PaymentForm({ participant }: PaymentFormProps) {
               Utiliser l'API directe (sans SDK Seamless)
             </label>
           </div>
+          
+          {sdkLoadError && (
+            <div className="text-red-500 text-sm mt-2 p-2 bg-red-50 rounded-md">
+              {sdkLoadError}
+            </div>
+          )}
         </div>
 
         <Form {...form}>
@@ -627,7 +612,7 @@ export function PaymentForm({ participant }: PaymentFormProps) {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={isProcessing || (!isCinetPayLoaded && !useOldMethod)}
+              disabled={isProcessing}
             >
               {isProcessing ? (
                 <>

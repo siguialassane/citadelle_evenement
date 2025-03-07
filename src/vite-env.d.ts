@@ -47,6 +47,21 @@ interface Window {
     }) => void) => void;
     onError?: (callback: (data: any) => void) => void;
     onClose?: (callback: () => void) => void;
+    // Propriétés ajoutées selon les logs d'analyse
+    cdnjs?: any;
+    cinetpay_url?: string;
+    socket_server?: string;
+    checkout?: any;
+    payment_data?: any;
+    response?: any;
+    error?: any;
+    config?: any;
+    type?: string;
+    old_socket_id?: string;
+    new_socket_id?: string;
+    socket_disconnect?: boolean;
+    checkout_close?: boolean;
+    loaded?: boolean;
   };
   getCheckout?: any; // Généré dynamiquement par CinetPay après l'appel de getCheckout
   checkoutData?: any; // Généré dynamiquement par CinetPay après l'appel de getCheckout
