@@ -21,12 +21,5 @@ export const PARTICIPANT_EMAILJS_TEMPLATE_ID = "template_dwx7qnw"; // Template p
 
 // Template pour la confirmation après validation du paiement (avec QR code)
 export const PAYMENT_CONFIRMATION_EMAILJS_SERVICE_ID = "service_is5645q";
-export const PAYMENT_CONFIRMATION_EMAILJS_TEMPLATE_ID = "template_v5nzwip"; // Template de confirmation avec QR code
-export const PAYMENT_CONFIRMATION_EMAILJS_PUBLIC_KEY = "pWG3H0YqA-EKu4hqC";
-
-// Numéros de paiement
-export const PAYMENT_NUMBERS = {
-  MTN: "0503002817",
-  MOOV: "0140229857",
-  WAVE: "0503002817" // Même que MTN
-};
+export const PAYMENT_CONFIRMATION_EMAILJS_TEMPLATE_ID = "template_xvdr1iq"; // Template de confirmation avec QR code (corrigé)
+export const PAYMENT_CONFIRMATION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae"; // Clé publique correcte

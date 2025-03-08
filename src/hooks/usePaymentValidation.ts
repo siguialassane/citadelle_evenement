@@ -215,7 +215,20 @@ export const usePaymentValidation = (paymentId?: string) => {
       if (fetchError) throw fetchError;
       if (!participantData) throw new Error("Participant non trouvé");
 
-      await sendConfirmationEmail(participantData, participantData.qr_code_id);
+      console.log("Avant d'appeler sendConfirmationEmail - participant data:", participantData);
+      
+      try {
+        const emailResult = await sendConfirmationEmail(participantData, participantData.qr_code_id);
+        console.log("Résultat de l'envoi d'email:", emailResult);
+      } catch (emailError: any) {
+        console.error("Erreur lors de l'envoi de l'email de confirmation:", emailError);
+        // Ne pas bloquer la validation à cause d'un problème d'email
+        toast({
+          title: "Attention",
+          description: "Le paiement a été validé mais l'envoi de l'email de confirmation a échoué.",
+          variant: "destructive",
+        });
+      }
 
       toast({
         title: "Paiement validé avec succès",
@@ -290,9 +303,12 @@ export const usePaymentValidation = (paymentId?: string) => {
 
   const sendConfirmationEmail = async (participantData: any, qrCodeId: string) => {
     try {
-      console.log("Envoi de l'email de confirmation au participant après validation...");
+      console.log("Début de l'envoi de l'email de confirmation au participant après validation...");
+      console.log("Service ID:", PAYMENT_CONFIRMATION_EMAILJS_SERVICE_ID);
+      console.log("Template ID:", PAYMENT_CONFIRMATION_EMAILJS_TEMPLATE_ID);
+      console.log("Public Key:", PAYMENT_CONFIRMATION_EMAILJS_PUBLIC_KEY);
       
-      console.log("Données du participant:", JSON.stringify(participantData));
+      console.log("Données complètes du participant:", JSON.stringify(participantData));
       
       const appUrl = window.location.origin;
       
@@ -302,6 +318,7 @@ export const usePaymentValidation = (paymentId?: string) => {
       
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(confirmationUrl)}`;
       
+      // Préparation des paramètres pour le template_xvdr1iq
       const templateParams = {
         to_email: participantData.email.trim(),
         prenom: participantData.first_name.trim(),
@@ -313,13 +330,14 @@ export const usePaymentValidation = (paymentId?: string) => {
         participant_id: participantData.id,
         app_url: appUrl,
         receipt_url: `${appUrl}/confirmation/${participantData.id}`,
+        badge_url: `${appUrl}/confirmation/${participantData.id}`,
         
         to_name: `${participantData.first_name} ${participantData.last_name}`,
         from_name: "IFTAR 2024",
         reply_to: "ne-pas-repondre@lacitadelle.ci"
       };
 
-      console.log("Paramètres pour EmailJS (confirmation après validation):", templateParams);
+      console.log("Paramètres pour EmailJS (confirmation après validation):", JSON.stringify(templateParams));
       console.log("URL de confirmation:", confirmationUrl);
       console.log("URL du QR code:", qrCodeUrl);
 
@@ -334,7 +352,7 @@ export const usePaymentValidation = (paymentId?: string) => {
       console.log("Email de confirmation avec QR code envoyé avec succès:", response);
       return true;
     } catch (error) {
-      console.error("Erreur lors de l'envoi de l'email de confirmation au participant:", error);
+      console.error("Erreur détaillée lors de l'envoi de l'email de confirmation au participant:", error);
       throw error;
     }
   };
