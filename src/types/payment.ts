@@ -21,7 +21,7 @@ export interface Payment {
 
 export interface ManualPayment {
   id: string;
-  participant_id: string;
+  participant_id?: string; // Rendu optionnel car non présent dans les données jointes via Supabase
   amount: number;
   payment_method: string;
   phone_number: string;
@@ -33,4 +33,3 @@ export interface ManualPayment {
   validated_at?: string;
   validated_by?: string;
 }
-

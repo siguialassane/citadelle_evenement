@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { type Participant } from "../../types/participant";
+import { type ManualPayment } from "../../types/payment";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell } from "lucide-react";
@@ -87,7 +88,12 @@ const AdminDashboard = () => {
             amount,
             payment_method,
             phone_number,
-            created_at
+            created_at,
+            comments,
+            screenshot_url,
+            admin_notes,
+            validated_at,
+            validated_by
           )
         `)
         .order('created_at', { ascending: false });
@@ -96,8 +102,21 @@ const AdminDashboard = () => {
         throw error;
       }
 
-      setParticipants(data || []);
-      setFilteredParticipants(data || []);
+      // Avant d'assigner les données au state, nous nous assurons que 
+      // les champs obligatoires sont présents dans manual_payments
+      const processedData = data?.map(participant => {
+        if (participant.manual_payments) {
+          // Nous pouvons ajouter participant_id si nécessaire, bien que nous l'ayons rendu optionnel
+          participant.manual_payments = participant.manual_payments.map((payment: any) => ({
+            ...payment,
+            participant_id: participant.id  // Nous ajoutons cette propriété manuellement
+          }));
+        }
+        return participant;
+      }) || [];
+
+      setParticipants(processedData);
+      setFilteredParticipants(processedData);
     } catch (error) {
       console.error("Erreur lors de la récupération des participants:", error);
       toast({
