@@ -1,6 +1,8 @@
+
 // Ce fichier gère la page d'administration pour la validation des paiements manuels
 // Il permet aux administrateurs de voir les paiements en attente, de consulter les informations
 // et de valider ou rejeter les paiements
+// Dernière mise à jour: Ajout d'une redirection automatique après validation/rejet d'un paiement
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -232,11 +234,10 @@ const PaymentValidation = () => {
         variant: "default",
       });
 
-      if (paymentId) {
-        fetchPaymentById(paymentId);
-      } else {
-        fetchPendingPayments();
-      }
+      // Redirection vers la liste des paiements en attente après validation
+      setTimeout(() => {
+        navigate("/admin/payment-validation");
+      }, 1500);
 
     } catch (error: any) {
       console.error("Erreur lors de la validation du paiement:", error);
@@ -267,11 +268,10 @@ const PaymentValidation = () => {
         variant: "default",
       });
 
-      if (paymentId) {
-        fetchPaymentById(paymentId);
-      } else {
-        fetchPendingPayments();
-      }
+      // Redirection vers la liste des paiements en attente après rejet
+      setTimeout(() => {
+        navigate("/admin/payment-validation");
+      }, 1500);
 
     } catch (error: any) {
       console.error("Erreur lors du rejet du paiement:", error);
@@ -432,7 +432,7 @@ const PaymentValidation = () => {
                 <Button 
                   variant="ghost"
                   onClick={() => rejectPayment(payment.id)}
-                  disabled={isRejecting}
+                  disabled={isRejecting || isValidating}
                 >
                   {isRejecting ? (
                     <>
@@ -449,7 +449,7 @@ const PaymentValidation = () => {
                 
                 <Button 
                   onClick={() => validatePayment(payment.id)}
-                  disabled={isValidating}
+                  disabled={isValidating || isRejecting}
                 >
                   {isValidating ? (
                     <>
