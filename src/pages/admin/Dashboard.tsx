@@ -5,6 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { type Participant } from "../../types/participant";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Bell } from "lucide-react";
 
 // Composants refactorisés
 import { Header } from "@/components/admin/dashboard/Header";
@@ -24,6 +27,7 @@ const AdminDashboard = () => {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [pdfDownloaded, setPdfDownloaded] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pendingPayments, setPendingPayments] = useState<number>(0);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -40,6 +44,7 @@ const AdminDashboard = () => {
 
     checkAuth();
     fetchParticipants();
+    fetchPendingPaymentsCount();
   }, [navigate]);
 
   useEffect(() => {
@@ -97,9 +102,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchPendingPaymentsCount = async () => {
+    try {
+      const { data, error, count } = await supabase
+        .from('manual_payments')
+        .select('id', { count: 'exact' })
+        .eq('status', 'pending');
+
+      if (error) {
+        throw error;
+      }
+
+      setPendingPayments(count || 0);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des paiements en attente:", error);
+    }
+  };
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchParticipants();
+    await fetchPendingPaymentsCount();
     setIsRefreshing(false);
     toast({
       title: "Données actualisées",
@@ -159,11 +182,34 @@ const AdminDashboard = () => {
     setDetailsOpen(true);
   };
 
+  const goToPaymentValidation = () => {
+    navigate("/admin/payment-validation");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header onLogout={handleLogout} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Tableau de bord
+          </h1>
+          <Button 
+            onClick={goToPaymentValidation} 
+            className="flex items-center gap-2"
+            variant="outline"
+          >
+            {pendingPayments > 0 && (
+              <Badge className="bg-red-500 text-white">
+                {pendingPayments}
+              </Badge>
+            )}
+            <Bell className="h-4 w-4 mr-1" />
+            Validation des paiements
+          </Button>
+        </div>
+
         <SearchAndExport 
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}

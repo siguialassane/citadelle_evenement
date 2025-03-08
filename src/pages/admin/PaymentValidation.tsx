@@ -27,7 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { LogOut, Search, Eye, Check, X } from "lucide-react";
+import { LogOut, Search, Eye, Check, X, LayoutDashboard } from "lucide-react";
 import emailjs from '@emailjs/browser';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,7 @@ const PaymentValidation = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
   const [filteredPayments, setFilteredPayments] = useState<any[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -133,6 +134,10 @@ const PaymentValidation = () => {
       console.log("Paiements récupérés:", payments);
       setPendingPayments(payments || []);
       setFilteredPayments(payments || []);
+      
+      // Compter les paiements en attente
+      const pendingCount = (payments || []).filter(p => p.status === 'pending').length;
+      setPendingCount(pendingCount);
     } catch (error: any) {
       console.error("Erreur lors de la récupération des paiements:", error);
       toast({
@@ -397,14 +402,20 @@ const PaymentValidation = () => {
                 Validation des Paiements
               </h1>
               <p className="text-sm text-gray-600">
-                Gérez les paiements en attente de validation
+                {pendingCount > 0 ? (
+                  <span className="text-red-500 font-medium">{pendingCount} paiement(s) en attente de validation</span>
+                ) : (
+                  "Tous les paiements ont été traités"
+                )}
               </p>
             </div>
             <div className="flex space-x-4">
               <Button 
                 variant="outline" 
                 onClick={handleGoToDashboard}
+                className="flex items-center gap-2"
               >
+                <LayoutDashboard className="h-4 w-4 mr-1" />
                 Tableau de bord
               </Button>
               <Button 
