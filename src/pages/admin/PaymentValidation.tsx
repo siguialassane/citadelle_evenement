@@ -1,8 +1,8 @@
 
 // Ce fichier gère la page d'administration pour la validation des paiements manuels
-// Il permet aux administrateurs de voir les paiements en attente, de consulter les informations
-// et de valider ou rejeter les paiements
-// Dernière mise à jour: Ajout d'une redirection automatique après validation/rejet d'un paiement
+// Il permet aux administrateurs de voir les paiements sous forme de tableau
+// Il conserve toutes les fonctionnalités existantes mais avec une interface en tableau
+// Dernière mise à jour: Refonte de l'interface en format tableau
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -14,7 +14,8 @@ import {
   Clock, 
   SearchIcon, 
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from "lucide-react";
 import {
   Card,
@@ -40,6 +41,15 @@ import {
   PARTICIPANT_EMAILJS_PUBLIC_KEY 
 } from "@/components/manual-payment/config";
 import { PARTICIPANT_PAYMENT_CONFIRMATION_TEMPLATE } from "@/components/manual-payment/EmailTemplates";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Payment {
   id: string;
@@ -50,6 +60,8 @@ interface Payment {
   status: string;
   comments: string;
   created_at: string;
+  formatted_date: string;
+  formatted_time: string;
   participant_name: string;
   participant_email: string;
   participant_phone: string;
@@ -66,6 +78,7 @@ const PaymentValidation = () => {
   const [isRejecting, setIsRejecting] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [totalPayments, setTotalPayments] = useState(0);
   const { paymentId } = useParams();
   const navigate = useNavigate();
 
@@ -91,35 +104,53 @@ const PaymentValidation = () => {
           *,
           participants(*)
         `)
-        .eq('status', 'pending');
+        .order('created_at', { ascending: false });
 
       if (paymentsError) throw paymentsError;
 
       if (!paymentsData || paymentsData.length === 0) {
         toast({
-          title: "Aucun paiement en attente",
-          description: "Il n'y a aucun paiement en attente de validation pour le moment.",
+          title: "Aucun paiement trouvé",
+          description: "Il n'y a aucun paiement dans le système pour le moment.",
         });
         setPayments([]);
         setFilteredPayments([]);
+        setTotalPayments(0);
         return;
       }
 
-      const formattedPayments = paymentsData.map(payment => ({
-        id: payment.id,
-        participant_id: payment.participant_id,
-        amount: payment.amount,
-        payment_method: payment.payment_method,
-        phone_number: payment.phone_number,
-        status: payment.status,
-        comments: payment.comments,
-        created_at: new Date(payment.created_at).toLocaleString(),
-        participant_name: `${payment.participants.first_name} ${payment.participants.last_name}`,
-        participant_email: payment.participants.email,
-        participant_phone: payment.participants.contact_number,
-        participant: payment.participants
-      }));
+      // Formatter les paiements avec la date et l'heure séparées
+      const formattedPayments = paymentsData.map(payment => {
+        const date = new Date(payment.created_at);
+        const formattedDate = date.toLocaleDateString('fr-FR');
+        const formattedTime = date.toLocaleTimeString('fr-FR', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit' 
+        });
 
+        return {
+          id: payment.id,
+          participant_id: payment.participant_id,
+          amount: payment.amount,
+          payment_method: payment.payment_method,
+          phone_number: payment.phone_number,
+          status: payment.status,
+          comments: payment.comments,
+          created_at: payment.created_at,
+          formatted_date: formattedDate,
+          formatted_time: formattedTime,
+          participant_name: `${payment.participants.first_name} ${payment.participants.last_name}`,
+          participant_email: payment.participants.email,
+          participant_phone: payment.participants.contact_number,
+          participant: payment.participants
+        };
+      });
+
+      // Compter les paiements en attente
+      const pendingPayments = formattedPayments.filter(p => p.status === 'pending');
+      setTotalPayments(pendingPayments.length);
+      
       setPayments(formattedPayments);
       setFilteredPayments(formattedPayments);
 
@@ -151,6 +182,14 @@ const PaymentValidation = () => {
         return;
       }
 
+      const date = new Date(paymentData.created_at);
+      const formattedDate = date.toLocaleDateString('fr-FR');
+      const formattedTime = date.toLocaleTimeString('fr-FR', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+      });
+
       const formattedPayment = {
         id: paymentData.id,
         participant_id: paymentData.participant_id,
@@ -159,7 +198,9 @@ const PaymentValidation = () => {
         phone_number: paymentData.phone_number,
         status: paymentData.status,
         comments: paymentData.comments,
-        created_at: new Date(paymentData.created_at).toLocaleString(),
+        created_at: paymentData.created_at,
+        formatted_date: formattedDate,
+        formatted_time: formattedTime,
         participant_name: `${paymentData.participants.first_name} ${paymentData.participants.last_name}`,
         participant_email: paymentData.participants.email,
         participant_phone: paymentData.participants.contact_number,
@@ -203,7 +244,10 @@ const PaymentValidation = () => {
 
       if (updateError) throw updateError;
 
-      if (!currentPayment) {
+      // Trouver le paiement courant dans la liste, ou utiliser le paiement actuel
+      const paymentToValidate = currentPayment || payments.find(p => p.id === paymentId);
+      
+      if (!paymentToValidate) {
         throw new Error("Données de paiement manquantes");
       }
 
@@ -213,14 +257,14 @@ const PaymentValidation = () => {
           payment_status: 'completed',
           qr_code_id: uuidv4()
         })
-        .eq('id', currentPayment.participant_id);
+        .eq('id', paymentToValidate.participant_id);
 
       if (participantError) throw participantError;
 
       const { data: participantData, error: fetchError } = await supabase
         .from('participants')
         .select('*')
-        .eq('id', currentPayment.participant_id)
+        .eq('id', paymentToValidate.participant_id)
         .single();
 
       if (fetchError) throw fetchError;
@@ -230,9 +274,19 @@ const PaymentValidation = () => {
 
       toast({
         title: "Paiement validé avec succès",
-        description: `Un email de confirmation a été envoyé à ${currentPayment.participant_email}`,
+        description: `Un email de confirmation a été envoyé à ${paymentToValidate.participant_email}`,
         variant: "default",
       });
+
+      // Mettre à jour la liste des paiements localement
+      const updatedPayments = payments.map(payment => 
+        payment.id === paymentId 
+          ? { ...payment, status: 'completed' } 
+          : payment
+      );
+      
+      setPayments(updatedPayments);
+      filterPayments(searchQuery);
 
       // Redirection vers la liste des paiements en attente après validation
       setTimeout(() => {
@@ -267,6 +321,16 @@ const PaymentValidation = () => {
         description: "Le paiement a été rejeté et le participant sera notifié.",
         variant: "default",
       });
+
+      // Mettre à jour la liste des paiements localement
+      const updatedPayments = payments.map(payment => 
+        payment.id === paymentId 
+          ? { ...payment, status: 'rejected' } 
+          : payment
+      );
+      
+      setPayments(updatedPayments);
+      filterPayments(searchQuery);
 
       // Redirection vers la liste des paiements en attente après rejet
       setTimeout(() => {
@@ -337,6 +401,18 @@ const PaymentValidation = () => {
   const handleBackToList = () => {
     navigate("/admin/payment-validation");
   };
+  
+  const handleViewDetails = (paymentId: string) => {
+    navigate(`/admin/payment-validation/${paymentId}`);
+  };
+  
+  const handleRefresh = () => {
+    fetchPendingPayments();
+    toast({
+      title: "Liste actualisée",
+      description: "La liste des paiements a été actualisée",
+    });
+  };
 
   if (isLoading) {
     return (
@@ -361,78 +437,93 @@ const PaymentValidation = () => {
     );
   }
 
-  return (
-    <div className="container mx-auto py-10">
-      <div className="mb-6 flex items-center justify-between">
+  // Si nous sommes sur la page détaillée d'un paiement
+  if (paymentId && currentPayment) {
+    return (
+      <div className="container mx-auto py-10">
         <Button 
           variant="outline" 
-          className="flex items-center gap-2"
+          className="mb-6 flex items-center gap-2"
           onClick={handleBackToList}
         >
           <ArrowLeft className="h-4 w-4" />
           Retour à la liste
         </Button>
         
-        {!paymentId && (
-          <div className="relative w-64">
-            <Input
-              type="text"
-              placeholder="Rechercher un participant..."
-              value={searchQuery}
-              onChange={handleSearch}
-              className="pr-10"
-            />
-            <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
-          </div>
-        )}
-      </div>
-
-      {filteredPayments.length === 0 && !isLoading ? (
-        <Alert variant="default">
-          <AlertTitle>Aucun paiement trouvé</AlertTitle>
-          <AlertDescription>
-            Aucun paiement ne correspond à votre recherche.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredPayments.map((payment) => (
-            <Card key={payment.id}>
-              <CardHeader>
-                <CardTitle>
-                  {payment.participant_name}
-                </CardTitle>
-                <CardDescription>
-                  {payment.participant_email}
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-500">
-                    Méthode: {payment.payment_method}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Montant: {payment.amount} XOF
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Téléphone: {payment.phone_number}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Date: {payment.created_at}
-                  </p>
-                  <Separator />
-                  <p className="text-sm text-gray-500">
-                    Commentaires: {payment.comments || "Aucun commentaire"}
-                  </p>
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Détails du paiement de {currentPayment.participant_name}
+            </CardTitle>
+            <CardDescription>
+              {currentPayment.participant_email} • {currentPayment.participant_phone}
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Méthode de paiement</p>
+                  <p>{currentPayment.payment_method}</p>
                 </div>
-              </CardContent>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Montant</p>
+                  <p>{currentPayment.amount} XOF</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Numéro de téléphone</p>
+                  <p>{currentPayment.phone_number}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Date de création</p>
+                  <p>{currentPayment.formatted_date} à {currentPayment.formatted_time}</p>
+                </div>
+              </div>
               
-              <CardFooter className="flex justify-between">
+              <Separator />
+              
+              <div>
+                <p className="text-sm font-medium text-gray-500">Commentaires</p>
+                <p>{currentPayment.comments || "Aucun commentaire"}</p>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <p className="text-sm font-medium text-gray-500">Statut actuel</p>
+                <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  currentPayment.status === 'completed' 
+                    ? 'bg-green-100 text-green-800' 
+                    : currentPayment.status === 'rejected'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {currentPayment.status === 'completed' 
+                    ? 'Validé' 
+                    : currentPayment.status === 'rejected'
+                    ? 'Rejeté'
+                    : 'En attente'}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+          
+          <CardFooter className="flex flex-col sm:flex-row sm:justify-end gap-3">
+            <Button 
+              variant="outline"
+              onClick={handleBackToList}
+            >
+              Retour
+            </Button>
+            
+            {currentPayment.status === 'pending' && (
+              <>
                 <Button 
-                  variant="ghost"
-                  onClick={() => rejectPayment(payment.id)}
+                  variant="outline"
+                  onClick={() => rejectPayment(currentPayment.id)}
                   disabled={isRejecting || isValidating}
+                  className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
                 >
                   {isRejecting ? (
                     <>
@@ -448,8 +539,9 @@ const PaymentValidation = () => {
                 </Button>
                 
                 <Button 
-                  onClick={() => validatePayment(payment.id)}
+                  onClick={() => validatePayment(currentPayment.id)}
                   disabled={isValidating || isRejecting}
+                  className="bg-green-600 hover:bg-green-700"
                 >
                   {isValidating ? (
                     <>
@@ -463,9 +555,148 @@ const PaymentValidation = () => {
                     </>
                   )}
                 </Button>
-              </CardFooter>
-            </Card>
-          ))}
+              </>
+            )}
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  // Page principale avec le tableau des paiements
+  return (
+    <div className="container mx-auto py-10">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Validation des Paiements</h1>
+        {filteredPayments.filter(p => p.status === 'pending').length > 0 ? (
+          <p className="text-gray-600 mt-1">
+            {filteredPayments.filter(p => p.status === 'pending').length} paiement(s) en attente de validation
+          </p>
+        ) : (
+          <p className="text-gray-600 mt-1">
+            Tous les paiements ont été traités
+          </p>
+        )}
+      </div>
+
+      <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        <div className="relative w-full sm:w-64">
+          <Input
+            type="text"
+            placeholder="Rechercher un participant..."
+            value={searchQuery}
+            onChange={handleSearch}
+            className="pr-10"
+          />
+          <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-gray-500">{filteredPayments.length} paiement(s) trouvé(s)</p>
+          <Button variant="outline" onClick={handleRefresh} className="flex gap-2 items-center">
+            Actualiser
+          </Button>
+        </div>
+      </div>
+
+      {filteredPayments.length === 0 && !isLoading ? (
+        <Alert variant="default">
+          <AlertTitle>Aucun paiement trouvé</AlertTitle>
+          <AlertDescription>
+            Aucun paiement ne correspond à votre recherche.
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <div className="overflow-x-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[120px]">Date</TableHead>
+                <TableHead>Participant</TableHead>
+                <TableHead>Méthode</TableHead>
+                <TableHead>Montant</TableHead>
+                <TableHead>Statut</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredPayments.map((payment) => (
+                <TableRow key={payment.id}>
+                  <TableCell className="font-medium">
+                    <div>{payment.formatted_date}</div>
+                    <div className="text-xs text-gray-500">{payment.formatted_time}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">{payment.participant_name}</div>
+                    <div className="text-xs text-gray-500">{payment.participant_email}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div>{payment.payment_method}</div>
+                    <div className="text-xs text-gray-500">{payment.phone_number}</div>
+                  </TableCell>
+                  <TableCell>{payment.amount} XOF</TableCell>
+                  <TableCell>
+                    <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      payment.status === 'completed' 
+                        ? 'bg-green-100 text-green-800' 
+                        : payment.status === 'rejected'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {payment.status === 'completed' 
+                        ? 'Validé' 
+                        : payment.status === 'rejected'
+                        ? 'Rejeté'
+                        : 'En attente'}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleViewDetails(payment.id)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      
+                      {payment.status === 'pending' && (
+                        <>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => rejectPayment(payment.id)}
+                            disabled={isRejecting || isValidating}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            {isRejecting && payment.id === currentPayment?.id ? (
+                              <Clock className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <XCircle className="h-4 w-4" />
+                            )}
+                          </Button>
+                          
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => validatePayment(payment.id)}
+                            disabled={isValidating || isRejecting}
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            {isValidating && payment.id === currentPayment?.id ? (
+                              <Clock className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckCircle className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>
