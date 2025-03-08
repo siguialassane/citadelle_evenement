@@ -1,4 +1,3 @@
-
 // Composant pour afficher les détails d'un participant
 import { 
   Dialog,
@@ -21,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import { type Participant, type Payment } from "../../../types/participant";
+import { type ManualPayment } from "../../../types/payment";
 
 interface ParticipantDetailsProps {
   open: boolean;
@@ -44,7 +44,7 @@ export const ParticipantDetails = ({
     });
   };
 
-  const getPaymentStatusBadge = (payment?: Payment) => {
+  const getPaymentStatusBadge = (payment?: Payment | ManualPayment) => {
     if (!payment) {
       return <Badge variant="outline" className="bg-gray-100 text-gray-800">Non payé</Badge>;
     }
@@ -52,6 +52,7 @@ export const ParticipantDetails = ({
     switch (payment.status.toUpperCase()) {
       case "APPROVED":
       case "SUCCESS":
+      case "COMPLETED":
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Confirmé</Badge>;
       case "PENDING":
         return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">En cours</Badge>;
@@ -63,6 +64,28 @@ export const ParticipantDetails = ({
         return <Badge variant="outline">{payment.status}</Badge>;
     }
   };
+
+  const getActivePayment = (participant: Participant | null) => {
+    if (!participant) return null;
+    
+    if (participant.payments?.length > 0) {
+      return { 
+        payment: participant.payments[0], 
+        type: 'standard' 
+      };
+    }
+    
+    if (participant.manual_payments?.length > 0) {
+      return { 
+        payment: participant.manual_payments[0], 
+        type: 'manual' 
+      };
+    }
+    
+    return null;
+  };
+
+  const activePayment = participant ? getActivePayment(participant) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -117,28 +140,44 @@ export const ParticipantDetails = ({
                 <CardTitle className="text-lg">Détails du paiement</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {participant.payments && participant.payments.length > 0 ? (
+                {activePayment ? (
                   <>
                     <div>
                       <p className="text-sm text-muted-foreground">Statut</p>
-                      <div className="mt-1">{getPaymentStatusBadge(participant.payments[0])}</div>
+                      <div className="mt-1">{getPaymentStatusBadge(activePayment.payment)}</div>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Montant</p>
-                      <p className="font-medium">{participant.payments[0].amount} {participant.payments[0].currency || 'XOF'}</p>
+                      <p className="font-medium">
+                        {activePayment.payment.amount} 
+                        {activePayment.type === 'standard' 
+                          ? ` ${(activePayment.payment as Payment).currency || 'XOF'}`
+                          : ' XOF'}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Méthode de paiement</p>
-                      <p className="font-medium">{participant.payments[0].payment_method || 'Non spécifiée'}</p>
+                      <p className="font-medium">{activePayment.payment.payment_method || 'Non spécifiée'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Date de paiement</p>
-                      <p className="font-medium">{formatDate(participant.payments[0].payment_date)}</p>
+                      <p className="font-medium">
+                        {formatDate(activePayment.type === 'standard' 
+                          ? (activePayment.payment as Payment).payment_date
+                          : (activePayment.payment as ManualPayment).created_at
+                        )}
+                      </p>
                     </div>
-                    {participant.payments[0].transaction_id && (
+                    {activePayment.type === 'standard' && (activePayment.payment as Payment).transaction_id && (
                       <div>
                         <p className="text-sm text-muted-foreground">ID de transaction</p>
-                        <p className="font-medium">{participant.payments[0].transaction_id}</p>
+                        <p className="font-medium">{(activePayment.payment as Payment).transaction_id}</p>
+                      </div>
+                    )}
+                    {activePayment.type === 'manual' && (activePayment.payment as ManualPayment).comments && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Commentaires</p>
+                        <p className="font-medium">{(activePayment.payment as ManualPayment).comments}</p>
                       </div>
                     )}
                   </>

@@ -1,5 +1,7 @@
 
 // Types pour les participants et les paiements
+import { ManualPayment } from './payment';
+
 export type Participant = {
   id: string;
   first_name: string;
@@ -10,6 +12,7 @@ export type Participant = {
   check_in_status: boolean;
   created_at: string;
   payments: Payment[];
+  manual_payments?: ManualPayment[]; // Ajout de la propriété manual_payments
 };
 
 export type Payment = {
