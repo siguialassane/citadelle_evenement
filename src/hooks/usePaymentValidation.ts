@@ -328,6 +328,7 @@ export const usePaymentValidation = (paymentId?: string) => {
       
       const confirmationUrl = `${appUrl}/confirmation/${participantData.id}`;
       
+      // S'assurer que l'URL du QR code est encodée correctement
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(confirmationUrl)}`;
       
       // Préparation des paramètres pour le template de confirmation
