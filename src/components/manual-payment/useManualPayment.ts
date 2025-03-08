@@ -1,5 +1,6 @@
 
 // Ce hook gère toute la logique du paiement manuel
+// Dernière mise à jour: Amélioration de la gestion d'erreurs et clarification des logs
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -14,7 +15,6 @@ import {
   ADMIN_EMAIL
 } from "./config";
 import { PaymentMethod, Participant, CopyStates } from "./types";
-import { ADMIN_PAYMENT_VALIDATION_TEMPLATE } from "./EmailTemplates";
 
 export function useManualPayment(participant: Participant) {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -139,14 +139,22 @@ export function useManualPayment(participant: Participant) {
       console.log("Paiement manuel enregistré:", manualPayment);
 
       // Envoyer une notification à l'administrateur
-      await sendAdminNotification(manualPayment.id);
-
-      // Afficher un message de succès
-      toast({
-        title: "Paiement soumis avec succès",
-        description: "Votre demande est en attente de validation par un administrateur. Vous recevrez un email de confirmation une fois validée.",
-        variant: "default",
-      });
+      const emailSent = await sendAdminNotification(manualPayment.id);
+      if (!emailSent) {
+        console.warn("L'email de notification n'a pas pu être envoyé à l'administrateur, mais le paiement a été enregistré");
+        toast({
+          title: "Attention",
+          description: "Votre paiement a été soumis mais l'email de notification n'a pas pu être envoyé. Un administrateur sera informé de ce problème.",
+          variant: "destructive",
+        });
+      } else {
+        // Afficher un message de succès
+        toast({
+          title: "Paiement soumis avec succès",
+          description: "Votre demande est en attente de validation par un administrateur. Vous recevrez un email de confirmation une fois validée.",
+          variant: "default",
+        });
+      }
 
       // Rediriger vers une page d'attente
       setTimeout(() => {

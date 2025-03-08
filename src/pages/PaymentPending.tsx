@@ -38,6 +38,7 @@ const PaymentPending = () => {
           .single();
 
         if (participantError) {
+          console.error("Erreur lors de la récupération du participant:", participantError);
           throw participantError;
         }
 
@@ -55,18 +56,24 @@ const PaymentPending = () => {
           .eq('participant_id', participantId)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle(); // Utiliser maybeSingle au lieu de single pour éviter l'erreur
 
         if (paymentError) {
           console.error("Erreur lors de la récupération du paiement:", paymentError);
           // Ne pas définir d'erreur ici, car le participant peut ne pas avoir encore de paiement
-        } else {
+        } else if (paymentData) {
+          console.log("Paiement trouvé:", paymentData);
           setPayment(paymentData);
 
           // Si le paiement a été validé, rediriger vers la page de confirmation
-          if (paymentData && paymentData.status === 'completed') {
+          if (paymentData.status === 'completed') {
+            console.log("Paiement validé, redirection vers confirmation");
             navigate(`/confirmation/${participantId}`);
           }
+        } else {
+          console.log("Aucun paiement trouvé pour le participant:", participantId);
+          // Aucun paiement trouvé, mais ce n'est pas nécessairement une erreur
+          // On pourrait afficher un message spécifique à l'utilisateur
         }
       } catch (err: any) {
         console.error("Erreur lors de la récupération des données:", err);
@@ -89,7 +96,7 @@ const PaymentPending = () => {
           .eq('participant_id', participantId)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle(); // Utiliser maybeSingle au lieu de single
 
         if (error) {
           console.error("Erreur lors de la vérification du statut:", error);
@@ -103,13 +110,16 @@ const PaymentPending = () => {
             variant: "default",
           });
           
+          console.log("Paiement validé détecté, redirection vers confirmation");
           // Rediriger vers la page de confirmation
           setTimeout(() => {
             navigate(`/confirmation/${participantId}`);
           }, 2000);
         }
 
-        setPayment(data);
+        if (data) {
+          setPayment(data);
+        }
       } catch (err) {
         console.error("Erreur lors de la vérification du statut:", err);
       }
@@ -163,6 +173,50 @@ const PaymentPending = () => {
           <div className="text-center">
             <Button onClick={handleBackToHome}>
               Retourner à la page d'accueil
+            </Button>
+          </div>
+        </div>
+        
+        <div className="fixed bottom-0 left-0 w-full h-2 flex">
+          <div className="bg-orange-500 w-1/3 h-full"></div>
+          <div className="bg-white w-1/3 h-full"></div>
+          <div className="bg-green-600 w-1/3 h-full"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Afficher un message si aucun paiement n'a été trouvé
+  if (!payment) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8">
+        <div className="fixed top-0 left-0 w-full h-2 flex">
+          <div className="bg-orange-500 w-1/3 h-full"></div>
+          <div className="bg-white w-1/3 h-full"></div>
+          <div className="bg-green-600 w-1/3 h-full"></div>
+        </div>
+        
+        <div className="max-w-3xl mx-auto">
+          <Button 
+            variant="outline" 
+            className="mb-6 flex items-center gap-2"
+            onClick={handleBackToHome}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour à l'accueil
+          </Button>
+          
+          <Alert className="mb-8">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Aucun paiement en attente</AlertTitle>
+            <AlertDescription>
+              Aucun paiement en attente n'a été trouvé pour ce participant. Si vous venez de soumettre un paiement, veuillez actualiser la page.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="text-center">
+            <Button onClick={() => window.location.reload()}>
+              Actualiser la page
             </Button>
           </div>
         </div>
@@ -233,7 +287,7 @@ const PaymentPending = () => {
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Montant</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {payment?.amount?.toLocaleString() || "1000"} XOF
+                  {payment?.amount.toLocaleString() || "1000"} XOF
                 </dd>
               </div>
               

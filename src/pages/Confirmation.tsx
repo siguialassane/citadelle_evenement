@@ -1,5 +1,5 @@
 
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -11,19 +11,18 @@ import EventLogo from "@/components/EventLogo";
 
 // Ce fichier gère la page de confirmation d'inscription après le paiement
 // Modifications:
-// - Suppression des dépendances CinetPay
-// - Simplification du processus de vérification du paiement
-// - Conservation du processus de génération de reçu
+// - Ajout du support des paiements manuels
+// - Gestion améliorée des erreurs
+// - Affichage des détails appropriés selon le type de paiement (manuel ou standard)
 
 const Confirmation = () => {
   const { participantId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const [participant, setParticipant] = useState<any>(null);
   const [payment, setPayment] = useState<any>(null);
+  const [isManualPayment, setIsManualPayment] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isVerifying, setIsVerifying] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
 
@@ -37,34 +36,80 @@ const Confirmation = () => {
           return;
         }
 
+        console.log("Récupération des données pour le participant:", participantId);
+
+        // 1. Récupérer les informations du participant
         const { data: participantData, error: participantError } = await supabase
           .from('participants')
           .select('*')
           .eq('id', participantId)
-          .single();
+          .maybeSingle();
 
         if (participantError) {
+          console.error("Erreur lors de la récupération du participant:", participantError);
           throw participantError;
         }
 
-        const { data: paymentData, error: paymentError } = await supabase
+        if (!participantData) {
+          console.error("Participant non trouvé:", participantId);
+          setError("Participant non trouvé. Veuillez vérifier l'URL ou contacter le support.");
+          return;
+        }
+
+        console.log("Participant trouvé:", participantData);
+        setParticipant(participantData);
+
+        // 2. Essayer d'abord de récupérer un paiement manuel
+        const { data: manualPaymentData, error: manualPaymentError } = await supabase
+          .from('manual_payments')
+          .select('*')
+          .eq('participant_id', participantId)
+          .eq('status', 'completed')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        // 3. Si un paiement manuel existe, l'utiliser
+        if (manualPaymentData) {
+          console.log("Paiement manuel trouvé:", manualPaymentData);
+          setPayment({
+            ...manualPaymentData,
+            currency: 'XOF',
+            payment_date: manualPaymentData.validated_at || manualPaymentData.created_at,
+            transaction_id: `MANUAL-${manualPaymentData.id.substring(0, 8)}`,
+          });
+          setIsManualPayment(true);
+          return;
+        } else if (manualPaymentError) {
+          console.error("Erreur lors de la récupération du paiement manuel:", manualPaymentError);
+        } else {
+          console.log("Aucun paiement manuel trouvé pour ce participant");
+        }
+
+        // 4. Sinon, essayer de récupérer un paiement standard
+        const { data: standardPaymentData, error: standardPaymentError } = await supabase
           .from('payments')
           .select('*')
           .eq('participant_id', participantId)
           .order('payment_date', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
-        if (paymentError) {
-          throw paymentError;
+        if (standardPaymentData) {
+          console.log("Paiement standard trouvé:", standardPaymentData);
+          setPayment(standardPaymentData);
+          setIsManualPayment(false);
+        } else if (standardPaymentError) {
+          console.error("Erreur lors de la récupération du paiement standard:", standardPaymentError);
+          throw standardPaymentError;
+        } else {
+          console.error("Aucun paiement trouvé pour ce participant");
+          setError("Aucun paiement validé trouvé pour ce participant.");
         }
-
-        setParticipant(participantData);
-        setPayment(paymentData);
 
       } catch (err: any) {
         console.error("Erreur lors de la récupération des données:", err);
-        setError(err.message || "Une erreur est survenue");
+        setError(err.message || "Une erreur est survenue lors de la récupération des données de paiement.");
       } finally {
         setLoading(false);
       }
@@ -149,6 +194,9 @@ const Confirmation = () => {
       wave: "Wave",
       orange_money: "Orange Money",
       moov_money: "Moov Money",
+      MTN: "MTN Money",
+      ORANGE: "Orange Money",
+      MOOV: "Moov Money",
       mtn_money: "MTN Money",
       bank_card: "Carte bancaire",
     };
@@ -203,6 +251,53 @@ const Confirmation = () => {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Erreur</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          
+          <div className="text-center">
+            <Button onClick={handleBackToHome} className="bg-green-700 hover:bg-green-800 text-white">
+              Retourner à la page d'accueil
+            </Button>
+          </div>
+        </div>
+        
+        <div className="fixed bottom-0 left-0 w-full h-2 flex">
+          <div className="bg-orange-500 w-1/3 h-full"></div>
+          <div className="bg-white w-1/3 h-full"></div>
+          <div className="bg-green-600 w-1/3 h-full"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Si aucun paiement n'a été trouvé
+  if (!payment) {
+    return (
+      <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+        <div className="fixed top-0 left-0 w-full h-2 flex">
+          <div className="bg-orange-500 w-1/3 h-full"></div>
+          <div className="bg-white w-1/3 h-full"></div>
+          <div className="bg-green-600 w-1/3 h-full"></div>
+        </div>
+        
+        <div className="max-w-3xl mx-auto">
+          <EventLogo size="medium" className="mb-6" />
+          
+          <Button 
+            variant="outline" 
+            className="mb-6 flex items-center gap-2 border-green-200 text-green-700"
+            onClick={handleBackToHome}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour à l'accueil
+          </Button>
+          
+          <Alert className="mb-8">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Aucun paiement validé</AlertTitle>
+            <AlertDescription>
+              Nous n'avons pas trouvé de paiement validé pour votre inscription. Si vous avez récemment effectué un paiement, 
+              il est possible qu'il soit en cours de traitement. Veuillez vérifier la page d'état de votre paiement ou contacter l'administrateur.
+            </AlertDescription>
           </Alert>
           
           <div className="text-center">
@@ -280,7 +375,7 @@ const Confirmation = () => {
                 Détails de votre inscription
               </h2>
               <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                Référence de transaction: {payment?.transaction_id}
+                Référence de transaction: {payment?.transaction_id || (isManualPayment ? `M-${payment?.id.substring(0, 8)}` : 'N/A')}
               </p>
             </div>
             <EventLogo size="small" />
@@ -315,7 +410,7 @@ const Confirmation = () => {
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Montant payé</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {payment?.amount.toLocaleString()} {payment?.currency}
+                  {payment?.amount.toLocaleString()} {payment?.currency || 'XOF'}
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -333,7 +428,16 @@ const Confirmation = () => {
                     year: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit'
-                  }) : "En attente"}
+                  }) : (
+                    isManualPayment && payment?.validated_at ? 
+                    new Date(payment.validated_at).toLocaleString('fr-FR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }) : "En attente"
+                  )}
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
