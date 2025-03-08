@@ -11,7 +11,8 @@ import {
   CheckCircle, 
   Clock, 
   SearchIcon, 
-  XCircle 
+  XCircle,
+  AlertCircle
 } from "lucide-react";
 import {
   Card,
@@ -71,22 +72,17 @@ const PaymentValidation = () => {
       ? `Valider le paiement | IFTAR 2024`
       : "Validation des paiements | IFTAR 2024";
 
-    // Vérifier si on est en mode validation spécifique ou liste des paiements
     if (paymentId) {
-      // Chercher le paiement spécifique
       fetchPaymentById(paymentId);
     } else {
-      // Chercher tous les paiements en attente
       fetchPendingPayments();
     }
   }, [paymentId]);
 
-  // Fonction pour récupérer tous les paiements en attente
   const fetchPendingPayments = async () => {
     try {
       setIsLoading(true);
       
-      // Récupérer tous les paiements avec le statut "pending" et inclure les informations du participant
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('manual_payments')
         .select(`
@@ -107,7 +103,6 @@ const PaymentValidation = () => {
         return;
       }
 
-      // Formater les données des paiements pour l'affichage
       const formattedPayments = paymentsData.map(payment => ({
         id: payment.id,
         participant_id: payment.participant_id,
@@ -134,12 +129,10 @@ const PaymentValidation = () => {
     }
   };
 
-  // Fonction pour récupérer un paiement spécifique par ID
   const fetchPaymentById = async (id: string) => {
     try {
       setIsLoading(true);
       
-      // Récupérer le paiement par ID
       const { data: paymentData, error: paymentError } = await supabase
         .from('manual_payments')
         .select(`
@@ -156,7 +149,6 @@ const PaymentValidation = () => {
         return;
       }
 
-      // Formater les données du paiement pour l'affichage
       const formattedPayment = {
         id: paymentData.id,
         participant_id: paymentData.participant_id,
@@ -183,13 +175,11 @@ const PaymentValidation = () => {
     }
   };
 
-  // Fonction de recherche
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     filterPayments(e.target.value);
   };
 
-  // Fonction pour filtrer les paiements en fonction de la recherche
   const filterPayments = (query: string) => {
     const lowerCaseQuery = query.toLowerCase();
     const filtered = payments.filter(payment =>
@@ -200,12 +190,10 @@ const PaymentValidation = () => {
     setFilteredPayments(filtered);
   };
 
-  // Fonction pour valider un paiement
   const validatePayment = async (paymentId: string) => {
     try {
       setIsValidating(true);
       
-      // Mettre à jour le statut du paiement
       const { error: updateError } = await supabase
         .from('manual_payments')
         .update({ status: 'completed' })
@@ -217,18 +205,16 @@ const PaymentValidation = () => {
         throw new Error("Données de paiement manquantes");
       }
 
-      // Mettre à jour le statut du participant
       const { error: participantError } = await supabase
         .from('participants')
         .update({ 
           payment_status: 'completed',
-          qr_code_id: uuidv4() // Générer un nouvel ID de QR code
+          qr_code_id: uuidv4()
         })
         .eq('id', currentPayment.participant_id);
 
       if (participantError) throw participantError;
 
-      // Récupérer les données mises à jour du participant
       const { data: participantData, error: fetchError } = await supabase
         .from('participants')
         .select('*')
@@ -238,17 +224,14 @@ const PaymentValidation = () => {
       if (fetchError) throw fetchError;
       if (!participantData) throw new Error("Participant non trouvé");
 
-      // Générer un QR code et envoyer un email de confirmation
       await sendConfirmationEmail(participantData, participantData.qr_code_id);
 
-      // Afficher un message de succès
       toast({
         title: "Paiement validé avec succès",
         description: `Un email de confirmation a été envoyé à ${currentPayment.participant_email}`,
         variant: "default",
       });
 
-      // Actualiser la liste des paiements
       if (paymentId) {
         fetchPaymentById(paymentId);
       } else {
@@ -267,12 +250,10 @@ const PaymentValidation = () => {
     }
   };
 
-  // Fonction pour rejeter un paiement
   const rejectPayment = async (paymentId: string) => {
     try {
       setIsRejecting(true);
 
-      // Mettre à jour le statut du paiement à "rejected"
       const { error: updateError } = await supabase
         .from('manual_payments')
         .update({ status: 'rejected' })
@@ -280,14 +261,12 @@ const PaymentValidation = () => {
 
       if (updateError) throw updateError;
 
-      // Afficher un message de succès
       toast({
         title: "Paiement rejeté avec succès",
         description: "Le paiement a été rejeté et le participant sera notifié.",
         variant: "default",
       });
 
-      // Actualiser la liste des paiements
       if (paymentId) {
         fetchPaymentById(paymentId);
       } else {
@@ -306,27 +285,20 @@ const PaymentValidation = () => {
     }
   };
 
-  // Fonction pour envoyer un email de confirmation au participant
   const sendConfirmationEmail = async (participantData: any, qrCodeId: string) => {
     try {
       console.log("Envoi de l'email de confirmation au participant...");
       
-      // Log plus détaillé de l'objet participant pour le débogage
       console.log("Données du participant:", JSON.stringify(participantData));
       
-      // URL de base de l'application
       const appUrl = window.location.origin;
       
-      // Déterminer le statut du participant
       const statut = participantData.is_member ? "Membre" : "Non-membre";
       
-      // Créer l'URL de confirmation
       const confirmationUrl = `${appUrl}/confirmation/${participantData.id}`;
       
-      // Générer l'URL du QR code
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(confirmationUrl)}`;
       
-      // Adapter les paramètres pour correspondre au template
       const templateParams = {
         to_email: participantData.email.trim(),
         prenom: participantData.first_name.trim(),
@@ -338,18 +310,15 @@ const PaymentValidation = () => {
         participant_id: participantData.id,
         app_url: appUrl,
         
-        // Variables nécessaires pour EmailJS
         to_name: `${participantData.first_name} ${participantData.last_name}`,
         from_name: "IFTAR 2024",
         reply_to: "ne-pas-repondre@lacitadelle.ci"
       };
 
-      // Log des paramètres pour débogage
       console.log("Paramètres pour EmailJS (participant):", templateParams);
       console.log("URL de confirmation:", confirmationUrl);
       console.log("URL du QR code:", qrCodeUrl);
 
-      // Envoi de l'email via EmailJS
       const response = await emailjs.send(
         PARTICIPANT_EMAILJS_SERVICE_ID,
         PARTICIPANT_EMAILJS_TEMPLATE_ID,
@@ -419,7 +388,7 @@ const PaymentValidation = () => {
       </div>
 
       {filteredPayments.length === 0 && !isLoading ? (
-        <Alert variant="info">
+        <Alert variant="default">
           <AlertTitle>Aucun paiement trouvé</AlertTitle>
           <AlertDescription>
             Aucun paiement ne correspond à votre recherche.
