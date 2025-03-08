@@ -1,4 +1,3 @@
-
 // Ce fichier gère la page d'administration pour la validation des paiements manuels
 // Il permet aux administrateurs de voir les paiements en attente, de consulter les informations
 // et de valider ou rejeter les paiements
@@ -181,17 +180,17 @@ const PaymentValidation = () => {
       // Log plus détaillé de l'objet participant pour le débogage
       console.log("Données du participant:", JSON.stringify(participantData));
       
+      // URL de base de l'application
+      const appUrl = window.location.origin;
+      
       // Déterminer le statut du participant
       const statut = participantData.is_member ? "Membre" : "Non-membre";
       
       // Créer l'URL de confirmation
-      const confirmationUrl = `${window.location.origin}/confirmation/${participantData.id}`;
+      const confirmationUrl = `${appUrl}/confirmation/${participantData.id}`;
       
       // Générer l'URL du QR code
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(confirmationUrl)}`;
-      
-      // Créer l'URL du badge (simulée pour le moment)
-      const badgeUrl = `${window.location.origin}/badge/${qrCodeId}`;
       
       // Adapter les paramètres pour correspondre au template
       const templateParams = {
@@ -201,10 +200,9 @@ const PaymentValidation = () => {
         email: participantData.email.trim(),
         tel: participantData.contact_number,
         status: statut,
-        badge_url: badgeUrl,
         qr_code_url: qrCodeUrl,
-        confirmation_url: confirmationUrl,
-        app_url: confirmationUrl,
+        participant_id: participantData.id,
+        app_url: appUrl,
         
         // Variables nécessaires pour EmailJS
         to_name: `${participantData.first_name} ${participantData.last_name}`,

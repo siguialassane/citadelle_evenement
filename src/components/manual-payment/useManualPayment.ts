@@ -50,7 +50,8 @@ export function useManualPayment(participant: Participant) {
     try {
       console.log("Envoi de notification à l'administrateur...");
       
-      const adminLink = `${window.location.origin}/admin/payment-validation/${manualPaymentId}`;
+      const appUrl = window.location.origin;
+      const adminLink = `${appUrl}/admin/payment-validation/${manualPaymentId}`;
       const currentDate = new Date().toLocaleString('fr-FR');
 
       const templateParams = {
@@ -64,7 +65,8 @@ export function useManualPayment(participant: Participant) {
         transaction_reference: transactionReference,
         payment_phone: phoneNumber,
         comments: comments || "Aucun commentaire",
-        validation_link: adminLink,
+        payment_id: manualPaymentId,
+        app_url: appUrl,
         current_date: currentDate,
         // Variables requises par EmailJS
         reply_to: "ne-pas-repondre@lacitadelle.ci"
