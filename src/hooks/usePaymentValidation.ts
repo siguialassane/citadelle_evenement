@@ -8,9 +8,9 @@ import { toast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import emailjs from '@emailjs/browser';
 import { 
-  PARTICIPANT_EMAILJS_SERVICE_ID, 
-  PARTICIPANT_EMAILJS_TEMPLATE_ID, 
-  PARTICIPANT_EMAILJS_PUBLIC_KEY 
+  PAYMENT_CONFIRMATION_EMAILJS_SERVICE_ID, 
+  PAYMENT_CONFIRMATION_EMAILJS_TEMPLATE_ID, 
+  PAYMENT_CONFIRMATION_EMAILJS_PUBLIC_KEY 
 } from "@/components/manual-payment/config";
 import { Payment } from "@/types/payment";
 
@@ -181,7 +181,11 @@ export const usePaymentValidation = (paymentId?: string) => {
       
       const { error: updateError } = await supabase
         .from('manual_payments')
-        .update({ status: 'completed' })
+        .update({ 
+          status: 'completed',
+          validated_at: new Date().toISOString(),
+          validated_by: "Admin" // Idéalement, remplacer par l'ID ou le nom de l'admin connecté
+        })
         .eq('id', paymentId);
 
       if (updateError) throw updateError;
@@ -286,7 +290,7 @@ export const usePaymentValidation = (paymentId?: string) => {
 
   const sendConfirmationEmail = async (participantData: any, qrCodeId: string) => {
     try {
-      console.log("Envoi de l'email de confirmation au participant...");
+      console.log("Envoi de l'email de confirmation au participant après validation...");
       
       console.log("Données du participant:", JSON.stringify(participantData));
       
@@ -308,27 +312,29 @@ export const usePaymentValidation = (paymentId?: string) => {
         qr_code_url: qrCodeUrl,
         participant_id: participantData.id,
         app_url: appUrl,
+        receipt_url: `${appUrl}/confirmation/${participantData.id}`,
         
         to_name: `${participantData.first_name} ${participantData.last_name}`,
         from_name: "IFTAR 2024",
         reply_to: "ne-pas-repondre@lacitadelle.ci"
       };
 
-      console.log("Paramètres pour EmailJS (participant):", templateParams);
+      console.log("Paramètres pour EmailJS (confirmation après validation):", templateParams);
       console.log("URL de confirmation:", confirmationUrl);
       console.log("URL du QR code:", qrCodeUrl);
 
+      // Utilisation du template de confirmation de paiement avec QR code
       const response = await emailjs.send(
-        PARTICIPANT_EMAILJS_SERVICE_ID,
-        PARTICIPANT_EMAILJS_TEMPLATE_ID,
+        PAYMENT_CONFIRMATION_EMAILJS_SERVICE_ID,
+        PAYMENT_CONFIRMATION_EMAILJS_TEMPLATE_ID,
         templateParams,
-        PARTICIPANT_EMAILJS_PUBLIC_KEY
+        PAYMENT_CONFIRMATION_EMAILJS_PUBLIC_KEY
       );
 
-      console.log("Email de confirmation envoyé avec succès:", response);
+      console.log("Email de confirmation avec QR code envoyé avec succès:", response);
       return true;
     } catch (error) {
-      console.error("Erreur lors de l'envoi de l'email au participant:", error);
+      console.error("Erreur lors de l'envoi de l'email de confirmation au participant:", error);
       throw error;
     }
   };

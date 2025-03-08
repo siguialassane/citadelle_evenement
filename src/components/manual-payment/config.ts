@@ -4,9 +4,9 @@
 // Définition des constantes
 export const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
 
-// Configuration EmailJS pour le participant
+// Configuration EmailJS pour le participant - Email initial (en attente de validation)
 export const EMAILJS_SERVICE_ID = "service_is5645q";
-export const EMAILJS_TEMPLATE_ID = "template_dwx7qnw"; // Template standard
+export const EMAILJS_TEMPLATE_ID = "template_dwx7qnw"; // Template pour notification initiale
 export const EMAILJS_PUBLIC_KEY = "pWG3H0YqA-EKu4hqC"; // Clé publique pour EmailJS
 
 // Configuration EmailJS pour l'admin
@@ -15,10 +15,14 @@ export const ADMIN_EMAILJS_TEMPLATE_ID = "template_dp1tu2w"; // Template admin
 export const ADMIN_EMAILJS_PUBLIC_KEY = "pWG3H0YqA-EKu4hqC";
 export const ADMIN_EMAIL = "siguialassane93@gmail.com";
 
-// Configuration spécifique pour les emails de confirmation au participant
+// Configuration spécifique pour les emails de confirmation au participant (après validation paiement)
 export const PARTICIPANT_EMAILJS_SERVICE_ID = "service_is5645q";
-export const PARTICIPANT_EMAILJS_TEMPLATE_ID = "template_dwx7qnw";
-export const PARTICIPANT_EMAILJS_PUBLIC_KEY = "pWG3H0YqA-EKu4hqC";
+export const PARTICIPANT_EMAILJS_TEMPLATE_ID = "template_dwx7qnw"; // Template pour email initial
+
+// Template pour la confirmation après validation du paiement (avec QR code)
+export const PAYMENT_CONFIRMATION_EMAILJS_SERVICE_ID = "service_is5645q";
+export const PAYMENT_CONFIRMATION_EMAILJS_TEMPLATE_ID = "template_v5nzwip"; // Template de confirmation avec QR code
+export const PAYMENT_CONFIRMATION_EMAILJS_PUBLIC_KEY = "pWG3H0YqA-EKu4hqC";
 
 // Numéros de paiement
 export const PAYMENT_NUMBERS = {
