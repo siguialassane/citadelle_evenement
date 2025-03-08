@@ -80,6 +80,14 @@ const AdminDashboard = () => {
             payment_date,
             currency,
             transaction_id
+          ),
+          manual_payments (
+            id,
+            status,
+            amount,
+            payment_method,
+            phone_number,
+            created_at
           )
         `)
         .order('created_at', { ascending: false });

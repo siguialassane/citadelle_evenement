@@ -37,24 +37,45 @@ export const ParticipantTable = ({
   onCheckIn
 }: ParticipantTableProps) => {
   
-  const getPaymentStatusBadge = (payment?: Payment) => {
-    if (!payment) {
-      return <Badge variant="outline" className="bg-gray-100 text-gray-800">Non payé</Badge>;
+  const getPaymentStatusBadge = (participant: Participant) => {
+    // Vérifier d'abord les paiements standard
+    if (participant.payments && participant.payments.length > 0) {
+      const payment = participant.payments[0];
+      
+      switch (payment.status.toUpperCase()) {
+        case "APPROVED":
+        case "SUCCESS":
+        case "COMPLETED":
+          return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Confirmé</Badge>;
+        case "PENDING":
+          return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">En cours</Badge>;
+        case "FAILED":
+        case "CANCELLED":
+        case "REJECTED":
+          return <Badge variant="destructive">Rejeté</Badge>;
+        default:
+          return <Badge variant="outline">{payment.status}</Badge>;
+      }
     }
     
-    switch (payment.status.toUpperCase()) {
-      case "APPROVED":
-      case "SUCCESS":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Confirmé</Badge>;
-      case "PENDING":
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">En cours</Badge>;
-      case "FAILED":
-      case "CANCELLED":
-      case "REJECTED":
-        return <Badge variant="destructive">Rejeté</Badge>;
-      default:
-        return <Badge variant="outline">{payment.status}</Badge>;
+    // Vérifier ensuite les paiements manuels
+    if (participant.manual_payments && participant.manual_payments.length > 0) {
+      const manualPayment = participant.manual_payments[0];
+      
+      switch (manualPayment.status.toLowerCase()) {
+        case "completed":
+          return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Confirmé</Badge>;
+        case "pending":
+          return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">En attente</Badge>;
+        case "rejected":
+          return <Badge variant="destructive">Rejeté</Badge>;
+        default:
+          return <Badge variant="outline">{manualPayment.status}</Badge>;
+      }
     }
+    
+    // Aucun paiement trouvé
+    return <Badge variant="outline" className="bg-gray-100 text-gray-800">Non payé</Badge>;
   };
 
   return (
@@ -119,7 +140,7 @@ export const ParticipantTable = ({
                   {new Date(participant.created_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
-                  {getPaymentStatusBadge(participant.payments?.[0])}
+                  {getPaymentStatusBadge(participant)}
                 </TableCell>
                 <TableCell>
                   {participant.check_in_status ? (
