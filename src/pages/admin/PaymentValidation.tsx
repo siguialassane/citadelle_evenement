@@ -3,180 +3,314 @@
 // et de valider ou rejeter les paiements
 
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-import { 
-  Table, 
-  TableBody, 
-  TableCaption, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { LogOut, Search, Eye, Check, X, LayoutDashboard } from "lucide-react";
+import { 
+  ArrowLeft, 
+  CheckCircle, 
+  Clock, 
+  SearchIcon, 
+  XCircle 
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { 
+  Alert, 
+  AlertDescription, 
+  AlertTitle 
+} from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
 import emailjs from '@emailjs/browser';
 import { v4 as uuidv4 } from 'uuid';
-import { Input } from "@/components/ui/input";
+import { 
+  PARTICIPANT_EMAILJS_SERVICE_ID, 
+  PARTICIPANT_EMAILJS_TEMPLATE_ID, 
+  PARTICIPANT_EMAILJS_PUBLIC_KEY 
+} from "@/components/manual-payment/config";
+import { PARTICIPANT_PAYMENT_CONFIRMATION_TEMPLATE } from "@/components/manual-payment/EmailTemplates";
 
-// Configuration EmailJS pour la notification de validation
-const EMAILJS_SERVICE_ID = "service_is5645q";
-const EMAILJS_PAYMENT_TEMPLATE_ID = "template_xvdr1iq";
-const EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
-
-const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
+interface Payment {
+  id: string;
+  participant_id: string;
+  amount: number;
+  payment_method: string;
+  phone_number: string;
+  status: string;
+  comments: string;
+  created_at: string;
+  participant_name: string;
+  participant_email: string;
+  participant_phone: string;
+  participant: any;
+}
 
 const PaymentValidation = () => {
-  const navigate = useNavigate();
-  const { paymentId } = useParams(); // Pour afficher directement un paiement spécifique
-  
-  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
-  const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
-  const [participant, setParticipant] = useState<any | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [currentPayment, setCurrentPayment] = useState<Payment | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [adminNotes, setAdminNotes] = useState("");
-  const [filteredPayments, setFilteredPayments] = useState<any[]>([]);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { paymentId } = useParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuth = () => {
-      const isAdmin = localStorage.getItem("adminAuth") === "true";
-      if (!isAdmin) {
-        toast({
-          title: "Accès non autorisé",
-          description: "Veuillez vous connecter pour accéder au tableau de bord.",
-          variant: "destructive",
-        });
-        navigate("/admin/login");
-      }
-    };
+    document.title = paymentId
+      ? `Valider le paiement | IFTAR 2024`
+      : "Validation des paiements | IFTAR 2024";
 
-    checkAuth();
-    fetchPendingPayments();
-  }, [navigate]);
-
-  // Filtrer les paiements lorsque le terme de recherche change
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredPayments(pendingPayments);
-      return;
+    // Vérifier si on est en mode validation spécifique ou liste des paiements
+    if (paymentId) {
+      // Chercher le paiement spécifique
+      fetchPaymentById(paymentId);
+    } else {
+      // Chercher tous les paiements en attente
+      fetchPendingPayments();
     }
+  }, [paymentId]);
 
-    const searchTermLower = searchTerm.toLowerCase();
-    const filtered = pendingPayments.filter(payment => {
-      const participantName = `${payment.participant?.first_name} ${payment.participant?.last_name}`.toLowerCase();
-      const participantEmail = payment.participant?.email.toLowerCase();
-      const participantPhone = payment.participant?.contact_number;
-      const paymentMethod = payment.payment_method?.toLowerCase();
-      const paymentPhone = payment.phone_number;
-
-      return (
-        participantName.includes(searchTermLower) ||
-        participantEmail.includes(searchTermLower) ||
-        participantPhone.includes(searchTerm) ||
-        paymentMethod?.includes(searchTermLower) ||
-        paymentPhone?.includes(searchTerm)
-      );
-    });
-
-    setFilteredPayments(filtered);
-  }, [searchTerm, pendingPayments]);
-
-  // Ouvrir les détails d'un paiement spécifique s'il est fourni dans l'URL
-  useEffect(() => {
-    if (paymentId && pendingPayments.length > 0) {
-      const payment = pendingPayments.find(p => p.id === paymentId);
-      if (payment) {
-        handleViewDetails(payment);
-      }
-    }
-  }, [paymentId, pendingPayments]);
-
+  // Fonction pour récupérer tous les paiements en attente
   const fetchPendingPayments = async () => {
     try {
       setIsLoading(true);
       
-      const { data: payments, error } = await supabase
+      // Récupérer tous les paiements avec le statut "pending" et inclure les informations du participant
+      const { data: paymentsData, error: paymentsError } = await supabase
         .from('manual_payments')
         .select(`
           *,
-          participant: participant_id (
-            id,
-            first_name,
-            last_name,
-            email,
-            contact_number,
-            is_member
-          )
+          participants(*)
         `)
-        .order('created_at', { ascending: false });
+        .eq('status', 'pending');
 
-      if (error) {
-        throw error;
+      if (paymentsError) throw paymentsError;
+
+      if (!paymentsData || paymentsData.length === 0) {
+        toast({
+          title: "Aucun paiement en attente",
+          description: "Il n'y a aucun paiement en attente de validation pour le moment.",
+        });
+        setPayments([]);
+        setFilteredPayments([]);
+        return;
       }
 
-      console.log("Paiements récupérés:", payments);
-      setPendingPayments(payments || []);
-      setFilteredPayments(payments || []);
-      
-      // Compter les paiements en attente
-      const pendingCount = (payments || []).filter(p => p.status === 'pending').length;
-      setPendingCount(pendingCount);
+      // Formater les données des paiements pour l'affichage
+      const formattedPayments = paymentsData.map(payment => ({
+        id: payment.id,
+        participant_id: payment.participant_id,
+        amount: payment.amount,
+        payment_method: payment.payment_method,
+        phone_number: payment.phone_number,
+        status: payment.status,
+        comments: payment.comments,
+        created_at: new Date(payment.created_at).toLocaleString(),
+        participant_name: `${payment.participants.first_name} ${payment.participants.last_name}`,
+        participant_email: payment.participants.email,
+        participant_phone: payment.participants.contact_number,
+        participant: payment.participants
+      }));
+
+      setPayments(formattedPayments);
+      setFilteredPayments(formattedPayments);
+
     } catch (error: any) {
       console.error("Erreur lors de la récupération des paiements:", error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de récupérer la liste des paiements.",
-        variant: "destructive",
-      });
+      setError(error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleViewDetails = (payment: any) => {
-    setSelectedPayment(payment);
-    setParticipant(payment.participant);
-    setAdminNotes("");
-    setDetailsOpen(true);
+  // Fonction pour récupérer un paiement spécifique par ID
+  const fetchPaymentById = async (id: string) => {
+    try {
+      setIsLoading(true);
+      
+      // Récupérer le paiement par ID
+      const { data: paymentData, error: paymentError } = await supabase
+        .from('manual_payments')
+        .select(`
+          *,
+          participants(*)
+        `)
+        .eq('id', id)
+        .single();
+
+      if (paymentError) throw paymentError;
+
+      if (!paymentData) {
+        setError("Paiement non trouvé");
+        return;
+      }
+
+      // Formater les données du paiement pour l'affichage
+      const formattedPayment = {
+        id: paymentData.id,
+        participant_id: paymentData.participant_id,
+        amount: paymentData.amount,
+        payment_method: paymentData.payment_method,
+        phone_number: paymentData.phone_number,
+        status: paymentData.status,
+        comments: paymentData.comments,
+        created_at: new Date(paymentData.created_at).toLocaleString(),
+        participant_name: `${paymentData.participants.first_name} ${paymentData.participants.last_name}`,
+        participant_email: paymentData.participants.email,
+        participant_phone: paymentData.participants.contact_number,
+        participant: paymentData.participants
+      };
+
+      setCurrentPayment(formattedPayment);
+      setFilteredPayments([formattedPayment]);
+
+    } catch (error: any) {
+      console.error("Erreur lors de la récupération du paiement:", error);
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCloseDetails = () => {
-    setSelectedPayment(null);
-    setParticipant(null);
-    setDetailsOpen(false);
+  // Fonction de recherche
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    filterPayments(e.target.value);
   };
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+  // Fonction pour filtrer les paiements en fonction de la recherche
+  const filterPayments = (query: string) => {
+    const lowerCaseQuery = query.toLowerCase();
+    const filtered = payments.filter(payment =>
+      payment.participant_name.toLowerCase().includes(lowerCaseQuery) ||
+      payment.participant_email.toLowerCase().includes(lowerCaseQuery) ||
+      payment.phone_number.toLowerCase().includes(lowerCaseQuery)
+    );
+    setFilteredPayments(filtered);
+  };
+
+  // Fonction pour valider un paiement
+  const validatePayment = async (paymentId: string) => {
+    try {
+      setIsValidating(true);
+      
+      // Mettre à jour le statut du paiement
+      const { error: updateError } = await supabase
+        .from('manual_payments')
+        .update({ status: 'completed' })
+        .eq('id', paymentId);
+
+      if (updateError) throw updateError;
+
+      if (!currentPayment) {
+        throw new Error("Données de paiement manquantes");
+      }
+
+      // Mettre à jour le statut du participant
+      const { error: participantError } = await supabase
+        .from('participants')
+        .update({ 
+          payment_status: 'completed',
+          qr_code_id: uuidv4() // Générer un nouvel ID de QR code
+        })
+        .eq('id', currentPayment.participant_id);
+
+      if (participantError) throw participantError;
+
+      // Récupérer les données mises à jour du participant
+      const { data: participantData, error: fetchError } = await supabase
+        .from('participants')
+        .select('*')
+        .eq('id', currentPayment.participant_id)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!participantData) throw new Error("Participant non trouvé");
+
+      // Générer un QR code et envoyer un email de confirmation
+      await sendConfirmationEmail(participantData, participantData.qr_code_id);
+
+      // Afficher un message de succès
+      toast({
+        title: "Paiement validé avec succès",
+        description: `Un email de confirmation a été envoyé à ${currentPayment.participant_email}`,
+        variant: "default",
+      });
+
+      // Actualiser la liste des paiements
+      if (paymentId) {
+        fetchPaymentById(paymentId);
+      } else {
+        fetchPendingPayments();
+      }
+
+    } catch (error: any) {
+      console.error("Erreur lors de la validation du paiement:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors de la validation du paiement",
+        variant: "destructive",
+      });
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  // Fonction pour rejeter un paiement
+  const rejectPayment = async (paymentId: string) => {
+    try {
+      setIsRejecting(true);
+
+      // Mettre à jour le statut du paiement à "rejected"
+      const { error: updateError } = await supabase
+        .from('manual_payments')
+        .update({ status: 'rejected' })
+        .eq('id', paymentId);
+
+      if (updateError) throw updateError;
+
+      // Afficher un message de succès
+      toast({
+        title: "Paiement rejeté avec succès",
+        description: "Le paiement a été rejeté et le participant sera notifié.",
+        variant: "default",
+      });
+
+      // Actualiser la liste des paiements
+      if (paymentId) {
+        fetchPaymentById(paymentId);
+      } else {
+        fetchPendingPayments();
+      }
+
+    } catch (error: any) {
+      console.error("Erreur lors du rejet du paiement:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors du rejet du paiement",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRejecting(false);
+    }
   };
 
   // Fonction pour envoyer un email de confirmation au participant
   const sendConfirmationEmail = async (participantData: any, qrCodeId: string) => {
     try {
-      console.log("Préparation de l'envoi d'email de confirmation via EmailJS");
+      console.log("Envoi de l'email de confirmation au participant...");
       
-      // Vérifier que l'email du participant existe
-      if (!participantData.email) {
-        console.error("Erreur: L'adresse email du participant est manquante");
-        return false;
-      }
-
       // Log plus détaillé de l'objet participant pour le débogage
       console.log("Données du participant:", JSON.stringify(participantData));
       
@@ -194,9 +328,9 @@ const PaymentValidation = () => {
       
       // Adapter les paramètres pour correspondre au template
       const templateParams = {
-        // Variables du template
-        nom: participantData.last_name,
-        prenom: participantData.first_name,
+        to_email: participantData.email.trim(),
+        prenom: participantData.first_name.trim(),
+        nom: participantData.last_name.trim(),
         email: participantData.email.trim(),
         tel: participantData.contact_number,
         status: statut,
@@ -206,482 +340,167 @@ const PaymentValidation = () => {
         
         // Variables nécessaires pour EmailJS
         to_name: `${participantData.first_name} ${participantData.last_name}`,
-        to_email: participantData.email.trim(),
-        from_name: "La Citadelle",
-        from_email: "no-reply@lacitadelle.ci",
-        reply_to: "info@lacitadelle.ci",
-        
-        // Informations de paiement
-        payment_amount: `${PAYMENT_AMOUNT.toLocaleString()} XOF`,
-        payment_method: "Mobile Money (Validation manuelle)",
-        transaction_id: selectedPayment.id,
-        payment_date: new Date().toLocaleString(),
-        qr_code_id: qrCodeId,
-        event_name: "Conférence La Citadelle"
+        from_name: "IFTAR 2024",
+        reply_to: "ne-pas-repondre@lacitadelle.ci"
       };
 
-      console.log("Paramètres du template EmailJS:", JSON.stringify(templateParams));
-      
-      // Vérification supplémentaire avant l'envoi
-      if (!templateParams.to_email) {
-        throw new Error("L'adresse email du destinataire est vide");
-      }
-      
+      // Log des paramètres pour débogage
+      console.log("Paramètres pour EmailJS (participant):", templateParams);
+      console.log("URL de confirmation:", confirmationUrl);
+      console.log("URL du QR code:", qrCodeUrl);
+
+      // Envoi de l'email via EmailJS
       const response = await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_PAYMENT_TEMPLATE_ID,
+        PARTICIPANT_EMAILJS_SERVICE_ID,
+        PARTICIPANT_EMAILJS_TEMPLATE_ID,
         templateParams,
-        EMAILJS_PUBLIC_KEY
+        PARTICIPANT_EMAILJS_PUBLIC_KEY
       );
 
-      console.log("Email envoyé avec succès:", response);
+      console.log("Email de confirmation envoyé avec succès:", response);
       return true;
     } catch (error) {
-      console.error("Erreur lors de l'envoi de l'email:", error);
-      return false;
+      console.error("Erreur lors de l'envoi de l'email au participant:", error);
+      throw error;
     }
   };
 
-  const validatePayment = async () => {
-    if (!selectedPayment || !participant) return;
-    
-    try {
-      setIsProcessing(true);
-      
-      // 1. Générer un QR code pour le participant
-      const qrCodeId = `QR-${participant.id}-${Date.now()}`;
-      console.log(`Génération du QR code ${qrCodeId}`);
-      
-      // 2. Mettre à jour le participant avec le QR code
-      const { error: participantUpdateError } = await supabase
-        .from('participants')
-        .update({
-          qr_code_id: qrCodeId
-        })
-        .eq('id', participant.id);
-
-      if (participantUpdateError) {
-        console.error("Erreur lors de la mise à jour du participant:", participantUpdateError);
-        throw participantUpdateError;
-      }
-
-      // 3. Mettre à jour le statut du paiement
-      const { error: paymentUpdateError } = await supabase
-        .from('manual_payments')
-        .update({
-          status: 'completed',
-          validated_at: new Date().toISOString(),
-          validated_by: "admin",
-          admin_notes: adminNotes
-        })
-        .eq('id', selectedPayment.id);
-
-      if (paymentUpdateError) {
-        console.error("Erreur lors de la mise à jour du paiement:", paymentUpdateError);
-        throw paymentUpdateError;
-      }
-
-      // 4. Créer un enregistrement de paiement normal
-      const { error: paymentRecordError } = await supabase
-        .from('payments')
-        .insert({
-          participant_id: participant.id,
-          amount: PAYMENT_AMOUNT,
-          payment_method: `Manuel (${selectedPayment.payment_method})`,
-          status: 'completed',
-          transaction_id: selectedPayment.id,
-          currency: "XOF"
-        });
-
-      if (paymentRecordError) {
-        console.error("Erreur lors de l'enregistrement du paiement:", paymentRecordError);
-        throw paymentRecordError;
-      }
-
-      // 5. Envoyer un email de confirmation
-      const emailSent = await sendConfirmationEmail(participant, qrCodeId);
-      
-      if (emailSent) {
-        console.log("Email de confirmation envoyé avec succès");
-      } else {
-        console.warn("L'email de confirmation n'a pas pu être envoyé");
-        // Continuer malgré l'échec de l'email
-      }
-
-      // 6. Mettre à jour l'interface
-      toast({
-        title: "Paiement validé",
-        description: "Le paiement a été validé avec succès. Un email a été envoyé au participant.",
-        variant: "default",
-      });
-      
-      // 7. Actualiser les données et fermer le modal
-      await fetchPendingPayments();
-      handleCloseDetails();
-      
-    } catch (error: any) {
-      console.error("Erreur lors de la validation du paiement:", error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Une erreur est survenue lors de la validation du paiement.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleBackToList = () => {
+    navigate("/admin/payment-validation");
   };
 
-  const rejectPayment = async () => {
-    if (!selectedPayment) return;
-    
-    try {
-      setIsProcessing(true);
-      
-      // Mettre à jour le statut du paiement
-      const { error } = await supabase
-        .from('manual_payments')
-        .update({
-          status: 'rejected',
-          validated_at: new Date().toISOString(),
-          validated_by: "admin",
-          admin_notes: adminNotes
-        })
-        .eq('id', selectedPayment.id);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Clock className="mx-auto h-6 w-6 animate-spin text-gray-500" />
+          <p className="mt-2 text-sm text-gray-500">Chargement des paiements...</p>
+        </div>
+      </div>
+    );
+  }
 
-      if (error) {
-        console.error("Erreur lors du rejet du paiement:", error);
-        throw error;
-      }
-
-      // Mettre à jour l'interface
-      toast({
-        title: "Paiement rejeté",
-        description: "Le paiement a été rejeté.",
-        variant: "default",
-      });
-      
-      // Actualiser les données et fermer le modal
-      await fetchPendingPayments();
-      handleCloseDetails();
-      
-    } catch (error: any) {
-      console.error("Erreur lors du rejet du paiement:", error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Une erreur est survenue lors du rejet du paiement.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("adminAuth");
-    toast({
-      title: "Déconnexion",
-      description: "Vous avez été déconnecté avec succès.",
-    });
-    navigate("/");
-  };
-
-  const handleGoToDashboard = () => {
-    navigate("/admin/dashboard");
-  };
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Erreur</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* En-tête avec navigation */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Validation des Paiements
-              </h1>
-              <p className="text-sm text-gray-600">
-                {pendingCount > 0 ? (
-                  <span className="text-red-500 font-medium">{pendingCount} paiement(s) en attente de validation</span>
-                ) : (
-                  "Tous les paiements ont été traités"
-                )}
-              </p>
-            </div>
-            <div className="flex space-x-4">
-              <Button 
-                variant="outline" 
-                onClick={handleGoToDashboard}
-                className="flex items-center gap-2"
-              >
-                <LayoutDashboard className="h-4 w-4 mr-1" />
-                Tableau de bord
-              </Button>
-              <Button 
-                variant="destructive" 
-                onClick={handleLogout}
-                className="flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                Déconnexion
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Barre de recherche et filtres */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+    <div className="container mx-auto py-10">
+      <div className="mb-6 flex items-center justify-between">
+        <Button 
+          variant="outline" 
+          className="flex items-center gap-2"
+          onClick={handleBackToList}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Retour à la liste
+        </Button>
+        
+        {!paymentId && (
+          <div className="relative w-64">
             <Input
               type="text"
-              placeholder="Rechercher par nom, email, téléphone..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="pl-10 w-full"
+              placeholder="Rechercher un participant..."
+              value={searchQuery}
+              onChange={handleSearch}
+              className="pr-10"
             />
+            <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
           </div>
-          
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-500">
-              {filteredPayments.length} paiement(s) trouvé(s)
-            </span>
-            <Button 
-              onClick={() => fetchPendingPayments()} 
-              variant="outline" 
-              size="sm"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-800"></div>
-              ) : "Actualiser"}
-            </Button>
-          </div>
-        </div>
+        )}
+      </div>
 
-        {/* Tableau des paiements */}
-        <Card>
-          <Table>
-            <TableCaption>Liste des paiements en attente de validation</TableCaption>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Participant</TableHead>
-                <TableHead>Méthode</TableHead>
-                <TableHead>Montant</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-700 mx-auto"></div>
-                    <p className="mt-2 text-gray-500">Chargement des paiements...</p>
-                  </TableCell>
-                </TableRow>
-              ) : filteredPayments.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10">
-                    <p className="text-gray-500">Aucun paiement trouvé</p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredPayments.map((payment) => (
-                  <TableRow key={payment.id}>
-                    <TableCell className="font-medium">
-                      {new Date(payment.created_at).toLocaleDateString()}
-                      <div className="text-xs text-gray-500">
-                        {new Date(payment.created_at).toLocaleTimeString()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {payment.participant?.first_name} {payment.participant?.last_name}
-                      <div className="text-xs text-gray-500">{payment.participant?.email}</div>
-                    </TableCell>
-                    <TableCell>
-                      {payment.payment_method}
-                      <div className="text-xs text-gray-500">{payment.phone_number}</div>
-                    </TableCell>
-                    <TableCell>{payment.amount} XOF</TableCell>
-                    <TableCell>
-                      {payment.status === 'pending' ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                          En attente
-                        </span>
-                      ) : payment.status === 'completed' ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Validé
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          Rejeté
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        onClick={() => handleViewDetails(payment)}
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                      >
-                        <Eye className="h-4 w-4" />
-                        <span className="sr-only">Voir détails</span>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </Card>
-      </main>
-
-      {/* Modal de détails du paiement */}
-      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Détails du paiement</DialogTitle>
-            <DialogDescription>
-              Vérifiez les informations et validez ou rejetez ce paiement
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedPayment && participant && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Informations du participant */}
-              <div className="space-y-4">
-                <h3 className="font-medium text-lg border-b pb-2">Informations du participant</h3>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="font-medium text-sm">Nom complet:</div>
-                  <div className="col-span-2 text-sm">{participant.first_name} {participant.last_name}</div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="font-medium text-sm">Email:</div>
-                  <div className="col-span-2 text-sm">{participant.email}</div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="font-medium text-sm">Téléphone:</div>
-                  <div className="col-span-2 text-sm">{participant.contact_number}</div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="font-medium text-sm">Membre:</div>
-                  <div className="col-span-2 text-sm">{participant.is_member ? "Oui" : "Non"}</div>
-                </div>
-                
-                <h3 className="font-medium text-lg border-b pb-2 mt-6">Détails du paiement</h3>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="font-medium text-sm">Montant:</div>
-                  <div className="col-span-2 text-sm">{selectedPayment.amount} XOF</div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="font-medium text-sm">Méthode:</div>
-                  <div className="col-span-2 text-sm">{selectedPayment.payment_method}</div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="font-medium text-sm">Numéro utilisé:</div>
-                  <div className="col-span-2 text-sm">{selectedPayment.phone_number}</div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="font-medium text-sm">Date:</div>
-                  <div className="col-span-2 text-sm">{new Date(selectedPayment.created_at).toLocaleString()}</div>
-                </div>
-                
-                {selectedPayment.comments && (
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="font-medium text-sm">Commentaires:</div>
-                    <div className="col-span-2 text-sm">{selectedPayment.comments}</div>
-                  </div>
-                )}
-                
-                <div className="mt-4">
-                  <label className="block text-sm font-medium mb-2">
-                    Notes administratives (facultatif):
-                  </label>
-                  <Textarea
-                    placeholder="Ajoutez des notes concernant ce paiement"
-                    value={adminNotes}
-                    onChange={(e) => setAdminNotes(e.target.value)}
-                    className="w-full"
-                    rows={3}
-                  />
-                </div>
-              </div>
-
-              {/* Actions de validation */}
-              <div className="space-y-4">
-                <h3 className="font-medium text-lg border-b pb-2">Instructions de validation</h3>
-                
-                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                  <p className="text-sm text-yellow-800 mb-4">
-                    Avant de valider ce paiement, vérifiez les points suivants:
+      {filteredPayments.length === 0 && !isLoading ? (
+        <Alert variant="info">
+          <AlertTitle>Aucun paiement trouvé</AlertTitle>
+          <AlertDescription>
+            Aucun paiement ne correspond à votre recherche.
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredPayments.map((payment) => (
+            <Card key={payment.id}>
+              <CardHeader>
+                <CardTitle>
+                  {payment.participant_name}
+                </CardTitle>
+                <CardDescription>
+                  {payment.participant_email}
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-500">
+                    Méthode: {payment.payment_method}
                   </p>
-                  <ul className="list-disc list-inside text-sm text-yellow-800 space-y-2">
-                    <li>Le numéro de téléphone de paiement correspond à un numéro mobile money valide</li>
-                    <li>Le montant du paiement (1000 XOF) a bien été reçu sur ce numéro</li>
-                    <li>Vérifiez que le participant n'a pas déjà été validé</li>
-                    <li>Les commentaires du participant peuvent contenir des informations utiles</li>
-                  </ul>
+                  <p className="text-sm text-gray-500">
+                    Montant: {payment.amount} XOF
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Téléphone: {payment.phone_number}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Date: {payment.created_at}
+                  </p>
+                  <Separator />
+                  <p className="text-sm text-gray-500">
+                    Commentaires: {payment.comments || "Aucun commentaire"}
+                  </p>
                 </div>
-                
-                <div className="mt-8 space-y-6">
-                  <h4 className="font-medium">Actions:</h4>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button
-                      variant="destructive"
-                      className="w-full flex items-center justify-center gap-2"
-                      onClick={rejectPayment}
-                      disabled={isProcessing}
-                    >
-                      <X className="h-4 w-4" />
+              </CardContent>
+              
+              <CardFooter className="flex justify-between">
+                <Button 
+                  variant="ghost"
+                  onClick={() => rejectPayment(payment.id)}
+                  disabled={isRejecting}
+                >
+                  {isRejecting ? (
+                    <>
+                      <Clock className="mr-2 h-4 w-4 animate-spin" />
+                      Rejet en cours...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="mr-2 h-4 w-4" />
                       Rejeter
-                    </Button>
-                    
-                    <Button
-                      variant="default"
-                      className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
-                      onClick={validatePayment}
-                      disabled={isProcessing}
-                    >
-                      {isProcessing ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      ) : (
-                        <Check className="h-4 w-4" />
-                      )}
+                    </>
+                  )}
+                </Button>
+                
+                <Button 
+                  onClick={() => validatePayment(payment.id)}
+                  disabled={isValidating}
+                >
+                  {isValidating ? (
+                    <>
+                      <Clock className="mr-2 h-4 w-4 animate-spin" />
+                      Validation...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
                       Valider
-                    </Button>
-                  </div>
-                  
-                  <div className="text-center mt-4">
-                    <Button
-                      variant="outline"
-                      onClick={handleCloseDetails}
-                      className="w-full"
-                      disabled={isProcessing}
-                    >
-                      Fermer
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
-}
+};
 
 export default PaymentValidation;

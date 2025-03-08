@@ -50,10 +50,12 @@ export function useManualPayment(participant: Participant) {
     try {
       console.log("Envoi de notification à l'administrateur...");
       
+      // URL de base de l'application (important pour générer des liens absolus)
       const appUrl = window.location.origin;
       const adminLink = `${appUrl}/admin/payment-validation/${manualPaymentId}`;
       const currentDate = new Date().toLocaleString('fr-FR');
 
+      // Envoi d'email à l'administrateur
       const templateParams = {
         to_email: ADMIN_EMAIL,
         from_name: "Système d'Inscription IFTAR",
@@ -66,6 +68,7 @@ export function useManualPayment(participant: Participant) {
         payment_phone: phoneNumber,
         comments: comments || "Aucun commentaire",
         payment_id: manualPaymentId,
+        participant_id: participant.id, // Ajout de l'ID du participant pour les liens
         app_url: appUrl,
         current_date: currentDate,
         // Variables requises par EmailJS
@@ -73,6 +76,7 @@ export function useManualPayment(participant: Participant) {
       };
 
       console.log("Paramètres pour EmailJS (admin):", templateParams);
+      console.log("URL de la page de paiement en attente:", `${appUrl}/payment-pending/${participant.id}`);
 
       const response = await emailjs.send(
         ADMIN_EMAILJS_SERVICE_ID,
@@ -82,6 +86,10 @@ export function useManualPayment(participant: Participant) {
       );
 
       console.log("Email de notification admin envoyé avec succès:", response);
+      
+      // Envoyer un email au participant pour lui confirmer que sa demande est en cours de traitement
+      // Cette partie pourrait être implémentée séparément si besoin
+      
       return true;
     } catch (error) {
       console.error("Erreur lors de l'envoi de l'email à l'administrateur:", error);

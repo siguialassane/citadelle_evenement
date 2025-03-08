@@ -187,3 +187,97 @@ export const PARTICIPANT_PAYMENT_CONFIRMATION_TEMPLATE = `<!DOCTYPE html>
 </body>
 </html>`;
 
+/**
+ * Template d'email pour la notification de paiement en attente au participant
+ * À utiliser avec EmailJS pour informer le participant que son paiement est en cours de traitement
+ */
+export const PARTICIPANT_PAYMENT_PENDING_TEMPLATE = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Paiement en attente de validation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #f39c12;
+            padding-bottom: 10px;
+        }
+        .pending-btn {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 12px 20px;
+            background-color: #f39c12;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .pending-btn:hover {
+            background-color: #e67e22;
+        }
+        .payment-details {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Paiement en attente de validation</h1>
+        
+        <p>Bonjour {{first_name}} {{last_name}},</p>
+        
+        <p>Merci de nous avoir informés de votre paiement. Nous allons vérifier le montant et vous tenir au courant de l'avancement.</p>
+        
+        <div class="payment-details">
+            <h3>Détails de votre paiement :</h3>
+            <ul style="list-style: none; padding-left: 0;">
+                <li><strong>Montant :</strong> {{payment_amount}}</li>
+                <li><strong>Méthode :</strong> {{payment_method}}</li>
+                <li><strong>Numéro utilisé :</strong> {{payment_phone}}</li>
+                <li><strong>Référence :</strong> {{transaction_reference}}</li>
+                <li><strong>Date :</strong> {{current_date}}</li>
+            </ul>
+
+            <h3>Vos informations :</h3>
+            <ul style="list-style: none; padding-left: 0;">
+                <li><strong>Nom complet :</strong> {{first_name}} {{last_name}}</li>
+                <li><strong>Email :</strong> {{participant_email}}</li>
+                <li><strong>Téléphone :</strong> {{participant_phone}}</li>
+            </ul>
+        </div>
+
+        <p><strong>Statut :</strong> En attente de validation</p>
+
+        <a href="{{app_url}}/payment-pending/{{participant_id}}" class="pending-btn">Suivre mon paiement</a>
+        
+        <p>Cet email a été envoyé automatiquement suite à la soumission de votre paiement. Un administrateur va vérifier votre paiement et vous recevrez un email de confirmation une fois validé.</p>
+        <p>Pour toute question, n'hésitez pas à contacter notre équipe support.</p>
+        
+        <p style="font-size: 0.9em; text-align: center; margin-top: 30px; color: #7f8c8d;">
+            © La Citadelle 2024. Tous droits réservés.
+        </p>
+    </div>
+</body>
+</html>`;
