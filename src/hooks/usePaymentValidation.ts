@@ -1,6 +1,6 @@
 
 // Hook personnalisé pour gérer la logique de validation des paiements
-// Extrait pour une meilleure séparation de la logique et de l'interface
+// Mise à jour: Correction de l'envoi d'email de confirmation
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -196,11 +196,15 @@ export const usePaymentValidation = (paymentId?: string) => {
         throw new Error("Données de paiement manquantes");
       }
 
+      // Génération d'un UUID pour le QR code
+      const qrCodeId = uuidv4();
+      console.log("Génération d'un nouveau QR code ID:", qrCodeId);
+
       const { error: participantError } = await supabase
         .from('participants')
         .update({ 
           payment_status: 'completed',
-          qr_code_id: uuidv4()
+          qr_code_id: qrCodeId
         })
         .eq('id', paymentToValidate.participant_id);
 
@@ -215,11 +219,13 @@ export const usePaymentValidation = (paymentId?: string) => {
       if (fetchError) throw fetchError;
       if (!participantData) throw new Error("Participant non trouvé");
 
-      console.log("Avant d'appeler sendConfirmationEmail - participant data:", participantData);
+      console.log("Préparation de l'envoi de l'email de confirmation - participant data:", participantData);
+      console.log("QR code ID généré:", qrCodeId);
       
       try {
-        const emailResult = await sendConfirmationEmail(participantData, participantData.qr_code_id);
-        console.log("Résultat de l'envoi d'email:", emailResult);
+        // UNIQUEMENT envoyer l'email de confirmation lors de la validation
+        const emailResult = await sendConfirmationEmail(participantData, qrCodeId);
+        console.log("Résultat de l'envoi d'email de confirmation:", emailResult);
       } catch (emailError: any) {
         console.error("Erreur lors de l'envoi de l'email de confirmation:", emailError);
         // Ne pas bloquer la validation à cause d'un problème d'email
@@ -303,6 +309,7 @@ export const usePaymentValidation = (paymentId?: string) => {
 
   const sendConfirmationEmail = async (participantData: any, qrCodeId: string) => {
     try {
+      console.log("---ENVOI EMAIL DE CONFIRMATION---");
       console.log("Début de l'envoi de l'email de confirmation au participant après validation...");
       console.log("Service ID:", PAYMENT_CONFIRMATION_EMAILJS_SERVICE_ID);
       console.log("Template ID:", PAYMENT_CONFIRMATION_EMAILJS_TEMPLATE_ID);
@@ -318,7 +325,7 @@ export const usePaymentValidation = (paymentId?: string) => {
       
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(confirmationUrl)}`;
       
-      // Préparation des paramètres pour le template_xvdr1iq
+      // Préparation des paramètres pour le template de confirmation
       const templateParams = {
         to_email: participantData.email.trim(),
         prenom: participantData.first_name.trim(),

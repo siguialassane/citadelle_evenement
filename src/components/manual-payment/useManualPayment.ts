@@ -1,6 +1,6 @@
 
 // Ce hook gère toute la logique du paiement manuel
-// Dernière mise à jour: Amélioration de la gestion d'erreurs et clarification des logs
+// Mise à jour: Correction du problème d'envoi simultané des deux emails
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +12,10 @@ import {
   ADMIN_EMAILJS_SERVICE_ID, 
   ADMIN_EMAILJS_TEMPLATE_ID, 
   ADMIN_EMAILJS_PUBLIC_KEY,
-  ADMIN_EMAIL
+  ADMIN_EMAIL,
+  EMAILJS_SERVICE_ID, 
+  EMAILJS_TEMPLATE_ID, 
+  EMAILJS_PUBLIC_KEY
 } from "./config";
 import { PaymentMethod, Participant, CopyStates } from "./types";
 
@@ -45,10 +48,10 @@ export function useManualPayment(participant: Participant) {
     });
   };
 
-  // Fonction pour envoyer l'email de notification à l'administrateur
+  // Fonction pour envoyer l'email de notification UNIQUEMENT à l'administrateur
   const sendAdminNotification = async (manualPaymentId: string) => {
     try {
-      console.log("Envoi de notification à l'administrateur...");
+      console.log("Envoi de notification à l'administrateur UNIQUEMENT...");
       
       // URL de base de l'application (important pour générer des liens absolus)
       const appUrl = window.location.origin;
@@ -80,6 +83,7 @@ export function useManualPayment(participant: Participant) {
       console.log("URL de validation admin:", validationLink);
       console.log("URL de la page de paiement en attente:", `${appUrl}/payment-pending/${participant.id}`);
 
+      // N'envoyer QUE l'email à l'administrateur
       const response = await emailjs.send(
         ADMIN_EMAILJS_SERVICE_ID,
         ADMIN_EMAILJS_TEMPLATE_ID,
@@ -90,7 +94,30 @@ export function useManualPayment(participant: Participant) {
       console.log("Email de notification admin envoyé avec succès:", response);
       
       // Envoyer un email au participant pour lui confirmer que sa demande est en cours de traitement
-      // Cette partie pourrait être implémentée séparément si besoin
+      // Cette partie est séparée de l'email de confirmation finale avec QR code
+      const participantTemplateParams = {
+        to_email: participant.email,
+        to_name: `${participant.first_name} ${participant.last_name}`,
+        from_name: "IFTAR 2024",
+        prenom: participant.first_name,
+        nom: participant.last_name,
+        payment_method: paymentMethod,
+        payment_amount: `${PAYMENT_AMOUNT} XOF`,
+        payment_phone: phoneNumber,
+        app_url: appUrl,
+        pending_url: `${appUrl}/payment-pending/${participant.id}`,
+        reply_to: "ne-pas-repondre@lacitadelle.ci"
+      };
+
+      // Utiliser le service et template pour l'email INITIAL uniquement (et pas celui de confirmation)
+      const participantResponse = await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID, 
+        participantTemplateParams,
+        EMAILJS_PUBLIC_KEY
+      );
+
+      console.log("Email initial au participant envoyé avec succès:", participantResponse);
       
       return true;
     } catch (error) {
