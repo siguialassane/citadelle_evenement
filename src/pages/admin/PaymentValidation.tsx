@@ -1,8 +1,7 @@
-
 // Ce fichier gère la page d'administration pour la validation des paiements manuels
 // Il permet aux administrateurs de voir les paiements sous forme de tableau
 // Il conserve toutes les fonctionnalités existantes mais avec une interface en tableau
-// Dernière mise à jour: Refonte de l'interface en format tableau
+// Dernière mise à jour: Ajout du bouton de communication avec le dashboard principal
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -50,6 +49,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DashboardCommunication } from "@/components/admin/dashboard/DashboardCommunication";
 
 interface Payment {
   id: string;
@@ -119,7 +119,6 @@ const PaymentValidation = () => {
         return;
       }
 
-      // Formatter les paiements avec la date et l'heure séparées
       const formattedPayments = paymentsData.map(payment => {
         const date = new Date(payment.created_at);
         const formattedDate = date.toLocaleDateString('fr-FR');
@@ -147,7 +146,6 @@ const PaymentValidation = () => {
         };
       });
 
-      // Compter les paiements en attente
       const pendingPayments = formattedPayments.filter(p => p.status === 'pending');
       setTotalPayments(pendingPayments.length);
       
@@ -244,7 +242,6 @@ const PaymentValidation = () => {
 
       if (updateError) throw updateError;
 
-      // Trouver le paiement courant dans la liste, ou utiliser le paiement actuel
       const paymentToValidate = currentPayment || payments.find(p => p.id === paymentId);
       
       if (!paymentToValidate) {
@@ -278,7 +275,6 @@ const PaymentValidation = () => {
         variant: "default",
       });
 
-      // Mettre à jour la liste des paiements localement
       const updatedPayments = payments.map(payment => 
         payment.id === paymentId 
           ? { ...payment, status: 'completed' } 
@@ -288,7 +284,6 @@ const PaymentValidation = () => {
       setPayments(updatedPayments);
       filterPayments(searchQuery);
 
-      // Redirection vers la liste des paiements en attente après validation
       setTimeout(() => {
         navigate("/admin/payment-validation");
       }, 1500);
@@ -322,7 +317,6 @@ const PaymentValidation = () => {
         variant: "default",
       });
 
-      // Mettre à jour la liste des paiements localement
       const updatedPayments = payments.map(payment => 
         payment.id === paymentId 
           ? { ...payment, status: 'rejected' } 
@@ -332,7 +326,6 @@ const PaymentValidation = () => {
       setPayments(updatedPayments);
       filterPayments(searchQuery);
 
-      // Redirection vers la liste des paiements en attente après rejet
       setTimeout(() => {
         navigate("/admin/payment-validation");
       }, 1500);
@@ -437,18 +430,21 @@ const PaymentValidation = () => {
     );
   }
 
-  // Si nous sommes sur la page détaillée d'un paiement
   if (paymentId && currentPayment) {
     return (
       <div className="container mx-auto py-10">
-        <Button 
-          variant="outline" 
-          className="mb-6 flex items-center gap-2"
-          onClick={handleBackToList}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Retour à la liste
-        </Button>
+        <div className="flex justify-between items-center mb-6">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={handleBackToList}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour à la liste
+          </Button>
+          
+          <DashboardCommunication variant="outline" />
+        </div>
         
         <Card>
           <CardHeader>
@@ -563,20 +559,23 @@ const PaymentValidation = () => {
     );
   }
 
-  // Page principale avec le tableau des paiements
   return (
     <div className="container mx-auto py-10">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Validation des Paiements</h1>
-        {filteredPayments.filter(p => p.status === 'pending').length > 0 ? (
-          <p className="text-gray-600 mt-1">
-            {filteredPayments.filter(p => p.status === 'pending').length} paiement(s) en attente de validation
-          </p>
-        ) : (
-          <p className="text-gray-600 mt-1">
-            Tous les paiements ont été traités
-          </p>
-        )}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Validation des Paiements</h1>
+          {filteredPayments.filter(p => p.status === 'pending').length > 0 ? (
+            <p className="text-gray-600 mt-1">
+              {filteredPayments.filter(p => p.status === 'pending').length} paiement(s) en attente de validation
+            </p>
+          ) : (
+            <p className="text-gray-600 mt-1">
+              Tous les paiements ont été traités
+            </p>
+          )}
+        </div>
+        
+        <DashboardCommunication />
       </div>
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
