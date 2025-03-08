@@ -1,4 +1,3 @@
-
 // Ce fichier contient les templates d'emails utilisés dans l'application
 
 /**
@@ -91,7 +90,7 @@ export const ADMIN_PAYMENT_VALIDATION_TEMPLATE = `<!DOCTYPE html>
         
         <p><strong>Instructions :</strong> Veuillez vérifier que le paiement a bien été reçu sur le numéro correspondant et que la référence indiquée est correcte avant de valider.</p>
         
-        <a href="{{app_url}}/admin/payment-validation/{{payment_id}}" class="validate-btn">Valider ce paiement</a>
+        <a href="{{validation_link}}" class="validate-btn">Valider ce paiement</a>
         
         <p style="font-size: 0.9em; text-align: center; margin-top: 30px; color: #7f8c8d;">
             Cet email a été envoyé automatiquement par le système d'inscription IFTAR.<br>

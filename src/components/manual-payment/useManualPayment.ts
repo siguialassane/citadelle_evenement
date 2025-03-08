@@ -52,7 +52,7 @@ export function useManualPayment(participant: Participant) {
       
       // URL de base de l'application (important pour générer des liens absolus)
       const appUrl = window.location.origin;
-      const adminLink = `${appUrl}/admin/payment-validation/${manualPaymentId}`;
+      const validationLink = `${appUrl}/admin/payment-validation/${manualPaymentId}`;
       const currentDate = new Date().toLocaleString('fr-FR');
 
       // Envoi d'email à l'administrateur
@@ -71,11 +71,13 @@ export function useManualPayment(participant: Participant) {
         participant_id: participant.id, // Ajout de l'ID du participant pour les liens
         app_url: appUrl,
         current_date: currentDate,
+        validation_link: validationLink, // Ajout du lien de validation complet
         // Variables requises par EmailJS
         reply_to: "ne-pas-repondre@lacitadelle.ci"
       };
 
       console.log("Paramètres pour EmailJS (admin):", templateParams);
+      console.log("URL de validation admin:", validationLink);
       console.log("URL de la page de paiement en attente:", `${appUrl}/payment-pending/${participant.id}`);
 
       const response = await emailjs.send(
