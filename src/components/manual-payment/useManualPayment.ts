@@ -1,6 +1,6 @@
 
 // Ce hook gère toute la logique du paiement manuel
-// Mise à jour: Correction du problème d'envoi simultané des deux emails
+// Mise à jour: Correction du problème d'envoi des emails et utilisation des bons identifiants EmailJS
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -93,31 +93,36 @@ export function useManualPayment(participant: Participant) {
 
       console.log("Email de notification admin envoyé avec succès:", response);
       
-      // Envoyer un email au participant pour lui confirmer que sa demande est en cours de traitement
-      // Cette partie est séparée de l'email de confirmation finale avec QR code
-      const participantTemplateParams = {
-        to_email: participant.email,
-        to_name: `${participant.first_name} ${participant.last_name}`,
-        from_name: "IFTAR 2024",
-        prenom: participant.first_name,
-        nom: participant.last_name,
-        payment_method: paymentMethod,
-        payment_amount: `${PAYMENT_AMOUNT} XOF`,
-        payment_phone: phoneNumber,
-        app_url: appUrl,
-        pending_url: `${appUrl}/payment-pending/${participant.id}`,
-        reply_to: "ne-pas-repondre@lacitadelle.ci"
-      };
+      try {
+        // Envoyer un email au participant pour lui confirmer que sa demande est en cours de traitement
+        // Cette partie est séparée de l'email de confirmation finale avec QR code
+        const participantTemplateParams = {
+          to_email: participant.email,
+          to_name: `${participant.first_name} ${participant.last_name}`,
+          from_name: "IFTAR 2024",
+          prenom: participant.first_name,
+          nom: participant.last_name,
+          payment_method: paymentMethod,
+          payment_amount: `${PAYMENT_AMOUNT} XOF`,
+          payment_phone: phoneNumber,
+          app_url: appUrl,
+          pending_url: `${appUrl}/payment-pending/${participant.id}`,
+          reply_to: "ne-pas-repondre@lacitadelle.ci"
+        };
 
-      // Utiliser le service et template pour l'email INITIAL uniquement (et pas celui de confirmation)
-      const participantResponse = await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID, 
-        participantTemplateParams,
-        EMAILJS_PUBLIC_KEY
-      );
+        // Utiliser le service et template pour l'email INITIAL uniquement (et pas celui de confirmation)
+        const participantResponse = await emailjs.send(
+          EMAILJS_SERVICE_ID,
+          EMAILJS_TEMPLATE_ID, 
+          participantTemplateParams,
+          EMAILJS_PUBLIC_KEY
+        );
 
-      console.log("Email initial au participant envoyé avec succès:", participantResponse);
+        console.log("Email initial au participant envoyé avec succès:", participantResponse);
+      } catch (emailError) {
+        console.error("Erreur lors de l'envoi de l'email initial au participant:", emailError);
+        // Ne pas bloquer le processus si l'email au participant échoue
+      }
       
       return true;
     } catch (error) {

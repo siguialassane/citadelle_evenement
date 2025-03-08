@@ -1,6 +1,6 @@
 
 // Hook personnalisé pour gérer la logique de validation des paiements
-// Mise à jour: Correction de l'envoi d'email de confirmation
+// Mise à jour: Correction de l'envoi d'email de confirmation et gestion des erreurs améliorée
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -226,8 +226,13 @@ export const usePaymentValidation = (paymentId?: string) => {
         // UNIQUEMENT envoyer l'email de confirmation lors de la validation
         const emailResult = await sendConfirmationEmail(participantData, qrCodeId);
         console.log("Résultat de l'envoi d'email de confirmation:", emailResult);
+        
+        if (!emailResult) {
+          // Log spécifique pour suivre les problèmes d'envoi d'email
+          console.error("L'email de confirmation n'a pas pu être envoyé bien que la fonction n'ait pas lancé d'erreur");
+        }
       } catch (emailError: any) {
-        console.error("Erreur lors de l'envoi de l'email de confirmation:", emailError);
+        console.error("Erreur détaillée lors de l'envoi de l'email de confirmation:", emailError);
         // Ne pas bloquer la validation à cause d'un problème d'email
         toast({
           title: "Attention",
