@@ -40,6 +40,7 @@ const Confirmation = () => {
 
         console.log("Paramètre d'URL reçu:", participantId);
         console.log("URL courante:", window.location.href);
+        console.log("Tentative de recherche avec le paramètre:", participantId);
         
         // IMPORTANT: Approche améliorée - Vérifier QR code ID d'abord, puis participant ID
         let currentParticipant = null;
@@ -54,6 +55,8 @@ const Confirmation = () => {
         
         if (qrCodeError) {
           console.error("Erreur lors de la recherche par QR code ID:", qrCodeError);
+        } else {
+          console.log("Résultat de la recherche par QR code ID:", participantByQrCode);
         }
         
         // 2. Si un participant est trouvé avec ce QR code ID
@@ -72,6 +75,8 @@ const Confirmation = () => {
           
           if (participantError) {
             console.error("Erreur lors de la recherche du participant par ID:", participantError);
+          } else {
+            console.log("Résultat de la recherche par ID participant:", participantById);
           }
           
           if (participantById) {
@@ -107,6 +112,8 @@ const Confirmation = () => {
 
         if (manualPaymentError) {
           console.error("Erreur lors de la récupération du paiement manuel:", manualPaymentError);
+        } else {
+          console.log("Résultat de la recherche de paiement manuel:", manualPaymentData);
         }
 
         // 2. Si un paiement manuel existe, l'utiliser
@@ -133,6 +140,8 @@ const Confirmation = () => {
 
           if (standardPaymentError) {
             console.error("Erreur lors de la récupération du paiement standard:", standardPaymentError);
+          } else {
+            console.log("Résultat de la recherche de paiement standard:", standardPaymentData);
           }
 
           if (standardPaymentData) {

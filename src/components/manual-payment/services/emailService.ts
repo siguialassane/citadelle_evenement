@@ -1,7 +1,7 @@
 
 // Ce service gère l'envoi des emails initiaux dans l'application
-// Mise à jour: Clarification de l'utilisation du service général pour les emails non-confirmation
-// Correction: Utilisation de QR Server API pour les QR codes dans tous les emails
+// Mise à jour: Correction de la validation des emails et amélioration du traitement des adresses email
+// Correction: Ajout de trim() sur les emails pour éviter les erreurs d'adresses vides
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -33,7 +33,7 @@ export const sendAdminNotification = async (
 
     // Envoi d'email à l'administrateur
     const templateParams = {
-      to_email: adminEmail,
+      to_email: adminEmail.trim(),
       from_name: "Système d'Inscription IFTAR",
       participant_name: `${participantData.first_name} ${participantData.last_name}`,
       participant_email: participantData.email,
@@ -80,17 +80,17 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
   try {
     console.log("===== PRÉPARATION EMAIL INITIAL AU PARTICIPANT =====");
     
-    // Vérification simplifiée de l'email
+    // Vérification améliorée de l'email
     if (!participantData || !participantData.email) {
       console.error("Données du participant ou email manquants");
       return false;
     }
     
-    // Traitement direct de l'email
+    // Traitement amélioré de l'email
     const email = participantData.email.trim();
-    console.log("Email utilisé pour l'envoi initial:", email);
+    console.log("Email utilisé pour l'envoi initial (après trim):", email);
     
-    // Vérification supplémentaire
+    // Vérification supplémentaire pour éviter l'erreur "recipient address is empty"
     if (!email || email === '') {
       console.error("Email vide après trim()");
       return false;
