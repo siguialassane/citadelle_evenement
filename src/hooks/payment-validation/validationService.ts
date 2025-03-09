@@ -1,7 +1,6 @@
 
 // Service pour la validation des paiements
-// Mise à jour: Modification pour corriger le problème d'envoi simultané d'emails
-// ATTENTION: Le code responsable des envois d'emails après paiement a été isolé temporairement
+// Mise à jour: Utilisation du second service EmailJS pour les confirmations après validation admin
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse, EmailConfirmationParams } from "./types";
@@ -9,36 +8,20 @@ import {
   validatePaymentInDatabase, 
   fetchParticipantData 
 } from "./supabaseService";
-import emailjs from '@emailjs/browser';
 import { 
-  CONFIRMATION_EMAILJS_SERVICE_ID,
-  CONFIRMATION_EMAILJS_PUBLIC_KEY,
-  CONFIRMATION_TEMPLATE_ID,
-  ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID,
-  ADMIN_EMAIL
-} from "@/components/manual-payment/config";
+  sendConfirmationEmail, 
+  sendAdminNotification
+} from "./emailService";
 
 // Valide un paiement et envoie les emails nécessaires
-// Cette fonction est UNIQUEMENT appelée par l'administrateur lors de la validation explicite d'un paiement
 export const validatePayment = async (paymentId: string, paymentData: any): Promise<ValidationResponse> => {
   try {
-    console.log("==== DÉBUT DU PROCESSUS DE VALIDATION DE PAIEMENT (ADMIN UNIQUEMENT) ====");
-    console.log(`Validation du paiement ID: ${paymentId} par l'administrateur`);
+    console.log("==== DÉBUT DU PROCESSUS DE VALIDATION DE PAIEMENT ====");
+    console.log(`Validation du paiement ID: ${paymentId}`);
     
     if (!paymentData) {
       console.error("Données de paiement introuvables pour l'ID:", paymentId);
       throw new Error("Données de paiement manquantes");
-    }
-    
-    // Vérifier si le paiement est déjà validé pour éviter les doubles envois
-    if (paymentData.status === 'completed') {
-      console.log("Ce paiement a déjà été validé, aucune action supplémentaire nécessaire");
-      toast({
-        title: "Information",
-        description: "Ce paiement a déjà été validé précédemment.",
-        variant: "default",
-      });
-      return { success: true };
     }
     
     // Mettre à jour le statut du paiement et générer le QR code
@@ -56,84 +39,38 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
       throw new Error("Email du participant manquant");
     }
 
-    // NOUVEAU CODE SIMPLIFIÉ POUR L'ENVOI D'EMAIL - UNIQUEMENT APRÈS VALIDATION ADMIN
-    console.log("=== ENVOI D'EMAIL DE CONFIRMATION APRÈS VALIDATION ADMIN ===");
+    // Envoi de l'email de confirmation APRÈS avoir tout validé
+    console.log("=== PRÉPARATION DE L'ENVOI D'EMAIL DE CONFIRMATION (SERVICE #2) ===");
     
     try {
-      // Envoi direct de l'email de confirmation avec le Service #2
-      const email = participantData.email.trim();
-      console.log("Email utilisé pour l'envoi de confirmation:", email);
+      // Envoi de l'email de confirmation avec QR code en utilisant le SECOND service
+      const emailSuccess = await sendConfirmationEmail(participantData, qrCodeId);
       
-      // Construction de l'URL du QR code
-      const appUrl = window.location.origin;
-      const qrCodeData = `${appUrl}/confirmation/${participantData.id}`;
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeData)}`;
-      
-      // Détermination du statut pour l'affichage
-      const statut = participantData.is_member ? "Membre" : "Non-membre";
-      
-      // Préparation des paramètres pour le template d'email
-      const templateParams = {
-        to_email: email,
-        to_name: `${participantData.first_name} ${participantData.last_name}`,
-        from_name: "IFTAR 2024",
-        prenom: participantData.first_name,
-        nom: participantData.last_name,
-        participant_email: email,
-        participant_phone: participantData.contact_number,
-        participant_name: `${participantData.first_name} ${participantData.last_name}`,
-        tel: participantData.contact_number,
-        status: statut,
-        qr_code_url: qrCodeUrl,
-        participant_id: participantData.id,
-        app_url: appUrl,
-        receipt_url: `${appUrl}/confirmation/${participantData.id}`,
-        badge_url: `${appUrl}/confirmation/${participantData.id}`,
-        reply_to: "ne-pas-repondre@lacitadelle.ci"
-      };
-
-      console.log("ENVOI D'EMAIL DE CONFIRMATION - ADMIN UNIQUEMENT");
-      console.log("- Service EmailJS:", CONFIRMATION_EMAILJS_SERVICE_ID);
-      console.log("- Template confirmation:", CONFIRMATION_TEMPLATE_ID);
-      console.log("- Clé publique:", CONFIRMATION_EMAILJS_PUBLIC_KEY);
-      
-      // Envoi de l'email de confirmation avec EmailJS
-      const emailResponse = await emailjs.send(
-        CONFIRMATION_EMAILJS_SERVICE_ID,
-        CONFIRMATION_TEMPLATE_ID,
-        templateParams,
-        CONFIRMATION_EMAILJS_PUBLIC_KEY
-      );
-      
-      console.log("✅ Email de confirmation envoyé avec succès:", emailResponse);
-      
-      // Envoi de la notification à l'administrateur
-      const adminNotifParams = {
-        to_email: ADMIN_EMAIL,
-        from_name: "Système d'Inscription IFTAR",
-        admin_name: "Administrateur",
-        participant_name: `${participantData.first_name} ${participantData.last_name}`,
-        participant_email: email,
-        participant_phone: participantData.contact_number,
-        status: statut,
-        payment_method: paymentData.payment_method,
-        payment_amount: `${paymentData.amount} XOF`,
-        payment_id: paymentId,
-        app_url: window.location.origin,
-        validation_time: new Date().toLocaleString('fr-FR'),
-        reply_to: "ne-pas-repondre@lacitadelle.ci"
-      };
-      
-      // Envoi de la notification admin
-      const adminNotifResponse = await emailjs.send(
-        CONFIRMATION_EMAILJS_SERVICE_ID,
-        ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID,
-        adminNotifParams,
-        CONFIRMATION_EMAILJS_PUBLIC_KEY
-      );
-      
-      console.log("✅ Email de notification admin envoyé avec succès:", adminNotifResponse);
-      
+      if (emailSuccess) {
+        console.log("✅ Email de confirmation envoyé avec succès (SERVICE #2)");
+        
+        // Notification à l'administrateur avec le SECOND service
+        const notificationParams: EmailConfirmationParams = {
+          participantId: participantData.id,
+          participantEmail: participantData.email,
+          participantName: `${participantData.first_name} ${participantData.last_name}`,
+          participantPhone: participantData.contact_number,
+          amount: paymentData.amount,
+          paymentMethod: paymentData.payment_method,
+          paymentId: paymentId,
+          isMember: participantData.is_member,
+          qrCodeId: qrCodeId
+        };
+        
+        await sendAdminNotification(notificationParams);
+      } else {
+        console.error("❌ L'email de confirmation n'a pas pu être envoyé");
+        toast({
+          title: "Attention",
+          description: "Le paiement a été validé mais l'envoi de l'email de confirmation a échoué. Veuillez contacter le participant manuellement.",
+          variant: "default",
+        });
+      }
     } catch (emailError: any) {
       console.error("Erreur lors de l'envoi de l'email de confirmation:", emailError);
       toast({
