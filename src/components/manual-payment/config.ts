@@ -1,28 +1,28 @@
 
 // Ce fichier contient les constantes et configurations pour le paiement manuel
-// Mise à jour: Uniformisation des services EmailJS pour corriger les problèmes d'envoi d'email
-// Correction: Ajout du template pour notification admin après envoi de confirmation
+// Mise à jour: Séparation claire des services EmailJS pour faciliter la maintenance
+// Correction: Utilisation du service dédié à la confirmation
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
 
-// ==================== CONFIGURATION EMAILJS UNIFIÉE ====================
-// Utilisation d'un service unique pour tous les emails (recommandé par EmailJS)
+// ==================== CONFIGURATION EMAILJS SÉPARÉE ====================
+// Service pour les emails initiaux et notifications administrateur (demandes en attente)
 export const EMAILJS_SERVICE_ID = "service_sxgma2j";
 export const EMAILJS_PUBLIC_KEY = "pWG3H0YqA-EKu4hqC";
 
+// Service dédié pour les emails de confirmation après validation (avec QR code)
+export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_is5645q";
+export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
+
 // Templates pour les différents types d'emails
 export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_2ncsaxe"; // Email initial (en attente)
-export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_dp1tu2w"; // Notification admin
+export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_dp1tu2w"; // Notification admin initiale
 export const CONFIRMATION_TEMPLATE_ID = "template_xvdr1iq"; // Confirmation avec QR code
 export const ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID = "template_dwx7qnw"; // Notification admin post-confirmation
 
 // Email de l'administrateur
 export const ADMIN_EMAIL = "siguialassane93@gmail.com";
-
-// Anciennes configurations (conservées comme référence, mais non utilisées)
-// export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_is5645q";
-// export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
 
 // Numéros de paiement
 export const PAYMENT_NUMBERS = {

@@ -1,12 +1,13 @@
 
 // Service pour l'envoi d'emails de confirmation après validation des paiements
+// Mise à jour: Utilisation du service dédié à la confirmation avec QR code
 // Créé pour isoler la logique d'envoi d'emails du reste du service de validation
 
 import emailjs from '@emailjs/browser';
 import { ADMIN_EMAIL } from "@/components/manual-payment/config";
 import { 
-  EMAILJS_SERVICE_ID, 
-  EMAILJS_PUBLIC_KEY,
+  CONFIRMATION_EMAILJS_SERVICE_ID, 
+  CONFIRMATION_EMAILJS_PUBLIC_KEY,
   CONFIRMATION_TEMPLATE_ID,
   ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID
 } from "@/components/manual-payment/config";
@@ -47,16 +48,16 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     };
     
     console.log("Envoi de l'email de confirmation avec QR code:", confirmationParams);
-    console.log("Service EmailJS:", EMAILJS_SERVICE_ID);
+    console.log("Service EmailJS dédié à la confirmation:", CONFIRMATION_EMAILJS_SERVICE_ID);
     console.log("Template confirmation:", CONFIRMATION_TEMPLATE_ID);
-    console.log("Clé publique:", EMAILJS_PUBLIC_KEY);
+    console.log("Clé publique dédiée:", CONFIRMATION_EMAILJS_PUBLIC_KEY);
     
-    // Envoi de l'email de confirmation
+    // Envoi de l'email de confirmation avec le service dédié
     const response = await emailjs.send(
-      EMAILJS_SERVICE_ID,
+      CONFIRMATION_EMAILJS_SERVICE_ID,
       CONFIRMATION_TEMPLATE_ID,
       confirmationParams,
-      EMAILJS_PUBLIC_KEY
+      CONFIRMATION_EMAILJS_PUBLIC_KEY
     );
     
     console.log("Email de confirmation envoyé avec succès:", response);
@@ -97,14 +98,15 @@ export const sendAdminNotification = async (params: EmailConfirmationParams): Pr
     };
     
     console.log("Envoi de la notification admin post-confirmation:", adminTemplateParams);
-    console.log("Service EmailJS:", EMAILJS_SERVICE_ID);
+    console.log("Service EmailJS dédié à la confirmation:", CONFIRMATION_EMAILJS_SERVICE_ID);
     console.log("Template admin notification:", ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID);
     
+    // Utilisation du même service de confirmation pour la notification admin
     const adminResponse = await emailjs.send(
-      EMAILJS_SERVICE_ID,
+      CONFIRMATION_EMAILJS_SERVICE_ID,
       ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID,
       adminTemplateParams,
-      EMAILJS_PUBLIC_KEY
+      CONFIRMATION_EMAILJS_PUBLIC_KEY
     );
     
     console.log("Email de notification admin après validation envoyé avec succès:", adminResponse);

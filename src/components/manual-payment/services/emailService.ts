@@ -1,6 +1,6 @@
 
-// Ce service gère l'envoi des emails dans l'application
-// Mise à jour: Correction du problème d'envoi d'email - Uniformisation avec le service de confirmation
+// Ce service gère l'envoi des emails initiaux dans l'application
+// Mise à jour: Clarification de l'utilisation du service général pour les emails non-confirmation
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -23,7 +23,7 @@ export const sendAdminNotification = async (
   transactionReference: string
 ) => {
   try {
-    console.log("Envoi de notification à l'administrateur...");
+    console.log("Envoi de notification à l'administrateur pour nouveau paiement...");
     
     // URL de base de l'application
     const appUrl = window.location.origin;
@@ -50,10 +50,10 @@ export const sendAdminNotification = async (
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    console.log("Envoi de l'email à l'administrateur avec service unifié...");
-    console.log("Service EmailJS:", EMAILJS_SERVICE_ID);
-    console.log("Template admin:", ADMIN_NOTIFICATION_TEMPLATE_ID);
-    console.log("Clé publique:", EMAILJS_PUBLIC_KEY);
+    console.log("Envoi de l'email à l'administrateur - service général...");
+    console.log("Service EmailJS général:", EMAILJS_SERVICE_ID);
+    console.log("Template admin initial:", ADMIN_NOTIFICATION_TEMPLATE_ID);
+    console.log("Clé publique générale:", EMAILJS_PUBLIC_KEY);
     console.log("URL de validation admin:", validationLink);
 
     // Envoyer l'email à l'administrateur
@@ -64,7 +64,7 @@ export const sendAdminNotification = async (
       EMAILJS_PUBLIC_KEY
     );
 
-    console.log("Email de notification admin envoyé avec succès:", response);
+    console.log("Email de notification admin initial envoyé avec succès:", response);
     return true;
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email à l'administrateur:", error);
@@ -110,13 +110,13 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    console.log("Envoi de l'email initial au participant avec service unifié...");
-    console.log("Service EmailJS:", EMAILJS_SERVICE_ID);
-    console.log("Template participant:", PARTICIPANT_INITIAL_TEMPLATE_ID);
-    console.log("Clé publique:", EMAILJS_PUBLIC_KEY);
+    console.log("Envoi de l'email initial au participant - service général...");
+    console.log("Service EmailJS général:", EMAILJS_SERVICE_ID);
+    console.log("Template participant initial:", PARTICIPANT_INITIAL_TEMPLATE_ID);
+    console.log("Clé publique générale:", EMAILJS_PUBLIC_KEY);
     console.log("Email du destinataire:", email);
 
-    // Envoi avec EmailJS
+    // Envoi avec EmailJS - service général
     const participantResponse = await emailjs.send(
       EMAILJS_SERVICE_ID,
       PARTICIPANT_INITIAL_TEMPLATE_ID, 
