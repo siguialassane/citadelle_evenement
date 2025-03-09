@@ -1,18 +1,16 @@
-
 // Tableau de bord administrateur refactorisé en composants plus petits
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { type Participant } from "../../types/participant";
-import { type ManualPayment } from "../../types/payment";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell } from "lucide-react";
 
 // Composants refactorisés
 import { Header } from "@/components/admin/dashboard/Header";
-import { SearchAndExport } from "@/components/admin/dashboard/SearchAndExport";
+import { SearchAndExport } from "@/components/admin/dashboard/search-export";
 import { ParticipantTable } from "@/components/admin/dashboard/ParticipantTable";
 import { ParticipantDetails } from "@/components/admin/dashboard/ParticipantDetails";
 import { DeleteConfirmation } from "@/components/admin/dashboard/DeleteConfirmation";
