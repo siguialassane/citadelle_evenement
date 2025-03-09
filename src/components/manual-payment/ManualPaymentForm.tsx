@@ -1,7 +1,7 @@
 
 // Ce fichier est le point d'entrée principal du formulaire de paiement manuel
 // Il utilise les composants plus petits et le hook personnalisé pour gérer la logique
-// Mise à jour: Utilisation du hook refactorisé
+// Mise à jour: Suppression de la référence de transaction
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaymentMethodSelector } from "./PaymentMethodSelector";
@@ -20,7 +20,6 @@ export function ManualPaymentForm({ participant }: ManualPaymentFormProps) {
     setPhoneNumber,
     comments,
     setComments,
-    transactionReference,
     isCopied,
     copyToClipboard,
     handleSubmit
@@ -47,7 +46,6 @@ export function ManualPaymentForm({ participant }: ManualPaymentFormProps) {
           <PaymentInstructions 
             paymentMethod={paymentMethod}
             paymentNumbers={PAYMENT_NUMBERS}
-            transactionReference={transactionReference}
             isCopied={isCopied}
             copyToClipboard={copyToClipboard}
             paymentAmount={PAYMENT_AMOUNT}

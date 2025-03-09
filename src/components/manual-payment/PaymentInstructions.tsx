@@ -8,7 +8,6 @@ import { PaymentMethod, PaymentNumbers, CopyStates } from "./types";
 type PaymentInstructionsProps = {
   paymentMethod: PaymentMethod;
   paymentNumbers: PaymentNumbers;
-  transactionReference: string;
   isCopied: CopyStates;
   copyToClipboard: (text: string, key: string) => void;
   paymentAmount: number;
@@ -17,7 +16,6 @@ type PaymentInstructionsProps = {
 export function PaymentInstructions({
   paymentMethod,
   paymentNumbers,
-  transactionReference,
   isCopied,
   copyToClipboard,
   paymentAmount
@@ -49,26 +47,12 @@ export function PaymentInstructions({
               </Button>
             </div>
           </div>
-          
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-700">Référence à indiquer:</span>
-            <div className="flex items-center">
-              <span className="mr-2 font-mono bg-gray-100 px-2 py-1 rounded">{transactionReference}</span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => copyToClipboard(transactionReference, 'reference')}
-              >
-                {isCopied['reference'] ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
         </div>
         
         <div className="flex items-start p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
           <Info className="h-5 w-5 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
           <div className="text-sm text-yellow-700">
-            <p><strong>Important:</strong> Veuillez indiquer cette référence comme <u>motif/commentaire</u> lors de votre transfert mobile money. Cette référence nous permettra d'identifier votre paiement.</p>
+            <p><strong>Important:</strong> Veuillez tenir compte des frais qui pourraient être appliqués par l'opérateur lors de votre transfert mobile money. Assurez-vous d'envoyer un montant suffisant pour couvrir le coût total.</p>
           </div>
         </div>
       </div>

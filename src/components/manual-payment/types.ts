@@ -2,11 +2,11 @@
 // Ce fichier contient les types utilisés dans les composants de paiement manuel
 
 // Type de méthode de paiement
-export type PaymentMethod = "MTN" | "MOOV" | "WAVE";
+export type PaymentMethod = "ORANGE" | "MOOV" | "WAVE";
 
 // Type pour les numéros de paiement
 export type PaymentNumbers = {
-  MTN: string;
+  ORANGE: string;
   MOOV: string;
   WAVE: string;
 };

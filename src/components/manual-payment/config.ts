@@ -2,6 +2,7 @@
 // Ce fichier contient les constantes et configurations pour le paiement manuel
 // Mise à jour: Suppression du template de notification admin après confirmation
 // Correction: Paramètres alignés avec les templates utilisés
+// Mise à jour: Nouveaux numéros de paiement et suppression de MTN
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
@@ -25,7 +26,7 @@ export const ADMIN_EMAIL = "siguialassane93@gmail.com";
 
 // Numéros de paiement
 export const PAYMENT_NUMBERS = {
-  MTN: "0503002817",
-  MOOV: "0140229857",
-  WAVE: "0503002817" // Même que MTN
+  ORANGE: "0759567966",
+  MOOV: "0101011786",
+  WAVE: "0759567966" // Même que ORANGE
 };

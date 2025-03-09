@@ -29,15 +29,15 @@ export function PaymentMethodSelector({
         onValueChange={(value: PaymentMethod) => setPaymentMethod(value)}
         className="grid grid-cols-1 md:grid-cols-3 gap-4"
       >
-        <div className={`p-4 border rounded-lg flex flex-col items-center ${paymentMethod === "MTN" ? "border-orange-500 bg-orange-50" : "border-gray-200"}`}>
-          <RadioGroupItem value="MTN" id="mtn" className="sr-only" />
-          <Label htmlFor="mtn" className="cursor-pointer w-full">
+        <div className={`p-4 border rounded-lg flex flex-col items-center ${paymentMethod === "ORANGE" ? "border-orange-500 bg-orange-50" : "border-gray-200"}`}>
+          <RadioGroupItem value="ORANGE" id="orange" className="sr-only" />
+          <Label htmlFor="orange" className="cursor-pointer w-full">
             <div className="text-center">
-              <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-2">
+              <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-2">
                 <PiggyBank className="h-6 w-6 text-white" />
               </div>
-              <div className="font-medium">MTN Mobile Money</div>
-              <div className="text-sm text-gray-500 mt-2">{paymentNumbers.MTN}</div>
+              <div className="font-medium">Orange Money</div>
+              <div className="text-sm text-gray-500 mt-2">{paymentNumbers.ORANGE}</div>
             </div>
           </Label>
         </div>

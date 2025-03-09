@@ -2,6 +2,7 @@
 // Ce hook gère la logique du paiement manuel
 // Mise à jour: Restructuration en modules plus petits pour une meilleure maintenance
 // Correction: Validation des adresses email avant envoi pour éviter les erreurs 422
+// Mise à jour: Suppression de la référence de transaction
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -10,21 +11,14 @@ import { ADMIN_EMAIL, PAYMENT_AMOUNT } from "./config";
 import { PaymentMethod, Participant, CopyStates } from "./types";
 import { sendAdminNotification, sendParticipantInitialEmail } from "./services/emailService";
 import { registerManualPayment } from "./services/paymentService";
-import { generateTransactionReference } from "./services/transactionService";
 
 export function useManualPayment(participant: Participant) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("MTN");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("ORANGE");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [comments, setComments] = useState("");
   const [isCopied, setIsCopied] = useState<CopyStates>({});
   const navigate = useNavigate();
-
-  // Référence de transaction (générée une seule fois)
-  const [transactionReference] = useState(generateTransactionReference(
-    participant.first_name, 
-    participant.last_name
-  ));
 
   // Fonction pour copier du texte dans le presse-papier
   const copyToClipboard = (text: string, key: string) => {
@@ -69,7 +63,7 @@ export function useManualPayment(participant: Participant) {
         paymentMethod,
         phoneNumber,
         comments,
-        transactionReference
+        ""  // Pas de référence de transaction
       );
 
       if (!adminEmailSent) {
@@ -124,7 +118,6 @@ export function useManualPayment(participant: Participant) {
     setPhoneNumber,
     comments,
     setComments,
-    transactionReference,
     isCopied,
     copyToClipboard,
     handleSubmit
