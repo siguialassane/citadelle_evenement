@@ -1,11 +1,10 @@
-
 // Ce fichier gère la page de confirmation d'inscription après le paiement
 // Modifications:
-// - Correction définitive du problème d'accès à la page via QR code ou lien dans l'email
-// - Support robuste pour comprendre si l'utilisateur arrive avec un QR code ID ou un participant ID
-// - Logging étendu pour faciliter le débogage
+// - Amélioration du traitement des URL de QR code avec paramètres supplémentaires
+// - Support robuste pour les paramètres type=qr et pid pour identifier la source
+// - Logging étendu pour faciliter le débogage des redirections QR code
 
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -18,6 +17,7 @@ import EventLogo from "@/components/EventLogo";
 const Confirmation = () => {
   // Le paramètre de l'URL peut être soit un participantId, soit un qrCodeId
   const { participantId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [participant, setParticipant] = useState<any>(null);
   const [payment, setPayment] = useState<any>(null);
@@ -38,35 +38,62 @@ const Confirmation = () => {
           return;
         }
 
-        console.log("Paramètre d'URL reçu:", participantId);
-        console.log("URL courante:", window.location.href);
-        console.log("Tentative de recherche avec le paramètre:", participantId);
+        // Extraction des paramètres de l'URL
+        const queryParams = new URLSearchParams(location.search);
+        const isQrCodeAccess = queryParams.get('type') === 'qr';
+        const providedParticipantId = queryParams.get('pid');
         
-        // IMPORTANT: Approche améliorée - Vérifier QR code ID d'abord, puis participant ID
+        console.log("==== ANALYSE DE L'URL DE CONFIRMATION ====");
+        console.log("URL complète:", window.location.href);
+        console.log("Paramètre URL principal:", participantId);
+        console.log("Paramètres querystring:", location.search);
+        console.log("Est un accès via QR code:", isQrCodeAccess ? "Oui" : "Non");
+        console.log("ID participant fourni dans l'URL:", providedParticipantId);
+        
+        // AMÉLIORATION: Stratégie de recherche hiérarchique
         let currentParticipant = null;
+        let searchMethod = "";
         
-        // 1. Essayer de trouver un participant avec ce QR code ID
-        console.log("Tentative de recherche par QR code ID...");
-        const { data: participantByQrCode, error: qrCodeError } = await supabase
-          .from('participants')
-          .select('*')
-          .eq('qr_code_id', participantId)
-          .maybeSingle();
-        
-        if (qrCodeError) {
-          console.error("Erreur lors de la recherche par QR code ID:", qrCodeError);
-        } else {
-          console.log("Résultat de la recherche par QR code ID:", participantByQrCode);
+        // 1. Si c'est un accès via QR code et un ID de participant est fourni
+        if (isQrCodeAccess && providedParticipantId) {
+          console.log("Stratégie: Utilisation de l'ID participant fourni dans l'URL QR code");
+          searchMethod = "pid_from_qr";
+          const { data: participantByProvidedId, error: pidError } = await supabase
+            .from('participants')
+            .select('*')
+            .eq('id', providedParticipantId)
+            .maybeSingle();
+          
+          if (pidError) {
+            console.error("Erreur lors de la recherche par ID participant fourni:", pidError);
+          } else if (participantByProvidedId) {
+            console.log("Participant trouvé via ID fourni dans l'URL QR:", participantByProvidedId);
+            currentParticipant = participantByProvidedId;
+          }
         }
         
-        // 2. Si un participant est trouvé avec ce QR code ID
-        if (participantByQrCode) {
-          console.log("Participant trouvé via QR code ID:", participantByQrCode);
-          currentParticipant = participantByQrCode;
-        } 
-        // 3. Sinon, essayer de trouver un participant avec cet ID
-        else {
-          console.log("Aucun participant trouvé avec ce QR code ID, recherche par ID participant...");
+        // 2. Si aucun participant trouvé, essayer de trouver par QR code ID
+        if (!currentParticipant) {
+          console.log("Stratégie: Recherche par QR code ID");
+          searchMethod = "qr_code_id";
+          const { data: participantByQrCode, error: qrCodeError } = await supabase
+            .from('participants')
+            .select('*')
+            .eq('qr_code_id', participantId)
+            .maybeSingle();
+          
+          if (qrCodeError) {
+            console.error("Erreur lors de la recherche par QR code ID:", qrCodeError);
+          } else if (participantByQrCode) {
+            console.log("Participant trouvé via QR code ID:", participantByQrCode);
+            currentParticipant = participantByQrCode;
+          }
+        }
+        
+        // 3. Si toujours aucun participant, essayer par ID participant direct
+        if (!currentParticipant) {
+          console.log("Stratégie: Recherche par ID participant direct");
+          searchMethod = "participant_id";
           const { data: participantById, error: participantError } = await supabase
             .from('participants')
             .select('*')
@@ -75,25 +102,20 @@ const Confirmation = () => {
           
           if (participantError) {
             console.error("Erreur lors de la recherche du participant par ID:", participantError);
-          } else {
-            console.log("Résultat de la recherche par ID participant:", participantById);
-          }
-          
-          if (participantById) {
+          } else if (participantById) {
             console.log("Participant trouvé via ID participant:", participantById);
             currentParticipant = participantById;
-          } else {
-            console.error("Aucun participant trouvé avec cet ID:", participantId);
           }
         }
         
+        // Si aucun participant trouvé après toutes les tentatives
         if (!currentParticipant) {
-          console.error("Aucun participant trouvé avec l'identifiant:", participantId);
+          console.error(`Aucun participant trouvé avec l'identifiant: ${participantId} (Méthode: ${searchMethod})`);
           setError("Participant non trouvé. Veuillez vérifier l'URL ou contacter le support.");
           return;
         }
         
-        // Maintenant que nous avons trouvé le participant, enregistrons-le dans l'état
+        console.log(`Participant identifié avec succès via la méthode: ${searchMethod}`);
         setParticipant(currentParticipant);
         
         const actualParticipantId = currentParticipant.id;
@@ -163,7 +185,7 @@ const Confirmation = () => {
     };
 
     fetchData();
-  }, [participantId]);
+  }, [participantId, location]);
 
   const handleBackToHome = () => {
     navigate("/");
@@ -416,7 +438,7 @@ const Confirmation = () => {
         </div>
 
         <div ref={receiptRef} className="bg-white shadow-md overflow-hidden sm:rounded-lg border border-green-100">
-          <div className="px-4 py-5 sm:px-6 bg-green-50 flex justify-between items-center">
+          <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 bg-green-50 flex justify-between items-center">
             <div>
               <h2 className="text-lg leading-6 font-medium text-gray-900">
                 Détails de votre inscription

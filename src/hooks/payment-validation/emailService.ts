@@ -1,7 +1,7 @@
 
 // Service pour l'envoi d'emails de confirmation après validation des paiements
-// Mise à jour: Correction de l'encodage des URL dans les QR codes pour garantir leur bon fonctionnement
-// Vérification des paramètres d'URL et ajout de logging détaillé pour le débogage
+// Mise à jour: Amélioration des URL de QR code avec paramètres plus robustes 
+// Ajout de paramètres d'identification supplémentaires pour garantir la redirection correcte
 
 import emailjs from '@emailjs/browser';
 import { ADMIN_EMAIL } from "@/components/manual-payment/config";
@@ -28,14 +28,15 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     // URL de base et génération des liens
     const appUrl = window.location.origin;
     
-    // URL de la page de confirmation (pour le lien dans l'email)
-    // IMPORTANT: L'URL doit pointer vers le paramètre qrCodeId et non participantId
-    const confirmationPageUrl = `${appUrl}/confirmation/${qrCodeId}`;
-    console.log("URL de confirmation générée:", confirmationPageUrl);
+    // AMÉLIORATION: URL de la page de confirmation avec paramètres supplémentaires
+    // Ajout du type=qr pour indiquer que c'est un accès via QR code
+    // Ajout du pid (participantId) pour la redirection si nécessaire
+    const confirmationPageUrl = `${appUrl}/confirmation/${qrCodeId}?type=qr&pid=${participantData.id}`;
+    console.log("URL de confirmation améliorée:", confirmationPageUrl);
     
-    // Génération de l'URL pour l'image QR code (utiliser QR Server API)
+    // Génération de l'URL pour l'image QR code avec encodage robuste
     const encodedConfirmationUrl = encodeURIComponent(confirmationPageUrl);
-    // La taille est importante, on prend 300x300 pour une meilleure lisibilité
+    // Paramètres optimisés: taille 300x300 et marge (qzone) de 2
     const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedConfirmationUrl}&qzone=2`;
     console.log("URL de l'image QR code générée (QR Server API):", qrCodeImageUrl);
     
@@ -45,6 +46,7 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     const formattedDate = new Date().toLocaleDateString('fr-FR');
     
     console.log("QR Code ID:", qrCodeId);
+    console.log("Participant ID:", participantData.id);
     console.log("URL de la page de confirmation:", confirmationPageUrl);
     console.log("URL de l'image QR code:", qrCodeImageUrl);
     console.log("URL du reçu:", receiptUrl);
@@ -102,10 +104,10 @@ export const sendAdminNotification = async (params: EmailConfirmationParams): Pr
     
     const appUrl = window.location.origin;
     
-    // URL de la page de confirmation
-    const confirmationPageUrl = `${appUrl}/confirmation/${params.qrCodeId}`;
+    // URL de la page de confirmation améliorée
+    const confirmationPageUrl = `${appUrl}/confirmation/${params.qrCodeId}?type=qr&pid=${params.participantId}`;
     
-    // URL de l'image QR code - utilisant QR Server API avec une taille plus grande et une marge (qzone)
+    // URL de l'image QR code - utilisant QR Server API avec paramètres optimisés
     const encodedConfirmationUrl = encodeURIComponent(confirmationPageUrl);
     const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedConfirmationUrl}&qzone=2`;
     

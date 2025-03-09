@@ -1,7 +1,7 @@
 
 // Ce service gère l'envoi des emails initiaux dans l'application
-// Mise à jour: Correction de la validation des emails et amélioration du traitement des adresses email
-// Correction: Ajout de trim() sur les emails pour éviter les erreurs d'adresses vides
+// Mise à jour: Amélioration de la génération des URL pour les QR codes
+// Correction: Ajout de paramètres supplémentaires pour garantir la redirection correcte
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -97,6 +97,9 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     }
     
     const appUrl = window.location.origin;
+    // URL améliorée pour la page en attente (ajout de type=initial)
+    const pendingUrl = `${appUrl}/payment-pending/${participantData.id}?type=initial`;
+    
     const participantTemplateParams = {
       to_email: email,
       to_name: `${participantData.first_name} ${participantData.last_name}`,
@@ -107,7 +110,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       payment_amount: `${1000} XOF`,
       payment_phone: phoneNumber,
       app_url: appUrl,
-      pending_url: `${appUrl}/payment-pending/${participantData.id}`,
+      pending_url: pendingUrl,
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
@@ -116,6 +119,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     console.log("Template participant initial:", PARTICIPANT_INITIAL_TEMPLATE_ID);
     console.log("Clé publique générale:", EMAILJS_PUBLIC_KEY);
     console.log("Email du destinataire:", email);
+    console.log("URL page pending:", pendingUrl);
 
     // Envoi avec EmailJS - service général
     const participantResponse = await emailjs.send(

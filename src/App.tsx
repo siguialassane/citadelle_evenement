@@ -26,7 +26,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/payment/:participantId" element={<Payment />} />
           <Route path="/payment-pending/:participantId" element={<PaymentPending />} />
-          <Route path="/confirmation/:qrCodeId" element={<Confirmation />} />
+          {/* Routes de confirmation avec support des paramètres supplémentaires */}
+          <Route path="/confirmation/:participantId" element={<Confirmation />} />
           <Route path="/receipt/:participantId" element={<Confirmation />} />
           
           {/* Routes administrateur */}
