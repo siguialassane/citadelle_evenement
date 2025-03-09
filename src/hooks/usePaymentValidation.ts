@@ -1,7 +1,7 @@
 
 // Hook personnalisé pour gérer la logique de validation des paiements
-// Mise à jour: Correction de l'envoi d'email de confirmation et utilisation des bonnes constantes
-// Correction du QR code pour qu'il contienne l'URL complète
+// Mise à jour: Correction de l'envoi d'email de confirmation et uniformisation de la méthode
+// Conservation de la correction du QR code pour qu'il contienne l'URL complète
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -331,8 +331,8 @@ export const usePaymentValidation = (paymentId?: string) => {
       // Construction de l'URL de confirmation
       const confirmationUrl = `${appUrl}/confirmation/${participantData.id}`;
       
-      // CORRECTION: S'assurer que l'URL du QR code contient l'URL complète et pas seulement l'UUID
-      // Créer une URL complète pour le QR code qui pointe vers la page de confirmation
+      // Conservation de la correction: S'assurer que l'URL du QR code contient l'URL complète 
+      // et pas seulement l'UUID
       const qrCodeData = `${appUrl}/confirmation/${participantData.id}`;
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeData)}`;
       
