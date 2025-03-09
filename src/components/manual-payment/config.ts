@@ -1,5 +1,6 @@
 
 // Ce fichier contient les constantes et configurations pour le paiement manuel
+// Mise à jour: Vérification et confirmation des templates et services EmailJS
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
@@ -22,7 +23,7 @@ export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_dp1tu2w";
 // Pour l'email de confirmation avec QR code après validation par l'admin
 
 export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_is5645q"; // Service pour l'email de confirmation
-export const CONFIRMATION_EMAILJS_TEMPLATE_ID = "template_xvdr1iq"; // Revenu au template original
+export const CONFIRMATION_EMAILJS_TEMPLATE_ID = "template_xvdr1iq"; // Template pour l'email de confirmation avec QR code
 export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae"; // Clé publique pour l'email de confirmation
 
 // Numéros de paiement
