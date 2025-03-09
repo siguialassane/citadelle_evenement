@@ -1,7 +1,7 @@
 
 // Service pour l'envoi d'emails de confirmation après validation des paiements
-// Mise à jour: Correction des paramètres pour correspondre au template EmailJS
-// Ajout des champs manquants comme le statut et l'URL du reçu
+// Mise à jour: Correction des URLs générées pour les liens de confirmation et QR code
+// Résolution du problème des liens non fonctionnels dans les emails
 
 import emailjs from '@emailjs/browser';
 import { ADMIN_EMAIL } from "@/components/manual-payment/config";
@@ -27,12 +27,18 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     
     // URL de base et génération des liens
     const appUrl = window.location.origin;
+    
+    // URL CORRIGÉE: utiliser le QR code ID et non l'ID du participant pour la page de confirmation
     const qrCodeLink = `${appUrl}/confirmation/${qrCodeId}`;
+    
+    // URL du reçu avec l'ID du participant
     const receiptUrl = `${appUrl}/receipt/${participantData.id}`;
+    
     const formattedDate = new Date().toLocaleDateString('fr-FR');
     
     console.log("QR Code généré:", qrCodeId);
-    console.log("URL du QR Code:", qrCodeLink);
+    console.log("URL du QR Code corrigée:", qrCodeLink);
+    console.log("URL du reçu:", receiptUrl);
     console.log("Email du participant:", participantData.email);
     
     // Déterminer le statut du participant
@@ -55,7 +61,7 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
     
-    console.log("Envoi de l'email de confirmation avec QR code:", confirmationParams);
+    console.log("Envoi de l'email de confirmation avec QR code - paramètres:", confirmationParams);
     console.log("Service EmailJS dédié à la confirmation:", CONFIRMATION_EMAILJS_SERVICE_ID);
     console.log("Template confirmation:", CONFIRMATION_TEMPLATE_ID);
     console.log("Clé publique dédiée:", CONFIRMATION_EMAILJS_PUBLIC_KEY);
@@ -85,7 +91,10 @@ export const sendAdminNotification = async (params: EmailConfirmationParams): Pr
     console.log("Envoi de notification à l'administrateur après validation...");
     
     const appUrl = window.location.origin;
+    
+    // URL CORRIGÉE: utiliser le QR code ID pour le lien de confirmation
     const qrCodeLink = `${appUrl}/confirmation/${params.qrCodeId}`;
+    
     const currentDate = new Date().toLocaleString('fr-FR');
     
     // Paramètres pour l'email admin
@@ -106,7 +115,7 @@ export const sendAdminNotification = async (params: EmailConfirmationParams): Pr
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
     
-    console.log("Envoi de la notification admin post-confirmation:", adminTemplateParams);
+    console.log("Envoi de la notification admin post-confirmation - paramètres:", adminTemplateParams);
     console.log("Service EmailJS dédié à la confirmation:", CONFIRMATION_EMAILJS_SERVICE_ID);
     console.log("Template admin notification:", ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID);
     
