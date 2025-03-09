@@ -1,6 +1,7 @@
 
 // Ce fichier est le point d'entrée principal du formulaire de paiement manuel
 // Il utilise les composants plus petits et le hook personnalisé pour gérer la logique
+// Mise à jour: Utilisation du hook refactorisé
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaymentMethodSelector } from "./PaymentMethodSelector";
