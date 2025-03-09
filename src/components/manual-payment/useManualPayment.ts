@@ -1,6 +1,6 @@
 
 // Ce hook gère toute la logique du paiement manuel
-// Mise à jour: Utilisation des bonnes constantes pour l'envoi d'emails initiaux uniquement
+// Mise à jour: Utilisation des nouvelles API #1 pour l'envoi d'emails initiaux uniquement
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -76,13 +76,13 @@ export function useManualPayment(participant: Participant) {
         reply_to: "ne-pas-repondre@lacitadelle.ci"
       };
 
-      console.log("Envoi de l'email à l'administrateur...");
+      console.log("Envoi de l'email à l'administrateur avec le nouveau service...");
       console.log("Service admin:", INITIAL_EMAILJS_SERVICE_ID);
       console.log("Template admin:", ADMIN_NOTIFICATION_TEMPLATE_ID);
       console.log("Clé publique:", INITIAL_EMAILJS_PUBLIC_KEY);
       console.log("URL de validation admin:", validationLink);
 
-      // Envoyer l'email à l'administrateur
+      // Envoyer l'email à l'administrateur avec les NOUVELLES clés API
       const response = await emailjs.send(
         INITIAL_EMAILJS_SERVICE_ID,
         ADMIN_NOTIFICATION_TEMPLATE_ID,
@@ -96,7 +96,7 @@ export function useManualPayment(participant: Participant) {
         // Envoyer un email au participant pour lui confirmer que sa demande est en cours de traitement
         // Cette partie est uniquement l'email INITIAL d'attente de validation
         const participantTemplateParams = {
-          to_email: participant.email,
+          to_email: participant.email.trim(),
           to_name: `${participant.first_name} ${participant.last_name}`,
           from_name: "IFTAR 2024",
           prenom: participant.first_name,
@@ -109,12 +109,12 @@ export function useManualPayment(participant: Participant) {
           reply_to: "ne-pas-repondre@lacitadelle.ci"
         };
 
-        console.log("Envoi de l'email initial au participant...");
+        console.log("Envoi de l'email initial au participant avec le nouveau service...");
         console.log("Service participant:", INITIAL_EMAILJS_SERVICE_ID);
         console.log("Template participant:", PARTICIPANT_INITIAL_TEMPLATE_ID);
         console.log("Clé publique:", INITIAL_EMAILJS_PUBLIC_KEY);
 
-        // Utiliser le service et template pour l'email INITIAL uniquement
+        // Utiliser le NOUVEAU service et template pour l'email INITIAL uniquement
         const participantResponse = await emailjs.send(
           INITIAL_EMAILJS_SERVICE_ID,
           PARTICIPANT_INITIAL_TEMPLATE_ID, 

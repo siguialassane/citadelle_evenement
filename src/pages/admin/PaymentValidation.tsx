@@ -2,6 +2,7 @@
 // Ce fichier a été refactorisé pour organiser le code en composants plus petits
 // Il utilise maintenant différents composants pour une meilleure maintenance
 // Mise à jour: Clarification du flux de validation et envoi d'emails
+// Aucune modification des API de confirmation (API #2)
 
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
