@@ -1,5 +1,7 @@
+
 // Hook personnalisé pour gérer la logique de validation des paiements
 // Mise à jour: Correction de l'envoi d'email de confirmation et utilisation des bonnes constantes
+// Correction du QR code pour qu'il contienne l'URL complète
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -195,7 +197,7 @@ export const usePaymentValidation = (paymentId?: string) => {
         throw new Error("Données de paiement manquantes");
       }
 
-      // Génération d'un UUID pour le QR code
+      // Génération d'un UUID pour le QR code qui sera l'identifiant unique
       const qrCodeId = uuidv4();
       console.log("Génération d'un nouveau QR code ID:", qrCodeId);
 
@@ -329,10 +331,13 @@ export const usePaymentValidation = (paymentId?: string) => {
       // Construction de l'URL de confirmation
       const confirmationUrl = `${appUrl}/confirmation/${participantData.id}`;
       
-      // S'assurer que l'URL du QR code est correctement encodée
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeId)}`;
+      // CORRECTION: S'assurer que l'URL du QR code contient l'URL complète et pas seulement l'UUID
+      // Créer une URL complète pour le QR code qui pointe vers la page de confirmation
+      const qrCodeData = `${appUrl}/confirmation/${participantData.id}`;
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeData)}`;
       
       console.log("QR Code URL générée:", qrCodeUrl);
+      console.log("QR Code données encodées:", qrCodeData);
       console.log("Confirmation URL:", confirmationUrl);
       
       // Préparation des paramètres pour le template de confirmation avec QR code
