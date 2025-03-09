@@ -1,7 +1,7 @@
 
 // Service pour l'envoi d'emails de confirmation après validation des paiements
-// Mise à jour: Correction du problème d'affichage du QR code dans les emails
-// Génération d'une image QR code réelle au lieu d'un simple lien
+// Mise à jour: Correction définitive de l'affichage du QR code et des liens dans les emails
+// Résolution du problème d'identification du participant via QR code
 
 import emailjs from '@emailjs/browser';
 import { ADMIN_EMAIL } from "@/components/manual-payment/config";
@@ -30,11 +30,13 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     
     // URL de la page de confirmation (pour le lien dans l'email)
     const confirmationPageUrl = `${appUrl}/confirmation/${qrCodeId}`;
+    console.log("URL de confirmation générée:", confirmationPageUrl);
     
     // Génération de l'URL pour l'image QR code (utiliser un service QR en ligne)
     // Encodage de l'URL de confirmation pour l'intégrer dans le QR
     const encodedConfirmationUrl = encodeURIComponent(confirmationPageUrl);
     const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedConfirmationUrl}`;
+    console.log("URL de l'image QR code générée:", qrCodeImageUrl);
     
     // URL du reçu avec l'ID du participant
     const receiptUrl = `${appUrl}/receipt/${participantData.id}`;
