@@ -1,7 +1,5 @@
-
 // Ce fichier gère la page d'attente après soumission d'un paiement manuel
-// Le participant est redirigé vers cette page après avoir soumis sa preuve
-// et attend la validation par l'administrateur
+// Mise à jour: Correction du problème d'envoi simultané d'emails - Amélioration de la vérification du statut
 
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -19,6 +17,7 @@ const PaymentPending = () => {
   const [payment, setPayment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasRedirected, setHasRedirected] = useState(false);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -66,8 +65,10 @@ const PaymentPending = () => {
           setPayment(paymentData);
 
           // Si le paiement a été validé, rediriger vers la page de confirmation
-          if (paymentData.status === 'completed') {
+          // IMPORTANT: Cette vérification se fait uniquement au chargement initial de la page
+          if (paymentData.status === 'completed' && !hasRedirected) {
             console.log("Paiement validé, redirection vers confirmation");
+            setHasRedirected(true);
             navigate(`/confirmation/${participantId}`);
           }
         } else {
@@ -86,10 +87,13 @@ const PaymentPending = () => {
     fetchData();
 
     // Configurer un intervalle pour vérifier régulièrement le statut du paiement
+    // IMPORTANT: Cette vérification automatique se fait avec une fréquence plus modérée
     const checkPaymentStatus = setInterval(async () => {
       try {
-        if (!participantId) return;
+        if (!participantId || hasRedirected) return;
 
+        console.log("Vérification périodique du statut du paiement...");
+        
         const { data, error } = await supabase
           .from('manual_payments')
           .select('*')
@@ -103,32 +107,35 @@ const PaymentPending = () => {
           return;
         }
 
-        if (data && data.status === 'completed') {
-          toast({
-            title: "Paiement validé",
-            description: "Votre paiement a été validé. Vous allez être redirigé vers la page de confirmation.",
-            variant: "default",
-          });
-          
-          console.log("Paiement validé détecté, redirection vers confirmation");
-          // Rediriger vers la page de confirmation
-          setTimeout(() => {
-            navigate(`/confirmation/${participantId}`);
-          }, 2000);
-        }
-
         if (data) {
           setPayment(data);
+          
+          // Si le statut est passé à 'completed', on redirige l'utilisateur
+          if (data.status === 'completed' && !hasRedirected) {
+            console.log("Statut du paiement passé à 'completed', préparation de la redirection...");
+            setHasRedirected(true);
+            
+            toast({
+              title: "Paiement validé",
+              description: "Votre paiement a été validé. Vous allez être redirigé vers la page de confirmation.",
+              variant: "default",
+            });
+            
+            // Rediriger vers la page de confirmation après un court délai
+            setTimeout(() => {
+              navigate(`/confirmation/${participantId}`);
+            }, 2000);
+          }
         }
       } catch (err) {
         console.error("Erreur lors de la vérification du statut:", err);
       }
-    }, 30000); // Vérifier toutes les 30 secondes
+    }, 60000); // Vérifier toutes les 60 secondes (réduit pour éviter les problèmes)
 
     return () => {
       clearInterval(checkPaymentStatus);
     };
-  }, [participantId, navigate]);
+  }, [participantId, navigate, hasRedirected]);
 
   const handleBackToHome = () => {
     navigate("/");
@@ -266,7 +273,7 @@ const PaymentPending = () => {
         </Alert>
 
         <div className="bg-white shadow-md rounded-xl overflow-hidden border border-green-100">
-          <div className="px-4 py-5 sm:px-6 bg-green-50">
+          <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 bg-green-50">
             <h2 className="text-lg leading-6 font-medium text-green-700">
               Détails du paiement
             </h2>

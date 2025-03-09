@@ -1,6 +1,6 @@
 
 // Service pour la validation des paiements
-// Mise à jour: Utilisation du second service EmailJS pour les confirmations après validation admin
+// Mise à jour: Correction du problème d'envoi simultané d'emails - Séparation claire entre les phases d'attente et de validation
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse, EmailConfirmationParams } from "./types";
@@ -22,6 +22,17 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
     if (!paymentData) {
       console.error("Données de paiement introuvables pour l'ID:", paymentId);
       throw new Error("Données de paiement manquantes");
+    }
+    
+    // Vérifier si le paiement est déjà validé pour éviter les doubles envois
+    if (paymentData.status === 'completed') {
+      console.log("Ce paiement a déjà été validé, aucune action supplémentaire nécessaire");
+      toast({
+        title: "Information",
+        description: "Ce paiement a déjà été validé précédemment.",
+        variant: "default",
+      });
+      return { success: true };
     }
     
     // Mettre à jour le statut du paiement et générer le QR code
