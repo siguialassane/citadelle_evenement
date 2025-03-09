@@ -1,4 +1,3 @@
-
 // Composant pour la recherche et l'export des participants
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -233,6 +232,39 @@ export const SearchAndExport = ({
     }
   };
 
+  // Fonction pour compter les paiements confirmés
+  const countConfirmedPayments = () => {
+    let count = 0;
+    
+    participants.forEach(participant => {
+      // Vérifier d'abord les paiements standards
+      if (participant.payments && participant.payments.length > 0) {
+        const standardPaymentConfirmed = participant.payments.some(
+          payment => payment.status?.toUpperCase() === "SUCCESS" || 
+                    payment.status?.toUpperCase() === "APPROVED"
+        );
+        
+        if (standardPaymentConfirmed) {
+          count++;
+          return; // Si un paiement standard est confirmé, on passe au participant suivant
+        }
+      }
+      
+      // Vérifier ensuite les paiements manuels
+      if (participant.manual_payments && participant.manual_payments.length > 0) {
+        const manualPaymentConfirmed = participant.manual_payments.some(
+          payment => payment.status?.toLowerCase() === "completed"
+        );
+        
+        if (manualPaymentConfirmed) {
+          count++;
+        }
+      }
+    });
+    
+    return count;
+  };
+
   return (
     <div className="bg-white p-4 rounded-lg shadow mb-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -292,7 +324,7 @@ export const SearchAndExport = ({
         <div className="bg-green-50 p-4 rounded-lg">
           <p className="text-green-800 font-medium">Paiements confirmés</p>
           <p className="text-2xl font-bold">
-            {participants.filter(p => p.payments?.[0]?.status?.toUpperCase() === "SUCCESS" || p.payments?.[0]?.status?.toUpperCase() === "APPROVED").length}
+            {countConfirmedPayments()}
           </p>
         </div>
         <div className="bg-blue-50 p-4 rounded-lg">

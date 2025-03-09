@@ -40,16 +40,36 @@ export const DeleteConfirmation = ({
 
     setIsDeleting(true);
     try {
-      // Supprimer d'abord les paiements (en raison des contraintes de clé étrangère)
-      // Utiliser une condition WHERE qui sélectionne toutes les lignes
+      // Supprimer dans l'ordre pour respecter les contraintes de clé étrangère
+      
+      // 1. D'abord les paiements manuels
+      const { error: manualPaymentsError } = await supabase
+        .from('manual_payments')
+        .delete()
+        .gte('id', '00000000-0000-0000-0000-000000000000');
+
+      if (manualPaymentsError) throw manualPaymentsError;
+      
+      // 2. Puis les paiements normaux
       const { error: paymentsError } = await supabase
         .from('payments')
         .delete()
         .gte('id', '00000000-0000-0000-0000-000000000000');
 
       if (paymentsError) throw paymentsError;
+      
+      // 3. Les check-ins si cette table existe
+      try {
+        await supabase
+          .from('check_ins')
+          .delete()
+          .gte('id', '00000000-0000-0000-0000-000000000000');
+      } catch (checkInError) {
+        // Si cette table n'existe pas ou si une erreur se produit, on continue
+        console.log("Note: check_ins n'a pas pu être vidée ou n'existe pas", checkInError);
+      }
 
-      // Supprimer ensuite les participants avec une condition WHERE qui sélectionne toutes les lignes
+      // 4. Enfin les participants
       const { error: participantsError } = await supabase
         .from('participants')
         .delete()
@@ -62,16 +82,16 @@ export const DeleteConfirmation = ({
       
       toast({
         title: "Base de données vidée",
-        description: "Tous les participants ont été supprimés avec succès.",
+        description: "Tous les participants et leurs données associées ont été supprimés avec succès.",
       });
 
       // Force page refresh to update the UI
       window.location.reload();
     } catch (error) {
-      console.error("Erreur lors de la suppression des participants:", error);
+      console.error("Erreur lors de la suppression des données:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de supprimer les participants. Veuillez réessayer.",
+        description: "Impossible de supprimer les données. Veuillez réessayer.",
         variant: "destructive",
       });
     } finally {
