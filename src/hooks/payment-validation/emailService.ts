@@ -1,8 +1,7 @@
 
 // Service pour l'envoi d'emails de confirmation après validation des paiements
-// Mise à jour: Correction définitive de l'affichage du QR code et des liens dans les emails
-// Résolution du problème d'identification du participant via QR code
-// IMPORTANT: Correction du problème de URL dans le QR code pour accéder à la page de confirmation
+// Mise à jour: Restauration de l'API QR Server pour la génération des codes QR
+// Correction du format de l'URL dans le QR code pour accéder à la page de confirmation
 
 import emailjs from '@emailjs/browser';
 import { ADMIN_EMAIL } from "@/components/manual-payment/config";
@@ -34,12 +33,10 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     const confirmationPageUrl = `${appUrl}/confirmation/${qrCodeId}`;
     console.log("URL de confirmation générée:", confirmationPageUrl);
     
-    // Génération de l'URL pour l'image QR code (utiliser un service QR en ligne)
-    // Encodage de l'URL de confirmation pour l'intégrer dans le QR
+    // Génération de l'URL pour l'image QR code (utiliser QR Server API)
     const encodedConfirmationUrl = encodeURIComponent(confirmationPageUrl);
-    // Utilisation d'une API QR alternative pour plus de fiabilité
-    const qrCodeImageUrl = `https://chart.googleapis.com/chart?cht=qr&chs=250x250&chl=${encodedConfirmationUrl}&choe=UTF-8`;
-    console.log("URL de l'image QR code générée (Google Charts API):", qrCodeImageUrl);
+    const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedConfirmationUrl}`;
+    console.log("URL de l'image QR code générée (QR Server API):", qrCodeImageUrl);
     
     // URL du reçu avec l'ID du participant
     const receiptUrl = `${appUrl}/receipt/${participantData.id}`;
@@ -65,8 +62,8 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
       from_name: "IFTAR 2024",
       payment_amount: "1000 XOF",
       status: status,
-      qr_code_url: qrCodeImageUrl,
-      confirmation_url: confirmationPageUrl,
+      qr_code_url: qrCodeImageUrl, // URL de l'image QR code
+      confirmation_url: confirmationPageUrl, // URL directe pour accéder à la page de confirmation
       receipt_url: receiptUrl,
       confirmation_date: formattedDate,
       app_url: appUrl,
@@ -107,9 +104,9 @@ export const sendAdminNotification = async (params: EmailConfirmationParams): Pr
     // URL de la page de confirmation
     const confirmationPageUrl = `${appUrl}/confirmation/${params.qrCodeId}`;
     
-    // URL de l'image QR code - utilisant la même API Google Charts
+    // URL de l'image QR code - utilisant QR Server API
     const encodedConfirmationUrl = encodeURIComponent(confirmationPageUrl);
-    const qrCodeImageUrl = `https://chart.googleapis.com/chart?cht=qr&chs=250x250&chl=${encodedConfirmationUrl}&choe=UTF-8`;
+    const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedConfirmationUrl}`;
     
     const currentDate = new Date().toLocaleString('fr-FR');
     
