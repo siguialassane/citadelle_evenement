@@ -1,6 +1,6 @@
 
 // Ce hook gère toute la logique du paiement manuel
-// Mise à jour: Utilisation des bonnes constantes renommées pour l'envoi d'emails initiaux uniquement
+// Mise à jour: Utilisation des bonnes constantes pour l'envoi d'emails initiaux uniquement
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -9,13 +9,11 @@ import { supabase } from "@/integrations/supabase/client";
 import emailjs from '@emailjs/browser';
 import { 
   PAYMENT_AMOUNT,
-  ADMIN_EMAILJS_SERVICE_ID, 
-  ADMIN_EMAILJS_TEMPLATE_ID, 
-  ADMIN_EMAILJS_PUBLIC_KEY,
   ADMIN_EMAIL,
   INITIAL_EMAILJS_SERVICE_ID, 
-  INITIAL_EMAILJS_TEMPLATE_ID, 
-  INITIAL_EMAILJS_PUBLIC_KEY
+  INITIAL_EMAILJS_PUBLIC_KEY,
+  PARTICIPANT_INITIAL_TEMPLATE_ID,
+  ADMIN_NOTIFICATION_TEMPLATE_ID
 } from "./config";
 import { PaymentMethod, Participant, CopyStates } from "./types";
 
@@ -79,16 +77,17 @@ export function useManualPayment(participant: Participant) {
       };
 
       console.log("Envoi de l'email à l'administrateur...");
-      console.log("Service admin:", ADMIN_EMAILJS_SERVICE_ID);
-      console.log("Template admin:", ADMIN_EMAILJS_TEMPLATE_ID);
+      console.log("Service admin:", INITIAL_EMAILJS_SERVICE_ID);
+      console.log("Template admin:", ADMIN_NOTIFICATION_TEMPLATE_ID);
+      console.log("Clé publique:", INITIAL_EMAILJS_PUBLIC_KEY);
       console.log("URL de validation admin:", validationLink);
 
-      // N'envoyer QUE l'email à l'administrateur
+      // Envoyer l'email à l'administrateur
       const response = await emailjs.send(
-        ADMIN_EMAILJS_SERVICE_ID,
-        ADMIN_EMAILJS_TEMPLATE_ID,
+        INITIAL_EMAILJS_SERVICE_ID,
+        ADMIN_NOTIFICATION_TEMPLATE_ID,
         templateParams,
-        ADMIN_EMAILJS_PUBLIC_KEY
+        INITIAL_EMAILJS_PUBLIC_KEY
       );
 
       console.log("Email de notification admin envoyé avec succès:", response);
@@ -112,12 +111,13 @@ export function useManualPayment(participant: Participant) {
 
         console.log("Envoi de l'email initial au participant...");
         console.log("Service participant:", INITIAL_EMAILJS_SERVICE_ID);
-        console.log("Template participant:", INITIAL_EMAILJS_TEMPLATE_ID);
+        console.log("Template participant:", PARTICIPANT_INITIAL_TEMPLATE_ID);
+        console.log("Clé publique:", INITIAL_EMAILJS_PUBLIC_KEY);
 
         // Utiliser le service et template pour l'email INITIAL uniquement
         const participantResponse = await emailjs.send(
           INITIAL_EMAILJS_SERVICE_ID,
-          INITIAL_EMAILJS_TEMPLATE_ID, 
+          PARTICIPANT_INITIAL_TEMPLATE_ID, 
           participantTemplateParams,
           INITIAL_EMAILJS_PUBLIC_KEY
         );

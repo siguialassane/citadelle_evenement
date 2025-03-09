@@ -1,4 +1,3 @@
-
 // Hook personnalisé pour gérer la logique de validation des paiements
 // Mise à jour: Correction de l'envoi d'email de confirmation et utilisation des bonnes constantes
 
@@ -226,6 +225,10 @@ export const usePaymentValidation = (paymentId?: string) => {
       try {
         // UNIQUEMENT envoyer l'email de confirmation APRÈS validation par l'admin
         console.log("Lancement de l'envoi d'email de confirmation...");
+        console.log("Service :", CONFIRMATION_EMAILJS_SERVICE_ID);
+        console.log("Template :", CONFIRMATION_EMAILJS_TEMPLATE_ID);
+        console.log("Clé publique :", CONFIRMATION_EMAILJS_PUBLIC_KEY);
+        
         const emailResult = await sendConfirmationEmail(participantData, qrCodeId);
         console.log("Résultat de l'envoi d'email de confirmation:", emailResult);
         
@@ -318,15 +321,6 @@ export const usePaymentValidation = (paymentId?: string) => {
     try {
       console.log("===== ENVOI EMAIL DE CONFIRMATION AVEC QR CODE =====");
       console.log("Début de l'envoi de l'email de confirmation au participant après validation par l'admin");
-      console.log("Service ID:", CONFIRMATION_EMAILJS_SERVICE_ID);
-      console.log("Template ID:", CONFIRMATION_EMAILJS_TEMPLATE_ID);
-      console.log("Public Key:", CONFIRMATION_EMAILJS_PUBLIC_KEY);
-      
-      console.log("Données du participant:", JSON.stringify({
-        id: participantData.id,
-        email: participantData.email,
-        name: `${participantData.first_name} ${participantData.last_name}`
-      }));
       
       const appUrl = window.location.origin;
       
@@ -336,7 +330,10 @@ export const usePaymentValidation = (paymentId?: string) => {
       const confirmationUrl = `${appUrl}/confirmation/${participantData.id}`;
       
       // S'assurer que l'URL du QR code est correctement encodée
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(confirmationUrl)}`;
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeId)}`;
+      
+      console.log("QR Code URL générée:", qrCodeUrl);
+      console.log("Confirmation URL:", confirmationUrl);
       
       // Préparation des paramètres pour le template de confirmation avec QR code
       const templateParams = {
@@ -363,7 +360,7 @@ export const usePaymentValidation = (paymentId?: string) => {
       console.log("URL du QR code:", qrCodeUrl);
       console.log("URL du reçu:", `${appUrl}/confirmation/${participantData.id}`);
 
-      // Utilisation du template de confirmation avec QR code
+      // Utilisation du service et template pour l'email de CONFIRMATION uniquement
       const response = await emailjs.send(
         CONFIRMATION_EMAILJS_SERVICE_ID,
         CONFIRMATION_EMAILJS_TEMPLATE_ID,

@@ -4,26 +4,26 @@
 // Définition des constantes
 export const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
 
-// ==================== PREMIÈRE API (EMAILS INITIAUX) ====================
-// Pour l'email initial envoyé au participant et l'email de notification à l'admin
+// ==================== EMAIL API #1 (EMAILS INITIAUX) ====================
+// Pour les emails initiaux (participant en attente + notification admin)
 
-// Configuration EmailJS pour le participant - Email initial (en attente de validation)
+// Service ID pour les emails initiaux (participant et admin)
 export const INITIAL_EMAILJS_SERVICE_ID = "service_is5645q";
-export const INITIAL_EMAILJS_TEMPLATE_ID = "template_dwx7qnw"; // Template pour notification initiale
 export const INITIAL_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
 
-// Configuration EmailJS pour l'admin
-export const ADMIN_EMAILJS_SERVICE_ID = "service_sxgma2j";
-export const ADMIN_EMAILJS_TEMPLATE_ID = "template_dp1tu2w"; // Template admin
-export const ADMIN_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
+// Template pour l'email initial au participant (en attente de validation)
+export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_dwx7qnw";
+
+// Email et template pour l'administrateur
 export const ADMIN_EMAIL = "siguialassane93@gmail.com";
+export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_dp1tu2w";
 
-// ==================== DEUXIÈME API (EMAIL DE CONFIRMATION) ====================
-// Pour l'email de confirmation avec QR code envoyé APRÈS validation par l'admin
+// ==================== EMAIL API #2 (EMAIL DE CONFIRMATION) ====================
+// Pour l'email de confirmation avec QR code après validation par l'admin
 
-export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_is5645q";
-export const CONFIRMATION_EMAILJS_TEMPLATE_ID = "template_xvdr1iq"; // Template avec QR code
-export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
+export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_is5645q"; // Même service que le premier
+export const CONFIRMATION_EMAILJS_TEMPLATE_ID = "template_xvdr1iq"; // Template pour confirmation avec QR code
+export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae"; // Même clé publique
 
 // Numéros de paiement
 export const PAYMENT_NUMBERS = {

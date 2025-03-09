@@ -42,6 +42,8 @@ const PaymentValidation = () => {
   const handleValidatePayment = async (paymentId: string) => {
     // Cette fonction déclenche l'envoi de l'email de confirmation avec QR code
     console.log("Validation du paiement par l'administrateur, ID:", paymentId);
+    console.log("Cette action va envoyer un email de confirmation avec QR code au participant");
+    
     const success = await validatePayment(paymentId);
     if (success) {
       console.log("Validation réussie et email de confirmation envoyé");
