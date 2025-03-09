@@ -1,18 +1,14 @@
-
 // Service pour la validation des paiements
-// Mise à jour: Amélioration de la journalisation pour le débogage des emails
-// Correction: Vérification approfondie des données du participant avant envoi d'email
+// Mise à jour: Suppression de l'envoi d'email à l'administrateur après validation
+// Amélioration de la journalisation pour le débogage des emails
 
 import { toast } from "@/hooks/use-toast";
-import { ValidationResponse, EmailConfirmationParams } from "./types";
+import { ValidationResponse } from "./types";
 import { 
   validatePaymentInDatabase, 
   fetchParticipantData 
 } from "./supabaseService";
-import { 
-  sendConfirmationEmail, 
-  sendAdminNotification
-} from "./emailService";
+import { sendConfirmationEmail } from "./emailService";
 
 // Valide un paiement et envoie les emails nécessaires
 export const validatePayment = async (paymentId: string, paymentData: any): Promise<ValidationResponse> => {
@@ -61,21 +57,6 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
       
       if (emailSuccess) {
         console.log("✅ Email de confirmation envoyé avec succès");
-        
-        // Notification à l'administrateur
-        const notificationParams: EmailConfirmationParams = {
-          participantId: participantData.id,
-          participantEmail: participantData.email,
-          participantName: `${participantData.first_name} ${participantData.last_name}`,
-          participantPhone: participantData.contact_number,
-          amount: paymentData.amount,
-          paymentMethod: paymentData.payment_method,
-          paymentId: paymentId,
-          isMember: participantData.is_member,
-          qrCodeId: qrCodeId
-        };
-        
-        await sendAdminNotification(notificationParams);
       } else {
         console.error("❌ L'email de confirmation n'a pas pu être envoyé");
         toast({

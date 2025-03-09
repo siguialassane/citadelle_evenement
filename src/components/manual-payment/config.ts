@@ -1,6 +1,6 @@
 
 // Ce fichier contient les constantes et configurations pour le paiement manuel
-// Mise à jour: Vérification et validation des identifiants des services EmailJS
+// Mise à jour: Suppression du template de notification admin après confirmation
 // Correction: Paramètres alignés avec les templates utilisés
 
 // Définition des constantes
@@ -19,7 +19,6 @@ export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
 export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_2ncsaxe"; // Email initial (en attente)
 export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_dp1tu2w"; // Notification admin initiale
 export const CONFIRMATION_TEMPLATE_ID = "template_xvdr1iq"; // Confirmation avec QR code
-export const ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID = "template_dwx7qnw"; // Notification admin post-confirmation
 
 // Email de l'administrateur
 export const ADMIN_EMAIL = "siguialassane93@gmail.com";

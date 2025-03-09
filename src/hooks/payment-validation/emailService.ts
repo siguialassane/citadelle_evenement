@@ -1,17 +1,14 @@
 
 // Service pour l'envoi d'emails de confirmation après validation des paiements
-// Mise à jour: Amélioration des URL de QR code avec paramètres plus robustes 
-// Ajout de paramètres d'identification supplémentaires pour garantir la redirection correcte
+// Mise à jour: Suppression de l'envoi d'email à l'administrateur après validation
+// Amélioration des URL de QR code avec paramètres plus robustes
 
 import emailjs from '@emailjs/browser';
-import { ADMIN_EMAIL } from "@/components/manual-payment/config";
 import { 
   CONFIRMATION_EMAILJS_SERVICE_ID, 
   CONFIRMATION_EMAILJS_PUBLIC_KEY,
-  CONFIRMATION_TEMPLATE_ID,
-  ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID
+  CONFIRMATION_TEMPLATE_ID
 } from "@/components/manual-payment/config";
-import { EmailConfirmationParams } from "./types";
 
 /**
  * Envoie un email de confirmation au participant avec son QR code
@@ -91,63 +88,6 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email de confirmation:", error);
     console.error("Détails de l'erreur:", error);
-    return false;
-  }
-};
-
-/**
- * Envoie un email de notification à l'administrateur après confirmation d'un paiement
- */
-export const sendAdminNotification = async (params: EmailConfirmationParams): Promise<boolean> => {
-  try {
-    console.log("Envoi de notification à l'administrateur après validation...");
-    
-    const appUrl = window.location.origin;
-    
-    // URL de la page de confirmation améliorée
-    const confirmationPageUrl = `${appUrl}/confirmation/${params.qrCodeId}?type=qr&pid=${params.participantId}`;
-    
-    // URL de l'image QR code - utilisant QR Server API avec paramètres optimisés
-    const encodedConfirmationUrl = encodeURIComponent(confirmationPageUrl);
-    const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedConfirmationUrl}&qzone=2`;
-    
-    const currentDate = new Date().toLocaleString('fr-FR');
-    
-    // Paramètres pour l'email admin
-    const adminTemplateParams = {
-      to_email: ADMIN_EMAIL,
-      from_name: "Système de Validation IFTAR",
-      participant_name: params.participantName,
-      participant_email: params.participantEmail,
-      participant_phone: params.participantPhone,
-      payment_amount: `${params.amount} XOF`,
-      payment_method: params.paymentMethod,
-      payment_id: params.paymentId,
-      participant_id: params.participantId,
-      qr_code_link: confirmationPageUrl,
-      qr_code_url: qrCodeImageUrl,
-      is_member: params.isMember ? "Oui" : "Non",
-      app_url: appUrl,
-      current_date: currentDate,
-      reply_to: "ne-pas-repondre@lacitadelle.ci"
-    };
-    
-    console.log("Envoi de la notification admin post-confirmation - paramètres:", adminTemplateParams);
-    console.log("Service EmailJS dédié à la confirmation:", CONFIRMATION_EMAILJS_SERVICE_ID);
-    console.log("Template admin notification:", ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID);
-    
-    // Utilisation du même service de confirmation pour la notification admin
-    const adminResponse = await emailjs.send(
-      CONFIRMATION_EMAILJS_SERVICE_ID,
-      ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID,
-      adminTemplateParams,
-      CONFIRMATION_EMAILJS_PUBLIC_KEY
-    );
-    
-    console.log("Email de notification admin après validation envoyé avec succès:", adminResponse);
-    return true;
-  } catch (error) {
-    console.error("Erreur lors de l'envoi de l'email de notification admin:", error);
     return false;
   }
 };
