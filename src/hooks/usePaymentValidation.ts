@@ -1,7 +1,7 @@
 
 // Hook personnalisé pour gérer la logique de validation des paiements
-// Mise à jour: Correction de l'envoi d'email de confirmation pour résoudre les problèmes de réception
-// Ajout de logs détaillés pour faciliter le débogage et correction du formatage des paramètres
+// Mise à jour: Correction de l'erreur de type sur les variants de toast
+// Changement de "warning" vers "default" avec une description claire pour l'utilisateur
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -285,10 +285,11 @@ export const usePaymentValidation = (paymentId?: string) => {
         } else {
           console.error("❌ L'email de confirmation n'a pas pu être envoyé");
           // Ne pas bloquer le processus si l'email échoue, mais notifier l'admin
+          // Correction ici: changer "warning" en "default" car "warning" n'est pas un variant valide
           toast({
             title: "Attention",
             description: "Le paiement a été validé mais l'envoi de l'email de confirmation a échoué. Veuillez contacter le participant manuellement.",
-            variant: "warning",
+            variant: "default", // Changé de "warning" à "default"
           });
         }
       } catch (emailError: any) {
