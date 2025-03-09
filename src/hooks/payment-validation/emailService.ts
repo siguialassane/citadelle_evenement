@@ -1,7 +1,7 @@
 
 // Service pour l'envoi d'emails de confirmation après validation des paiements
-// Mise à jour: Utilisation du service dédié à la confirmation avec QR code
-// Créé pour isoler la logique d'envoi d'emails du reste du service de validation
+// Mise à jour: Correction des paramètres pour correspondre au template EmailJS
+// Ajout des champs manquants comme le statut et l'URL du reçu
 
 import emailjs from '@emailjs/browser';
 import { ADMIN_EMAIL } from "@/components/manual-payment/config";
@@ -28,20 +28,28 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     // URL de base et génération des liens
     const appUrl = window.location.origin;
     const qrCodeLink = `${appUrl}/confirmation/${qrCodeId}`;
+    const receiptUrl = `${appUrl}/receipt/${participantData.id}`;
     const formattedDate = new Date().toLocaleDateString('fr-FR');
     
     console.log("QR Code généré:", qrCodeId);
     console.log("URL du QR Code:", qrCodeLink);
+    console.log("Email du participant:", participantData.email);
     
-    // Préparation des paramètres de l'email
+    // Déterminer le statut du participant
+    const status = participantData.is_member ? "Membre" : "Non-membre";
+    
+    // Préparation des paramètres de l'email - ajustés pour correspondre au template
     const confirmationParams = {
       to_email: participantData.email,
-      to_name: `${participantData.first_name} ${participantData.last_name}`,
-      from_name: "IFTAR 2024",
       prenom: participantData.first_name,
       nom: participantData.last_name,
+      participant_name: `${participantData.first_name} ${participantData.last_name}`,
+      participant_phone: participantData.contact_number,
+      from_name: "IFTAR 2024",
       payment_amount: "1000 XOF",
-      qr_code_link: qrCodeLink,
+      status: status,
+      qr_code_url: qrCodeLink,
+      receipt_url: receiptUrl,
       confirmation_date: formattedDate,
       app_url: appUrl,
       reply_to: "ne-pas-repondre@lacitadelle.ci"
@@ -64,6 +72,7 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     return true;
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email de confirmation:", error);
+    console.error("Détails de l'erreur:", error);
     return false;
   }
 };

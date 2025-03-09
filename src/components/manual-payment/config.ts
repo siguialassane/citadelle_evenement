@@ -1,7 +1,7 @@
 
 // Ce fichier contient les constantes et configurations pour le paiement manuel
-// Mise à jour: Séparation claire des services EmailJS pour faciliter la maintenance
-// Correction: Utilisation du service dédié à la confirmation
+// Mise à jour: Vérification et validation des identifiants des services EmailJS
+// Correction: Paramètres alignés avec les templates utilisés
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF

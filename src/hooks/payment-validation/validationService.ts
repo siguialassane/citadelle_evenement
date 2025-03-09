@@ -1,6 +1,7 @@
 
 // Service pour la validation des paiements
-// Mise à jour: Correction du problème de colonne manquante et simplification
+// Mise à jour: Amélioration de la journalisation pour le débogage des emails
+// Correction: Vérification approfondie des données du participant avant envoi d'email
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse, EmailConfirmationParams } from "./types";
@@ -32,11 +33,23 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
     
     console.log("Données du participant récupérées:", participantData);
     console.log("Email du participant:", participantData.email);
+    console.log("Téléphone du participant:", participantData.contact_number);
+    console.log("Statut d'adhésion:", participantData.is_member ? "Membre" : "Non-membre");
 
-    // Vérification simple de l'email
+    // Vérification approfondie des données du participant
+    if (!participantData) {
+      console.error("Données du participant introuvables");
+      throw new Error("Données du participant introuvables");
+    }
+
     if (!participantData.email) {
       console.error("Email du participant manquant");
       throw new Error("Email du participant manquant");
+    }
+
+    if (!participantData.first_name || !participantData.last_name) {
+      console.error("Nom du participant incomplet");
+      throw new Error("Nom du participant incomplet");
     }
 
     // Envoi de l'email de confirmation APRÈS avoir tout validé
@@ -73,6 +86,7 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
       }
     } catch (emailError: any) {
       console.error("Erreur lors de l'envoi de l'email de confirmation:", emailError);
+      console.error("Détails de l'erreur:", emailError);
       toast({
         title: "Attention",
         description: "Le paiement a été validé mais l'envoi de l'email de confirmation a échoué.",
@@ -92,6 +106,7 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
 
   } catch (error: any) {
     console.error("Erreur lors de la validation du paiement:", error);
+    console.error("Détails de l'erreur:", error);
     toast({
       title: "Erreur",
       description: error.message || "Une erreur est survenue lors de la validation du paiement",
