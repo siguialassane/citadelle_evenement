@@ -3,14 +3,22 @@
 // Modifications:
 // - Remplacement des couleurs belges par celles de la Côte d'Ivoire (orange, blanc, vert)
 // - Amélioration du design pour correspondre au thème islamique
+// - Ajout du programme détaillé et des invités officiels
 
 import React from "react";
 import { RegisterForm } from "@/components/RegisterForm";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Info, Lock, Calendar, MapPin, Clock, Users } from "lucide-react";
+import { Info, Lock, Calendar, MapPin, Clock, Users, Award, Film, Mic, Coffee, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import EventLogo from "@/components/EventLogo";
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from "@/components/ui/accordion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -83,6 +91,270 @@ const Index = () => {
               <li>Prière & Zikr</li>
             </ul>
           </div>
+        </div>
+        
+        {/* Programme détaillé avec accordéon */}
+        <div className="mb-12">
+          <Accordion type="single" collapsible className="w-full bg-white rounded-xl shadow-md">
+            <AccordionItem value="programme">
+              <AccordionTrigger className="px-6 py-4 text-xl font-bold text-green-700 hover:text-green-800 hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-6 w-6" />
+                  Programme détaillé
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-4">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Première colonne */}
+                    <div className="space-y-4">
+                      <Card className="border-l-4 border-l-orange-500">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Clock className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">15H30 – 16H00</p>
+                              <p className="text-gray-600">Accueil et installation</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-l-4 border-l-orange-500">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Star className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">16H00 – 16H45</p>
+                              <p className="text-gray-600">Prière de Asr, Zikr Collectif, Lecture de Yâsin</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-l-4 border-l-orange-500">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Users className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">16H45 – 16H50</p>
+                              <p className="text-gray-600">Mise en place en salle de conférence</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-l-4 border-l-orange-500">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Mic className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">16H55 – 18H00</p>
+                              <p className="text-gray-600">Conférence</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-l-4 border-l-orange-500">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Star className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">18H00 – 18H25</p>
+                              <p className="text-gray-600">Séance individuelle et collective de ZIKR</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    {/* Deuxième colonne */}
+                    <div className="space-y-4">
+                      <Card className="border-l-4 border-l-green-600">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Coffee className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">18H25 – 18H50</p>
+                              <p className="text-gray-600">IFTAR et Prière de Maghrib</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-l-4 border-l-green-600">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Mic className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">18H50 – 18H55</p>
+                              <p className="text-gray-600">Slam</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-l-4 border-l-green-600">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Film className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">18H55 – 19H05</p>
+                              <p className="text-gray-600">Projection d'un film Institutionnel sur LA CITADELLE</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-l-4 border-l-green-600">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Mic className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">19H05 – 19H10</p>
+                              <p className="text-gray-600">Allocution du Directeur Exécutif de LA CITADELLE</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-l-4 border-l-green-600">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Mic className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">19H10 – 19H15</p>
+                              <p className="text-gray-600">Allocution du PCA de LA CITADELLE</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    {/* Troisième colonne */}
+                    <div className="space-y-4">
+                      <Card className="border-l-4 border-l-orange-500">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Mic className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">19H15 – 19H20</p>
+                              <p className="text-gray-600">Allocution du PARRAIN</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-l-4 border-l-orange-500">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Mic className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">19H20 – 19H25</p>
+                              <p className="text-gray-600">Communication du Cheikoul Ousmane DIAKITE</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-l-4 border-l-orange-500">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Star className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">19H25 – 19H45</p>
+                              <p className="text-gray-600">Salat ICHAI et TARAWIH</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-l-4 border-l-orange-500">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Coffee className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">19H45 – 20H30</p>
+                              <p className="text-gray-600">Dîner + défilé</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-l-4 border-l-orange-500">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Star className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
+                            <div>
+                              <p className="font-bold text-gray-800">20H30 – 20H35</p>
+                              <p className="text-gray-600">Douah Finale</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+            
+            {/* Invités officiels et personnalités */}
+            <AccordionItem value="invites">
+              <AccordionTrigger className="px-6 py-4 text-xl font-bold text-green-700 hover:text-green-800 hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Award className="h-6 w-6" />
+                  Invités officiels et Personnalités
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <ul className="space-y-3 text-left">
+                    <li className="flex items-start">
+                      <div className="h-2 w-2 rounded-full bg-orange-500 mt-2 mr-2 flex-shrink-0"></div>
+                      <span className="font-medium">EL HADJ KONE DRISSA - CONSEILLER DU PRESIDENT DE LA REPUBLIQUE</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="h-2 w-2 rounded-full bg-orange-500 mt-2 mr-2 flex-shrink-0"></div>
+                      <span className="font-medium">M LE MINISTRE SANOGO MOUSSA</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="h-2 w-2 rounded-full bg-orange-500 mt-2 mr-2 flex-shrink-0"></div>
+                      <span className="font-medium">BAMBA KARIM- DG CNAM</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="h-2 w-2 rounded-full bg-green-600 mt-2 mr-2 flex-shrink-0"></div>
+                      <span className="font-medium">SIDIBE ISSOUFOU- DG OFFICE IVOIRIENNE DES CHARGEURS</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="h-2 w-2 rounded-full bg-green-600 mt-2 mr-2 flex-shrink-0"></div>
+                      <span className="font-medium">CHEIKHOUL AIMA OUSMANE DIAKHITE - PRESIDENT COSIM</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="h-2 w-2 rounded-full bg-green-600 mt-2 mr-2 flex-shrink-0"></div>
+                      <span className="font-medium">IMAM CISSE DJIGUIBA - DG ALBAYANE RADIO TV- RECTEUR DE LA MOSQUEE DU PLATEAU</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="h-2 w-2 rounded-full bg-orange-500 mt-2 mr-2 flex-shrink-0"></div>
+                      <span className="font-medium">HADJA KOMARA DOUSSOUTIE (INVITE PCA)</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="h-2 w-2 rounded-full bg-orange-500 mt-2 mr-2 flex-shrink-0"></div>
+                      <span className="font-medium">MAHAMADOU KOUMA- PCA CONVENTION SOCIETE CIVILE DE CI</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="h-2 w-2 rounded-full bg-green-600 mt-2 mr-2 flex-shrink-0"></div>
+                      <span className="font-medium">EL HAJJ FAMAN TOURE- PRESIDENT DE LA CCI-CI</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="h-2 w-2 rounded-full bg-green-600 mt-2 mr-2 flex-shrink-0"></div>
+                      <span className="font-medium">ALI BERTE - VICE-COMMISSAIRE DU HADJ</span>
+                    </li>
+                  </ul>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
         
         {/* Alerte d'information */}
