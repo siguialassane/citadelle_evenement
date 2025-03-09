@@ -1,6 +1,7 @@
 
 // Service pour l'envoi d'emails de confirmation et de notification
 // Créé lors de la refactorisation du hook usePaymentValidation pour isoler la logique d'envoi d'emails
+// Mise à jour: Uniformisation du traitement des emails pour éviter les erreurs 422
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -12,12 +13,19 @@ import {
 } from "@/components/manual-payment/config";
 import { EmailConfirmationParams } from './types';
 
-// Valide une adresse email
+// Valide une adresse email de manière simplifiée
 export const validateEmail = (email: string): boolean => {
-  if (!email || !email.trim() || !email.includes('@')) {
-    console.error("Adresse email invalide:", email);
+  if (!email || typeof email !== 'string') {
+    console.error("Adresse email invalide ou manquante:", email);
     return false;
   }
+  
+  const trimmedEmail = email.trim();
+  if (!trimmedEmail || !trimmedEmail.includes('@')) {
+    console.error("Adresse email mal formatée:", trimmedEmail);
+    return false;
+  }
+  
   return true;
 };
 
@@ -30,18 +38,23 @@ export const sendConfirmationEmail = async (
     console.log("===== ENVOI EMAIL DE CONFIRMATION AVEC QR CODE =====");
     
     // Validation des données du participant
-    if (!participantData || !participantData.email) {
-      console.error("Données du participant manquantes ou invalides:", participantData);
+    if (!participantData) {
+      console.error("Données du participant manquantes:", participantData);
       return false;
     }
     
-    // Nettoyage et validation de l'email
-    const emailAddress = participantData.email.trim();
-    if (!validateEmail(emailAddress)) {
+    // Validation explicite de l'email avant traitement
+    const participantEmail = participantData.email;
+    console.log("Email brut récupéré:", participantEmail);
+    
+    if (!validateEmail(participantEmail)) {
+      console.error("Email invalide, arrêt de l'envoi.");
       return false;
     }
     
-    console.log("Email du destinataire:", emailAddress);
+    // Utilisation directe de l'email après validation (comme dans sendParticipantInitialEmail)
+    const emailAddress = participantEmail.trim();
+    console.log("Email nettoyé utilisé pour l'envoi:", emailAddress);
     
     // Récupération de l'URL de base de l'application
     const appUrl = window.location.origin;
@@ -80,6 +93,7 @@ export const sendConfirmationEmail = async (
 
     console.log("Paramètres préparés pour le template d'email:", templateParams);
     console.log("Tentative d'envoi de l'email avec EmailJS (SERVICE UNIFIÉ)...");
+    console.log("Email destinataire:", templateParams.to_email);
 
     // Utilisation du service et des identifiants unifiés
     const response = await emailjs.send(
@@ -132,6 +146,7 @@ export const sendAdminNotification = async (params: EmailConfirmationParams): Pr
     console.log("- Service EmailJS:", EMAILJS_SERVICE_ID);
     console.log("- Template admin:", ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID);
     console.log("- Clé publique:", EMAILJS_PUBLIC_KEY);
+    console.log("- Email destinataire:", adminNotifParams.to_email);
     
     const adminNotifResponse = await emailjs.send(
       EMAILJS_SERVICE_ID,

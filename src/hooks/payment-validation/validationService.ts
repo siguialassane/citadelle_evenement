@@ -1,6 +1,7 @@
 
 // Service pour la validation des paiements
 // Créé lors de la refactorisation du hook usePaymentValidation pour isoler la logique de validation
+// Mise à jour: Amélioration de la validation de l'email et des journaux détaillés
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse, EmailConfirmationParams } from "./types";
@@ -39,9 +40,10 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
       qr_code_id: participantData.qr_code_id
     });
 
-    // Vérification que l'email existe et est correctement formaté
-    if (!validateEmail(participantData.email)) {
-      throw new Error("Email du participant invalide ou manquant");
+    // Vérification directe que l'email existe sans utiliser la validation complexe
+    if (!participantData.email) {
+      console.error("Email du participant manquant dans les données récupérées");
+      throw new Error("Email du participant manquant");
     }
 
     // Envoi de l'email de confirmation APRÈS avoir tout validé et mis à jour en base
@@ -91,7 +93,7 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
     // Notification de succès à l'admin
     toast({
       title: "Paiement validé avec succès",
-      description: `Un email de confirmation a été envoyé à ${paymentData.participant_email}`,
+      description: `Un email de confirmation a été envoyé à ${participantData.email}`,
       variant: "default",
     });
     
