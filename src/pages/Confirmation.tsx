@@ -1,9 +1,9 @@
 
 // Ce fichier gère la page de confirmation d'inscription après le paiement
 // Modifications:
-// - Correction du problème d'accès à la page via QR code ou lien dans l'email
-// - Support amélioré pour comprendre si l'utilisateur arrive avec un QR code ID ou un participant ID
-// - Gestion plus robuste des différentes façons d'accéder à la page
+// - Correction définitive du problème d'accès à la page via QR code ou lien dans l'email
+// - Support robuste pour comprendre si l'utilisateur arrive avec un QR code ID ou un participant ID
+// - Logging étendu pour faciliter le débogage
 
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
@@ -16,7 +16,7 @@ import html2canvas from "html2canvas";
 import EventLogo from "@/components/EventLogo";
 
 const Confirmation = () => {
-  // Récupérer le paramètre de l'URL - peut être soit participantId soit qrCodeId
+  // Le paramètre de l'URL peut être soit un participantId, soit un qrCodeId
   const { participantId } = useParams();
   const navigate = useNavigate();
   const [participant, setParticipant] = useState<any>(null);
@@ -33,29 +33,35 @@ const Confirmation = () => {
         setLoading(true);
         
         if (!participantId) {
+          console.error("Aucun paramètre d'URL trouvé");
           setError("Identifiant de participant manquant");
           return;
         }
 
         console.log("Paramètre d'URL reçu:", participantId);
+        console.log("URL courante:", window.location.href);
         
-        // Déterminer si l'identifiant est un QR code ID ou un participant ID
-        // 1. D'abord, essayez de trouver un participant avec ce QR code ID
+        // IMPORTANT: Approche améliorée - Vérifier QR code ID d'abord, puis participant ID
+        let currentParticipant = null;
+        
+        // 1. Essayer de trouver un participant avec ce QR code ID
+        console.log("Tentative de recherche par QR code ID...");
         const { data: participantByQrCode, error: qrCodeError } = await supabase
           .from('participants')
           .select('*')
           .eq('qr_code_id', participantId)
           .maybeSingle();
         
-        let currentParticipant = null;
+        if (qrCodeError) {
+          console.error("Erreur lors de la recherche par QR code ID:", qrCodeError);
+        }
         
         // 2. Si un participant est trouvé avec ce QR code ID
         if (participantByQrCode) {
           console.log("Participant trouvé via QR code ID:", participantByQrCode);
           currentParticipant = participantByQrCode;
-          setParticipant(participantByQrCode);
         } 
-        // 3. Sinon, essayez de trouver un participant avec cet ID
+        // 3. Sinon, essayer de trouver un participant avec cet ID
         else {
           console.log("Aucun participant trouvé avec ce QR code ID, recherche par ID participant...");
           const { data: participantById, error: participantError } = await supabase
@@ -66,24 +72,24 @@ const Confirmation = () => {
           
           if (participantError) {
             console.error("Erreur lors de la recherche du participant par ID:", participantError);
-            throw participantError;
           }
           
-          if (!participantById) {
+          if (participantById) {
+            console.log("Participant trouvé via ID participant:", participantById);
+            currentParticipant = participantById;
+          } else {
             console.error("Aucun participant trouvé avec cet ID:", participantId);
-            setError("Participant non trouvé. Veuillez vérifier l'URL ou contacter le support.");
-            return;
           }
-          
-          console.log("Participant trouvé via ID participant:", participantById);
-          currentParticipant = participantById;
-          setParticipant(participantById);
         }
         
         if (!currentParticipant) {
-          setError("Aucun participant trouvé avec cet identifiant.");
+          console.error("Aucun participant trouvé avec l'identifiant:", participantId);
+          setError("Participant non trouvé. Veuillez vérifier l'URL ou contacter le support.");
           return;
         }
+        
+        // Maintenant que nous avons trouvé le participant, enregistrons-le dans l'état
+        setParticipant(currentParticipant);
         
         const actualParticipantId = currentParticipant.id;
         console.log("ID du participant identifié:", actualParticipantId);
@@ -99,6 +105,10 @@ const Confirmation = () => {
           .limit(1)
           .maybeSingle();
 
+        if (manualPaymentError) {
+          console.error("Erreur lors de la récupération du paiement manuel:", manualPaymentError);
+        }
+
         // 2. Si un paiement manuel existe, l'utiliser
         if (manualPaymentData) {
           console.log("Paiement manuel trouvé:", manualPaymentData);
@@ -109,32 +119,30 @@ const Confirmation = () => {
             transaction_id: `MANUAL-${manualPaymentData.id.substring(0, 8)}`,
           });
           setIsManualPayment(true);
-          return;
-        } else if (manualPaymentError) {
-          console.error("Erreur lors de la récupération du paiement manuel:", manualPaymentError);
         } else {
-          console.log("Aucun paiement manuel trouvé pour ce participant");
-        }
+          console.log("Aucun paiement manuel trouvé pour ce participant, recherche de paiement standard...");
+          
+          // 3. Sinon, essayer de récupérer un paiement standard
+          const { data: standardPaymentData, error: standardPaymentError } = await supabase
+            .from('payments')
+            .select('*')
+            .eq('participant_id', actualParticipantId)
+            .order('payment_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-        // 3. Sinon, essayer de récupérer un paiement standard
-        const { data: standardPaymentData, error: standardPaymentError } = await supabase
-          .from('payments')
-          .select('*')
-          .eq('participant_id', actualParticipantId)
-          .order('payment_date', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          if (standardPaymentError) {
+            console.error("Erreur lors de la récupération du paiement standard:", standardPaymentError);
+          }
 
-        if (standardPaymentData) {
-          console.log("Paiement standard trouvé:", standardPaymentData);
-          setPayment(standardPaymentData);
-          setIsManualPayment(false);
-        } else if (standardPaymentError) {
-          console.error("Erreur lors de la récupération du paiement standard:", standardPaymentError);
-          throw standardPaymentError;
-        } else {
-          console.error("Aucun paiement trouvé pour ce participant");
-          setError("Aucun paiement validé trouvé pour ce participant.");
+          if (standardPaymentData) {
+            console.log("Paiement standard trouvé:", standardPaymentData);
+            setPayment(standardPaymentData);
+            setIsManualPayment(false);
+          } else {
+            console.error("Aucun paiement trouvé pour ce participant");
+            setError("Aucun paiement validé trouvé pour ce participant.");
+          }
         }
 
       } catch (err: any) {

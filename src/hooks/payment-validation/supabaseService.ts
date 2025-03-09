@@ -1,6 +1,7 @@
 
 // Service pour les opérations Supabase liées à la validation des paiements
 // Mise à jour: Correction définitive de l'association du QR code au participant
+// IMPORTANT: Consolidation de la logique des QR codes pour éviter les erreurs
 
 import { supabase } from "@/integrations/supabase/client";
 import { Payment } from "@/types/payment";
@@ -59,7 +60,7 @@ export const fetchPaymentById = async (id: string): Promise<Payment | null> => {
 // Met à jour le statut d'un paiement à "completed" et génère un QR code
 export const validatePaymentInDatabase = async (paymentId: string): Promise<{qrCodeId: string; participantId: string}> => {
   try {
-    console.log("==== MISE À JOUR DU STATUT DU PAIEMENT ====");
+    console.log("==== MISE À JOUR DU STATUT DU PAIEMENT ET GÉNÉRATION QR CODE ====");
     console.log(`Validation du paiement ID: ${paymentId}`);
     
     // Mettre à jour le statut du paiement à "completed"

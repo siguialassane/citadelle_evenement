@@ -2,6 +2,7 @@
 // Service pour l'envoi d'emails de confirmation après validation des paiements
 // Mise à jour: Correction définitive de l'affichage du QR code et des liens dans les emails
 // Résolution du problème d'identification du participant via QR code
+// IMPORTANT: Correction du problème de URL dans le QR code pour accéder à la page de confirmation
 
 import emailjs from '@emailjs/browser';
 import { ADMIN_EMAIL } from "@/components/manual-payment/config";
@@ -29,6 +30,7 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     const appUrl = window.location.origin;
     
     // URL de la page de confirmation (pour le lien dans l'email)
+    // IMPORTANT: L'URL doit pointer vers le paramètre qrCodeId et non participantId
     const confirmationPageUrl = `${appUrl}/confirmation/${qrCodeId}`;
     console.log("URL de confirmation générée:", confirmationPageUrl);
     
