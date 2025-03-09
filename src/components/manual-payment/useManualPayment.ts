@@ -1,6 +1,6 @@
 
 // Ce hook gère toute la logique du paiement manuel
-// Mise à jour: Utilisation des nouvelles API #1 pour l'envoi d'emails initiaux uniquement
+// Mise à jour: Uniformisation des services EmailJS
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -10,8 +10,8 @@ import emailjs from '@emailjs/browser';
 import { 
   PAYMENT_AMOUNT,
   ADMIN_EMAIL,
-  INITIAL_EMAILJS_SERVICE_ID, 
-  INITIAL_EMAILJS_PUBLIC_KEY,
+  EMAILJS_SERVICE_ID, 
+  EMAILJS_PUBLIC_KEY,
   PARTICIPANT_INITIAL_TEMPLATE_ID,
   ADMIN_NOTIFICATION_TEMPLATE_ID
 } from "./config";
@@ -76,18 +76,18 @@ export function useManualPayment(participant: Participant) {
         reply_to: "ne-pas-repondre@lacitadelle.ci"
       };
 
-      console.log("Envoi de l'email à l'administrateur avec le nouveau service...");
-      console.log("Service admin:", INITIAL_EMAILJS_SERVICE_ID);
+      console.log("Envoi de l'email à l'administrateur avec service unifié...");
+      console.log("Service EmailJS:", EMAILJS_SERVICE_ID);
       console.log("Template admin:", ADMIN_NOTIFICATION_TEMPLATE_ID);
-      console.log("Clé publique:", INITIAL_EMAILJS_PUBLIC_KEY);
+      console.log("Clé publique:", EMAILJS_PUBLIC_KEY);
       console.log("URL de validation admin:", validationLink);
 
-      // Envoyer l'email à l'administrateur avec les NOUVELLES clés API
+      // Envoyer l'email à l'administrateur
       const response = await emailjs.send(
-        INITIAL_EMAILJS_SERVICE_ID,
+        EMAILJS_SERVICE_ID,
         ADMIN_NOTIFICATION_TEMPLATE_ID,
         templateParams,
-        INITIAL_EMAILJS_PUBLIC_KEY
+        EMAILJS_PUBLIC_KEY
       );
 
       console.log("Email de notification admin envoyé avec succès:", response);
@@ -109,17 +109,17 @@ export function useManualPayment(participant: Participant) {
           reply_to: "ne-pas-repondre@lacitadelle.ci"
         };
 
-        console.log("Envoi de l'email initial au participant avec le nouveau service...");
-        console.log("Service participant:", INITIAL_EMAILJS_SERVICE_ID);
+        console.log("Envoi de l'email initial au participant avec service unifié...");
+        console.log("Service EmailJS:", EMAILJS_SERVICE_ID);
         console.log("Template participant:", PARTICIPANT_INITIAL_TEMPLATE_ID);
-        console.log("Clé publique:", INITIAL_EMAILJS_PUBLIC_KEY);
+        console.log("Clé publique:", EMAILJS_PUBLIC_KEY);
 
-        // Utiliser le NOUVEAU service et template pour l'email INITIAL uniquement
+        // Utiliser le service et template pour l'email INITIAL
         const participantResponse = await emailjs.send(
-          INITIAL_EMAILJS_SERVICE_ID,
+          EMAILJS_SERVICE_ID,
           PARTICIPANT_INITIAL_TEMPLATE_ID, 
           participantTemplateParams,
-          INITIAL_EMAILJS_PUBLIC_KEY
+          EMAILJS_PUBLIC_KEY
         );
 
         console.log("Email initial au participant envoyé avec succès:", participantResponse);

@@ -1,7 +1,6 @@
-
 // Hook personnalisé pour gérer la logique de validation des paiements
-// Mise à jour: Correction de l'erreur de type sur les variants de toast
-// Changement de "warning" vers "default" avec une description claire pour l'utilisateur
+// Mise à jour: Uniformisation des services EmailJS pour l'envoi des emails
+// Correction des problèmes de réception d'email de confirmation avec QR code
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,9 +8,9 @@ import { toast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import emailjs from '@emailjs/browser';
 import { 
-  CONFIRMATION_EMAILJS_SERVICE_ID, 
-  CONFIRMATION_EMAILJS_TEMPLATE_ID, 
-  CONFIRMATION_EMAILJS_PUBLIC_KEY 
+  EMAILJS_SERVICE_ID,
+  EMAILJS_PUBLIC_KEY,
+  CONFIRMATION_TEMPLATE_ID
 } from "@/components/manual-payment/config";
 import { Payment } from "@/types/payment";
 
@@ -272,10 +271,10 @@ export const usePaymentValidation = (paymentId?: string) => {
         console.log("Lancement de l'envoi d'email de confirmation...");
         
         // Vérification des configurations d'envoi d'email
-        console.log("Configuration d'envoi d'email de confirmation:");
-        console.log("- Service EmailJS:", CONFIRMATION_EMAILJS_SERVICE_ID);
-        console.log("- Template ID:", CONFIRMATION_EMAILJS_TEMPLATE_ID);
-        console.log("- Clé publique:", CONFIRMATION_EMAILJS_PUBLIC_KEY);
+        console.log("Configuration d'envoi d'email de confirmation (UNIFORMISÉE):");
+        console.log("- Service EmailJS:", EMAILJS_SERVICE_ID);
+        console.log("- Template ID:", CONFIRMATION_TEMPLATE_ID);
+        console.log("- Clé publique:", EMAILJS_PUBLIC_KEY);
         
         // Envoi de l'email de confirmation avec QR code
         const emailSuccess = await sendConfirmationEmail(participantData, qrCodeId);
@@ -285,11 +284,10 @@ export const usePaymentValidation = (paymentId?: string) => {
         } else {
           console.error("❌ L'email de confirmation n'a pas pu être envoyé");
           // Ne pas bloquer le processus si l'email échoue, mais notifier l'admin
-          // Correction ici: changer "warning" en "default" car "warning" n'est pas un variant valide
           toast({
             title: "Attention",
             description: "Le paiement a été validé mais l'envoi de l'email de confirmation a échoué. Veuillez contacter le participant manuellement.",
-            variant: "default", // Changé de "warning" à "default"
+            variant: "default",
           });
         }
       } catch (emailError: any) {
@@ -416,9 +414,8 @@ export const usePaymentValidation = (paymentId?: string) => {
       console.log("Données encodées dans le QR code:", qrCodeData);
       
       // Préparation des paramètres pour le template de confirmation avec QR code
-      // IMPORTANT : Ne pas dédoubler l'email (to_email est suffisant pour EmailJS)
       const templateParams = {
-        to_email: emailAddress, // Email du destinataire
+        to_email: emailAddress,
         to_name: `${participantData.first_name} ${participantData.last_name}`,
         from_name: "IFTAR 2024",
         prenom: participantData.first_name.trim(),
@@ -434,14 +431,15 @@ export const usePaymentValidation = (paymentId?: string) => {
       };
 
       console.log("Paramètres préparés pour le template d'email:", templateParams);
-      console.log("Tentative d'envoi de l'email avec EmailJS...");
+      console.log("Tentative d'envoi de l'email avec EmailJS (NOUVEAU SERVICE UNIFIÉ)...");
 
-      // Utilisation du service et template pour l'email de CONFIRMATION uniquement
+      // Utilisation du MÊME service et des MÊMES identifiants que pour les emails initiaux
+      // Mais avec le template de confirmation qui contient le QR code
       const response = await emailjs.send(
-        CONFIRMATION_EMAILJS_SERVICE_ID,
-        CONFIRMATION_EMAILJS_TEMPLATE_ID,
+        EMAILJS_SERVICE_ID,
+        CONFIRMATION_TEMPLATE_ID,
         templateParams,
-        CONFIRMATION_EMAILJS_PUBLIC_KEY
+        EMAILJS_PUBLIC_KEY
       );
 
       console.log("Réponse EmailJS:", response);

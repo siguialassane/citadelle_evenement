@@ -1,30 +1,26 @@
 
 // Ce fichier contient les constantes et configurations pour le paiement manuel
-// Mise à jour: Vérification et confirmation des templates et services EmailJS
+// Mise à jour: Uniformisation des services EmailJS pour corriger les problèmes d'envoi d'email
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
 
-// ==================== EMAIL API #1 (EMAILS INITIAUX) ====================
-// Pour les emails initiaux (participant en attente + notification admin)
+// ==================== CONFIGURATION EMAILJS UNIFIÉE ====================
+// Utilisation d'un service unique pour tous les emails (recommandé par EmailJS)
+export const EMAILJS_SERVICE_ID = "service_sxgma2j";
+export const EMAILJS_PUBLIC_KEY = "pWG3H0YqA-EKu4hqC";
 
-// Service ID pour les emails initiaux (participant et admin)
-export const INITIAL_EMAILJS_SERVICE_ID = "service_sxgma2j";
-export const INITIAL_EMAILJS_PUBLIC_KEY = "pWG3H0YqA-EKu4hqC";
+// Templates pour les différents types d'emails
+export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_2ncsaxe"; // Email initial (en attente)
+export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_dp1tu2w"; // Notification admin
+export const CONFIRMATION_TEMPLATE_ID = "template_xvdr1iq"; // Confirmation avec QR code
 
-// Template pour l'email initial au participant (en attente de validation)
-export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_2ncsaxe";
-
-// Email et template pour l'administrateur
+// Email de l'administrateur
 export const ADMIN_EMAIL = "siguialassane93@gmail.com";
-export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_dp1tu2w";
 
-// ==================== EMAIL API #2 (EMAIL DE CONFIRMATION) ====================
-// Pour l'email de confirmation avec QR code après validation par l'admin
-
-export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_is5645q"; // Service pour l'email de confirmation
-export const CONFIRMATION_EMAILJS_TEMPLATE_ID = "template_xvdr1iq"; // Template pour l'email de confirmation avec QR code
-export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae"; // Clé publique pour l'email de confirmation
+// Anciennes configurations (conservées comme référence, mais non utilisées)
+// export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_is5645q";
+// export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
 
 // Numéros de paiement
 export const PAYMENT_NUMBERS = {
