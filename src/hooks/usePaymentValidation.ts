@@ -1,6 +1,7 @@
 // Hook personnalisé pour gérer la logique de validation des paiements
 // Mise à jour: Uniformisation des services EmailJS pour l'envoi des emails
-// Correction des problèmes de réception d'email de confirmation avec QR code
+// Correction: Ajout d'un template de notification pour l'administrateur après envoi de la confirmation
+// Amélioration: Validation des adresses email et meilleure gestion des erreurs
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +11,9 @@ import emailjs from '@emailjs/browser';
 import { 
   EMAILJS_SERVICE_ID,
   EMAILJS_PUBLIC_KEY,
-  CONFIRMATION_TEMPLATE_ID
+  CONFIRMATION_TEMPLATE_ID,
+  ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID,
+  ADMIN_EMAIL
 } from "@/components/manual-payment/config";
 import { Payment } from "@/types/payment";
 
@@ -259,9 +262,9 @@ export const usePaymentValidation = (paymentId?: string) => {
       });
 
       // Vérification que l'email existe et est correctement formaté
-      if (!participantData.email || !participantData.email.includes('@')) {
+      if (!participantData.email || !participantData.email.trim() || !participantData.email.includes('@')) {
         console.error("Email du participant invalide ou manquant:", participantData.email);
-        throw new Error("Email du participant invalide");
+        throw new Error("Email du participant invalide ou manquant");
       }
 
       // Envoi de l'email de confirmation APRÈS avoir tout validé et mis à jour en base
@@ -275,12 +278,50 @@ export const usePaymentValidation = (paymentId?: string) => {
         console.log("- Service EmailJS:", EMAILJS_SERVICE_ID);
         console.log("- Template ID:", CONFIRMATION_TEMPLATE_ID);
         console.log("- Clé publique:", EMAILJS_PUBLIC_KEY);
+        console.log("- Email du destinataire:", participantData.email.trim());
         
         // Envoi de l'email de confirmation avec QR code
         const emailSuccess = await sendConfirmationEmail(participantData, qrCodeId);
         
         if (emailSuccess) {
           console.log("✅ Email de confirmation envoyé avec succès");
+          
+          // Notification à l'administrateur que l'email a été envoyé au participant
+          try {
+            console.log("Envoi de notification de confirmation à l'administrateur...");
+            
+            const adminNotifParams = {
+              to_email: ADMIN_EMAIL,
+              from_name: "Système d'Inscription IFTAR",
+              admin_name: "Administrateur",
+              participant_name: `${participantData.first_name} ${participantData.last_name}`,
+              participant_email: participantData.email.trim(),
+              status: participantData.is_member ? "Membre" : "Non-membre",
+              payment_method: paymentToValidate.payment_method,
+              payment_amount: `${paymentToValidate.amount} XOF`,
+              payment_id: paymentId,
+              app_url: window.location.origin,
+              validation_time: new Date().toLocaleString('fr-FR'),
+              reply_to: "ne-pas-repondre@lacitadelle.ci"
+            };
+            
+            console.log("Notification admin de confirmation avec service unifié...");
+            console.log("- Service EmailJS:", EMAILJS_SERVICE_ID);
+            console.log("- Template admin:", ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID);
+            console.log("- Clé publique:", EMAILJS_PUBLIC_KEY);
+            
+            const adminNotifResponse = await emailjs.send(
+              EMAILJS_SERVICE_ID,
+              ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID,
+              adminNotifParams,
+              EMAILJS_PUBLIC_KEY
+            );
+            
+            console.log("Email de notification admin (post-confirmation) envoyé avec succès:", adminNotifResponse);
+          } catch (adminNotifError) {
+            console.error("Erreur lors de l'envoi de la notification admin post-confirmation:", adminNotifError);
+            // Ne pas bloquer le processus si cette notification échoue
+          }
         } else {
           console.error("❌ L'email de confirmation n'a pas pu être envoyé");
           // Ne pas bloquer le processus si l'email échoue, mais notifier l'admin
@@ -431,7 +472,7 @@ export const usePaymentValidation = (paymentId?: string) => {
       };
 
       console.log("Paramètres préparés pour le template d'email:", templateParams);
-      console.log("Tentative d'envoi de l'email avec EmailJS (NOUVEAU SERVICE UNIFIÉ)...");
+      console.log("Tentative d'envoi de l'email avec EmailJS (SERVICE UNIFIÉ)...");
 
       // Utilisation du MÊME service et des MÊMES identifiants que pour les emails initiaux
       // Mais avec le template de confirmation qui contient le QR code

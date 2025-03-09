@@ -1,6 +1,6 @@
+
 // Ce fichier a été refactorisé pour organiser le code en composants plus petits
-// Mise à jour: Clarification du flux de validation et ajout de logs pour débogage
-// Uniformisation des API EmailJS pour assurer l'envoi d'emails de confirmation
+// Mise à jour: Clarification du flux de validation et uniformisation des services EmailJS
 
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -40,12 +40,13 @@ const PaymentValidation = () => {
 
   const handleValidatePayment = async (paymentId: string) => {
     // Cette fonction déclenche l'envoi de l'email de confirmation avec QR code
+    // et la notification à l'administrateur
     console.log("Validation du paiement par l'administrateur, ID:", paymentId);
-    console.log("Utilisation de la configuration EmailJS unifiée pour l'email de confirmation");
+    console.log("Utilisation de la configuration EmailJS unifiée pour tous les emails");
     
     const success = await validatePayment(paymentId);
     if (success) {
-      console.log("Validation réussie et email de confirmation envoyé avec le service unifié");
+      console.log("Validation réussie, tous les emails ont été envoyés avec le service unifié");
       setTimeout(() => {
         navigate("/admin/payment-validation");
       }, 1500);

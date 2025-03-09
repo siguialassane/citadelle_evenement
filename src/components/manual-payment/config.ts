@@ -1,6 +1,7 @@
 
 // Ce fichier contient les constantes et configurations pour le paiement manuel
 // Mise à jour: Uniformisation des services EmailJS pour corriger les problèmes d'envoi d'email
+// Correction: Ajout du template pour notification admin après envoi de confirmation
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
@@ -14,6 +15,7 @@ export const EMAILJS_PUBLIC_KEY = "pWG3H0YqA-EKu4hqC";
 export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_2ncsaxe"; // Email initial (en attente)
 export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_dp1tu2w"; // Notification admin
 export const CONFIRMATION_TEMPLATE_ID = "template_xvdr1iq"; // Confirmation avec QR code
+export const ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID = "template_dwx7qnw"; // Notification admin post-confirmation
 
 // Email de l'administrateur
 export const ADMIN_EMAIL = "siguialassane93@gmail.com";

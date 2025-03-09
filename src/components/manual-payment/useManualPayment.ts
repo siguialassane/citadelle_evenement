@@ -1,6 +1,7 @@
 
 // Ce hook gère toute la logique du paiement manuel
 // Mise à jour: Uniformisation des services EmailJS
+// Correction: Validation des adresses email avant envoi pour éviter les erreurs 422
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -95,6 +96,14 @@ export function useManualPayment(participant: Participant) {
       try {
         // Envoyer un email au participant pour lui confirmer que sa demande est en cours de traitement
         // Cette partie est uniquement l'email INITIAL d'attente de validation
+        
+        // S'assurer que l'adresse email est valide et bien formatée
+        if (!participant.email || !participant.email.trim() || !participant.email.includes('@')) {
+          console.error("Email du participant invalide ou manquant:", participant.email);
+          console.warn("L'email au participant ne sera pas envoyé en raison d'une adresse invalide");
+          return true; // On continue le processus malgré tout
+        }
+        
         const participantTemplateParams = {
           to_email: participant.email.trim(),
           to_name: `${participant.first_name} ${participant.last_name}`,
@@ -113,6 +122,7 @@ export function useManualPayment(participant: Participant) {
         console.log("Service EmailJS:", EMAILJS_SERVICE_ID);
         console.log("Template participant:", PARTICIPANT_INITIAL_TEMPLATE_ID);
         console.log("Clé publique:", EMAILJS_PUBLIC_KEY);
+        console.log("Email du destinataire:", participant.email.trim());
 
         // Utiliser le service et template pour l'email INITIAL
         const participantResponse = await emailjs.send(
