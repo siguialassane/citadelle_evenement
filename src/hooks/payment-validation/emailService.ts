@@ -1,7 +1,7 @@
 
 // Service pour l'envoi d'emails de confirmation après validation des paiements
-// Mise à jour: Correction des URLs générées pour les liens de confirmation et QR code
-// Résolution du problème des liens non fonctionnels dans les emails
+// Mise à jour: Correction du problème d'affichage du QR code dans les emails
+// Génération d'une image QR code réelle au lieu d'un simple lien
 
 import emailjs from '@emailjs/browser';
 import { ADMIN_EMAIL } from "@/components/manual-payment/config";
@@ -28,16 +28,22 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     // URL de base et génération des liens
     const appUrl = window.location.origin;
     
-    // URL CORRIGÉE: utiliser le QR code ID et non l'ID du participant pour la page de confirmation
-    const qrCodeLink = `${appUrl}/confirmation/${qrCodeId}`;
+    // URL de la page de confirmation (pour le lien dans l'email)
+    const confirmationPageUrl = `${appUrl}/confirmation/${qrCodeId}`;
+    
+    // Génération de l'URL pour l'image QR code (utiliser un service QR en ligne)
+    // Encodage de l'URL de confirmation pour l'intégrer dans le QR
+    const encodedConfirmationUrl = encodeURIComponent(confirmationPageUrl);
+    const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedConfirmationUrl}`;
     
     // URL du reçu avec l'ID du participant
     const receiptUrl = `${appUrl}/receipt/${participantData.id}`;
     
     const formattedDate = new Date().toLocaleDateString('fr-FR');
     
-    console.log("QR Code généré:", qrCodeId);
-    console.log("URL du QR Code corrigée:", qrCodeLink);
+    console.log("QR Code ID:", qrCodeId);
+    console.log("URL de la page de confirmation:", confirmationPageUrl);
+    console.log("URL de l'image QR code:", qrCodeImageUrl);
     console.log("URL du reçu:", receiptUrl);
     console.log("Email du participant:", participantData.email);
     
@@ -54,7 +60,8 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
       from_name: "IFTAR 2024",
       payment_amount: "1000 XOF",
       status: status,
-      qr_code_url: qrCodeLink,
+      qr_code_url: qrCodeImageUrl,
+      confirmation_url: confirmationPageUrl,
       receipt_url: receiptUrl,
       confirmation_date: formattedDate,
       app_url: appUrl,
@@ -92,8 +99,12 @@ export const sendAdminNotification = async (params: EmailConfirmationParams): Pr
     
     const appUrl = window.location.origin;
     
-    // URL CORRIGÉE: utiliser le QR code ID pour le lien de confirmation
-    const qrCodeLink = `${appUrl}/confirmation/${params.qrCodeId}`;
+    // URL de la page de confirmation
+    const confirmationPageUrl = `${appUrl}/confirmation/${params.qrCodeId}`;
+    
+    // URL de l'image QR code
+    const encodedConfirmationUrl = encodeURIComponent(confirmationPageUrl);
+    const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedConfirmationUrl}`;
     
     const currentDate = new Date().toLocaleString('fr-FR');
     
@@ -108,7 +119,8 @@ export const sendAdminNotification = async (params: EmailConfirmationParams): Pr
       payment_method: params.paymentMethod,
       payment_id: params.paymentId,
       participant_id: params.participantId,
-      qr_code_link: qrCodeLink,
+      qr_code_link: confirmationPageUrl,
+      qr_code_url: qrCodeImageUrl,
       is_member: params.isMember ? "Oui" : "Non",
       app_url: appUrl,
       current_date: currentDate,
