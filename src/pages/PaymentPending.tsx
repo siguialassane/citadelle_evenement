@@ -1,5 +1,5 @@
 // Ce fichier gère la page d'attente après soumission d'un paiement manuel
-// Mise à jour: Correction du problème d'envoi simultané d'emails - Amélioration de la vérification du statut
+// Mise à jour: Désactivation temporaire des redirections automatiques pour éviter les validations non souhaitées
 
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -17,7 +17,6 @@ const PaymentPending = () => {
   const [payment, setPayment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasRedirected, setHasRedirected] = useState(false);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -55,7 +54,7 @@ const PaymentPending = () => {
           .eq('participant_id', participantId)
           .order('created_at', { ascending: false })
           .limit(1)
-          .maybeSingle(); // Utiliser maybeSingle au lieu de single pour éviter l'erreur
+          .maybeSingle();
 
         if (paymentError) {
           console.error("Erreur lors de la récupération du paiement:", paymentError);
@@ -64,17 +63,33 @@ const PaymentPending = () => {
           console.log("Paiement trouvé:", paymentData);
           setPayment(paymentData);
 
-          // Si le paiement a été validé, rediriger vers la page de confirmation
-          // IMPORTANT: Cette vérification se fait uniquement au chargement initial de la page
+          // IMPORTANT: Désactivation temporaire de la redirection automatique
+          // SUPPRESSION DU CODE DE REDIRECTION AUTOMATIQUE POUR ÉVITER LES PROBLÈMES D'EMAILS
+          // ce code a été désactivé car il causait des déclenchements automatiques de validation
+          // ==== DÉBUT DU CODE DÉSACTIVÉ ====
+          /*
           if (paymentData.status === 'completed' && !hasRedirected) {
             console.log("Paiement validé, redirection vers confirmation");
             setHasRedirected(true);
             navigate(`/confirmation/${participantId}`);
           }
+          */
+          // ==== FIN DU CODE DÉSACTIVÉ ====
+          
+          // Ajout d'un log pour indiquer le statut actuel du paiement
+          console.log("Statut actuel du paiement:", paymentData.status);
+          
+          // Nouveau code: Si le paiement est déjà validé, afficher un message mais ne pas rediriger automatiquement
+          if (paymentData.status === 'completed') {
+            console.log("Ce paiement est déjà validé, mais nous n'effectuons pas de redirection automatique");
+            toast({
+              title: "Information",
+              description: "Votre paiement a été validé. Vous pouvez accéder à votre confirmation manuellement.",
+              variant: "default",
+            });
+          }
         } else {
           console.log("Aucun paiement trouvé pour le participant:", participantId);
-          // Aucun paiement trouvé, mais ce n'est pas nécessairement une erreur
-          // On pourrait afficher un message spécifique à l'utilisateur
         }
       } catch (err: any) {
         console.error("Erreur lors de la récupération des données:", err);
@@ -86,59 +101,106 @@ const PaymentPending = () => {
 
     fetchData();
 
-    // Configurer un intervalle pour vérifier régulièrement le statut du paiement
-    // IMPORTANT: Cette vérification automatique se fait avec une fréquence plus modérée
+    // IMPORTANT: Désactivation temporaire de la vérification périodique du statut
+    // SUPPRESSION DU CODE DE VÉRIFICATION PÉRIODIQUE POUR ÉVITER LES PROBLÈMES
+    // Ce code a été désactivé car il pouvait déclencher la validation automatique
+    
+    // ==== DÉBUT DU CODE DÉSACTIVÉ ====
+    /*
     const checkPaymentStatus = setInterval(async () => {
-      try {
-        if (!participantId || hasRedirected) return;
-
-        console.log("Vérification périodique du statut du paiement...");
-        
-        const { data, error } = await supabase
-          .from('manual_payments')
-          .select('*')
-          .eq('participant_id', participantId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(); // Utiliser maybeSingle au lieu de single
-
-        if (error) {
-          console.error("Erreur lors de la vérification du statut:", error);
-          return;
-        }
-
-        if (data) {
-          setPayment(data);
-          
-          // Si le statut est passé à 'completed', on redirige l'utilisateur
-          if (data.status === 'completed' && !hasRedirected) {
-            console.log("Statut du paiement passé à 'completed', préparation de la redirection...");
-            setHasRedirected(true);
-            
-            toast({
-              title: "Paiement validé",
-              description: "Votre paiement a été validé. Vous allez être redirigé vers la page de confirmation.",
-              variant: "default",
-            });
-            
-            // Rediriger vers la page de confirmation après un court délai
-            setTimeout(() => {
-              navigate(`/confirmation/${participantId}`);
-            }, 2000);
-          }
-        }
-      } catch (err) {
-        console.error("Erreur lors de la vérification du statut:", err);
-      }
-    }, 60000); // Vérifier toutes les 60 secondes (réduit pour éviter les problèmes)
+      // Code de vérification périodique désactivé
+    }, 60000);
 
     return () => {
       clearInterval(checkPaymentStatus);
     };
-  }, [participantId, navigate, hasRedirected]);
+    */
+    // ==== FIN DU CODE DÉSACTIVÉ ====
+    
+  }, [participantId, navigate]); // Suppression de hasRedirected des dépendances
+
+  // Fonction pour vérifier manuellement le statut du paiement
+  const checkPaymentStatus = async () => {
+    try {
+      if (!participantId) return;
+      
+      toast({
+        title: "Vérification",
+        description: "Vérification du statut de votre paiement...",
+        variant: "default",
+      });
+      
+      const { data, error } = await supabase
+        .from('manual_payments')
+        .select('*')
+        .eq('participant_id', participantId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Erreur lors de la vérification du statut:", error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de vérifier le statut de votre paiement.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data) {
+        setPayment(data);
+        
+        if (data.status === 'completed') {
+          toast({
+            title: "Paiement validé",
+            description: "Votre paiement a été validé! Vous pouvez accéder à votre confirmation.",
+            variant: "default",
+          });
+          
+          // Bouton de redirection vers la page de confirmation
+          const goToConfirmation = document.createElement('button');
+          goToConfirmation.innerText = 'Voir ma confirmation';
+          goToConfirmation.onclick = () => navigate(`/confirmation/${participantId}`);
+          
+        } else if (data.status === 'pending') {
+          toast({
+            title: "Paiement en attente",
+            description: "Votre paiement est toujours en attente de validation par un administrateur.",
+            variant: "default",
+          });
+        } else {
+          toast({
+            title: "Statut du paiement",
+            description: `Statut actuel: ${data.status}`,
+            variant: "default",
+          });
+        }
+      } else {
+        toast({
+          title: "Aucun paiement trouvé",
+          description: "Aucun paiement n'a été trouvé pour votre compte.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Erreur lors de la vérification manuelle du statut:", err);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la vérification du statut.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleBackToHome = () => {
     navigate("/");
+  };
+  
+  const handleGoToConfirmation = () => {
+    if (participantId) {
+      navigate(`/confirmation/${participantId}`);
+    }
   };
 
   if (loading) {
@@ -264,13 +326,30 @@ const PaymentPending = () => {
           </h1>
         </div>
 
-        <Alert>
-          <Clock className="h-4 w-4" />
-          <AlertTitle>Paiement en cours de validation</AlertTitle>
-          <AlertDescription>
-            Votre preuve de paiement a été soumise avec succès et est en attente de validation par un administrateur. Ce processus peut prendre jusqu'à 24 heures. Vous recevrez un email de confirmation une fois votre paiement validé.
-          </AlertDescription>
-        </Alert>
+        {/* Affichage conditionnel selon le statut du paiement */}
+        {payment.status === 'completed' ? (
+          <Alert className="bg-green-50 border-green-200">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertTitle className="text-green-800">Paiement validé</AlertTitle>
+            <AlertDescription className="text-green-700">
+              Votre paiement a été validé! Vous pouvez maintenant accéder à votre confirmation et votre QR code.
+            </AlertDescription>
+            <Button 
+              onClick={handleGoToConfirmation}
+              className="mt-4 bg-green-600 hover:bg-green-700 text-white"
+            >
+              Voir ma confirmation
+            </Button>
+          </Alert>
+        ) : (
+          <Alert>
+            <Clock className="h-4 w-4" />
+            <AlertTitle>Paiement en cours de validation</AlertTitle>
+            <AlertDescription>
+              Votre preuve de paiement a été soumise avec succès et est en attente de validation par un administrateur. Ce processus peut prendre jusqu'à 24 heures. Vous recevrez un email de confirmation une fois votre paiement validé.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="bg-white shadow-md rounded-xl overflow-hidden border border-green-100">
           <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 bg-green-50">
@@ -308,10 +387,21 @@ const PaymentPending = () => {
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Statut</dt>
                 <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                    <Clock className="mr-1 h-3 w-3" />
-                    En attente de validation
-                  </span>
+                  {payment.status === 'completed' ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <CheckCircle className="mr-1 h-3 w-3" />
+                      Validé
+                    </span>
+                  ) : payment.status === 'pending' ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      <Clock className="mr-1 h-3 w-3" />
+                      En attente de validation
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      {payment.status}
+                    </span>
+                  )}
                 </dd>
               </div>
               
@@ -325,63 +415,76 @@ const PaymentPending = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-yellow-100">
-          <h3 className="font-medium text-lg mb-4 flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-            Que se passe-t-il ensuite ?
-          </h3>
-          
-          <div className="space-y-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-600">
-                  1
+        {payment.status === 'pending' && (
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-yellow-100">
+            <h3 className="font-medium text-lg mb-4 flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+              Que se passe-t-il ensuite ?
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-600">
+                    1
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <h4 className="text-base font-medium">Vérification</h4>
+                  <p className="mt-1 text-sm text-gray-500">Un administrateur vérifiera votre preuve de paiement.</p>
                 </div>
               </div>
-              <div className="ml-4">
-                <h4 className="text-base font-medium">Vérification</h4>
-                <p className="mt-1 text-sm text-gray-500">Un administrateur vérifiera votre preuve de paiement.</p>
+              
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-600">
+                    2
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <h4 className="text-base font-medium">Validation</h4>
+                  <p className="mt-1 text-sm text-gray-500">Une fois validé, votre inscription sera confirmée.</p>
+                </div>
+              </div>
+              
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-600">
+                    3
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <h4 className="text-base font-medium">Confirmation par email</h4>
+                  <p className="mt-1 text-sm text-gray-500">Vous recevrez un email avec votre QR code et votre reçu.</p>
+                </div>
               </div>
             </div>
             
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-600">
-                  2
-                </div>
-              </div>
-              <div className="ml-4">
-                <h4 className="text-base font-medium">Validation</h4>
-                <p className="mt-1 text-sm text-gray-500">Une fois validé, votre inscription sera confirmée.</p>
-              </div>
-            </div>
-            
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-600">
-                  3
-                </div>
-              </div>
-              <div className="ml-4">
-                <h4 className="text-base font-medium">Confirmation par email</h4>
-                <p className="mt-1 text-sm text-gray-500">Vous recevrez un email avec votre QR code et votre reçu.</p>
-              </div>
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-500">
+                Vous pouvez vérifier le statut de votre paiement en actualisant cette page.
+              </p>
+              <Button 
+                onClick={checkPaymentStatus} 
+                variant="outline" 
+                className="mt-2"
+              >
+                Vérifier le statut
+              </Button>
             </div>
           </div>
-          
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              Vous pouvez vérifier le statut de votre paiement en actualisant cette page.
-            </p>
+        )}
+        
+        {payment.status === 'completed' && (
+          <div className="text-center">
             <Button 
-              onClick={() => window.location.reload()} 
-              variant="outline" 
-              className="mt-2"
+              onClick={handleGoToConfirmation}
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
-              Actualiser le statut
+              Accéder à ma confirmation et mon QR code
             </Button>
           </div>
-        </div>
+        )}
         
         <div className="w-full flex justify-center my-10">
           <div className="h-8 w-64 bg-contain bg-center bg-no-repeat islamic-divider" 
