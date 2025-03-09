@@ -1,6 +1,7 @@
 
 // Ce service gère l'envoi des emails initiaux dans l'application
 // Mise à jour: Clarification de l'utilisation du service général pour les emails non-confirmation
+// Correction: Utilisation de Google Charts API pour les QR codes dans tous les emails
 
 import emailjs from '@emailjs/browser';
 import { 
