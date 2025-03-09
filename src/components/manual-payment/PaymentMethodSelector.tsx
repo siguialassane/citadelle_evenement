@@ -3,7 +3,6 @@
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { PiggyBank } from "lucide-react";
 import { PaymentMethod, PaymentNumbers } from "./types";
 
 type PaymentMethodSelectorProps = {
@@ -33,8 +32,12 @@ export function PaymentMethodSelector({
           <RadioGroupItem value="ORANGE" id="orange" className="sr-only" />
           <Label htmlFor="orange" className="cursor-pointer w-full">
             <div className="text-center">
-              <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                <PiggyBank className="h-6 w-6 text-white" />
+              <div className="w-16 h-16 mx-auto mb-2">
+                <img 
+                  src="/lovable-uploads/b9ea8b89-890d-460c-b608-1a123b2052a9.png" 
+                  alt="Orange Money" 
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div className="font-medium">Orange Money</div>
               <div className="text-sm text-gray-500 mt-2">{paymentNumbers.ORANGE}</div>
@@ -42,12 +45,16 @@ export function PaymentMethodSelector({
           </Label>
         </div>
         
-        <div className={`p-4 border rounded-lg flex flex-col items-center ${paymentMethod === "MOOV" ? "border-orange-500 bg-orange-50" : "border-gray-200"}`}>
+        <div className={`p-4 border rounded-lg flex flex-col items-center ${paymentMethod === "MOOV" ? "border-blue-500 bg-blue-50" : "border-gray-200"}`}>
           <RadioGroupItem value="MOOV" id="moov" className="sr-only" />
           <Label htmlFor="moov" className="cursor-pointer w-full">
             <div className="text-center">
-              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                <PiggyBank className="h-6 w-6 text-white" />
+              <div className="w-16 h-16 mx-auto mb-2">
+                <img 
+                  src="/lovable-uploads/b2c951b6-9240-4fd5-86ee-052c25606c40.png" 
+                  alt="Moov Money" 
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div className="font-medium">Moov Money</div>
               <div className="text-sm text-gray-500 mt-2">{paymentNumbers.MOOV}</div>
@@ -55,12 +62,16 @@ export function PaymentMethodSelector({
           </Label>
         </div>
         
-        <div className={`p-4 border rounded-lg flex flex-col items-center ${paymentMethod === "WAVE" ? "border-orange-500 bg-orange-50" : "border-gray-200"}`}>
+        <div className={`p-4 border rounded-lg flex flex-col items-center ${paymentMethod === "WAVE" ? "border-teal-500 bg-teal-50" : "border-gray-200"}`}>
           <RadioGroupItem value="WAVE" id="wave" className="sr-only" />
           <Label htmlFor="wave" className="cursor-pointer w-full">
             <div className="text-center">
-              <div className="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                <PiggyBank className="h-6 w-6 text-white" />
+              <div className="w-16 h-16 mx-auto mb-2">
+                <img 
+                  src="/lovable-uploads/860c57aa-e79f-4298-97a8-84c1792cf18f.png" 
+                  alt="Wave" 
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div className="font-medium">Wave</div>
               <div className="text-sm text-gray-500 mt-2">{paymentNumbers.WAVE}</div>

@@ -3,9 +3,10 @@
 // Mise à jour: Suppression du template de notification admin après confirmation
 // Correction: Paramètres alignés avec les templates utilisés
 // Mise à jour: Nouveaux numéros de paiement et suppression de MTN
+// Mise à jour: Montant modifié à 30000 XOF
 
 // Définition des constantes
-export const PAYMENT_AMOUNT = 1000; // Montant fixé à 1000 XOF
+export const PAYMENT_AMOUNT = 30000; // Montant fixé à 30000 XOF
 
 // ==================== CONFIGURATION EMAILJS SÉPARÉE ====================
 // Service pour les emails initiaux et notifications administrateur (demandes en attente)
