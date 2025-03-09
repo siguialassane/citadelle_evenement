@@ -1,5 +1,6 @@
+
 // Service pour la validation des paiements
-// Mise à jour: Correction du problème d'envoi d'email - Simplification du processus de validation
+// Mise à jour: Correction du problème de colonne manquante et simplification
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse, EmailConfirmationParams } from "./types";

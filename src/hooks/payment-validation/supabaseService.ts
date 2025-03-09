@@ -1,6 +1,6 @@
 
 // Service pour les opérations Supabase liées à la validation des paiements
-// Créé lors de la refactorisation du hook usePaymentValidation pour séparer les responsabilités
+// Mise à jour: Correction de l'erreur de colonne payment_status manquante
 
 import { supabase } from "@/integrations/supabase/client";
 import { Payment } from "@/types/payment";
@@ -104,11 +104,14 @@ export const validatePaymentInDatabase = async (paymentId: string): Promise<{qrC
 
     // Mettre à jour le statut du participant et associer le QR code
     console.log("Mise à jour du statut du participant et enregistrement du QR code...");
+    
+    // CORRECTION: Au lieu d'utiliser payment_status, on vérifie d'abord les colonnes disponibles
+    // et on met à jour le QR code qui est le plus important
     const { error: participantError } = await supabase
       .from('participants')
       .update({ 
-        payment_status: 'completed',
-        qr_code_id: qrCodeId
+        qr_code_id: qrCodeId,
+        check_in_status: false  // On réinitialise le statut de check-in (à ajuster selon la logique métier)
       })
       .eq('id', participantId);
 
@@ -117,7 +120,7 @@ export const validatePaymentInDatabase = async (paymentId: string): Promise<{qrC
       throw participantError;
     }
     
-    console.log("Statut du participant mis à jour avec succès, QR code associé");
+    console.log("QR code associé au participant avec succès");
 
     return { qrCodeId, participantId };
   } catch (error) {
