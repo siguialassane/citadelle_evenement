@@ -1,7 +1,5 @@
-
 // Service pour la validation des paiements
-// Créé lors de la refactorisation du hook usePaymentValidation pour isoler la logique de validation
-// Mise à jour: Amélioration de la validation de l'email et des journaux détaillés
+// Mise à jour: Correction du problème d'envoi d'email - Simplification du processus de validation
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse, EmailConfirmationParams } from "./types";
@@ -11,8 +9,7 @@ import {
 } from "./supabaseService";
 import { 
   sendConfirmationEmail, 
-  sendAdminNotification, 
-  validateEmail 
+  sendAdminNotification
 } from "./emailService";
 
 // Valide un paiement et envoie les emails nécessaires
@@ -32,21 +29,16 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
     // Récupérer les données complètes du participant
     const participantData = await fetchParticipantData(participantId);
     
-    console.log("Données complètes du participant récupérées:", {
-      id: participantData.id,
-      email: participantData.email,
-      first_name: participantData.first_name,
-      last_name: participantData.last_name,
-      qr_code_id: participantData.qr_code_id
-    });
+    console.log("Données du participant récupérées:", participantData);
+    console.log("Email du participant:", participantData.email);
 
-    // Vérification directe que l'email existe sans utiliser la validation complexe
+    // Vérification simple de l'email
     if (!participantData.email) {
-      console.error("Email du participant manquant dans les données récupérées");
+      console.error("Email du participant manquant");
       throw new Error("Email du participant manquant");
     }
 
-    // Envoi de l'email de confirmation APRÈS avoir tout validé et mis à jour en base
+    // Envoi de l'email de confirmation APRÈS avoir tout validé
     console.log("=== PRÉPARATION DE L'ENVOI D'EMAIL DE CONFIRMATION ===");
     
     try {
@@ -56,7 +48,7 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
       if (emailSuccess) {
         console.log("✅ Email de confirmation envoyé avec succès");
         
-        // Notification à l'administrateur que l'email a été envoyé au participant
+        // Notification à l'administrateur
         const notificationParams: EmailConfirmationParams = {
           participantId: participantData.id,
           participantEmail: participantData.email,
@@ -72,7 +64,6 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
         await sendAdminNotification(notificationParams);
       } else {
         console.error("❌ L'email de confirmation n'a pas pu être envoyé");
-        // Ne pas bloquer le processus si l'email échoue, mais notifier l'admin
         toast({
           title: "Attention",
           description: "Le paiement a été validé mais l'envoi de l'email de confirmation a échoué. Veuillez contacter le participant manuellement.",
@@ -80,9 +71,7 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
         });
       }
     } catch (emailError: any) {
-      console.error("Erreur détaillée lors de l'envoi de l'email de confirmation:", emailError);
-      console.error("Message d'erreur:", emailError.message);
-      // Ne pas bloquer la validation à cause d'un problème d'email
+      console.error("Erreur lors de l'envoi de l'email de confirmation:", emailError);
       toast({
         title: "Attention",
         description: "Le paiement a été validé mais l'envoi de l'email de confirmation a échoué.",
@@ -102,7 +91,6 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
 
   } catch (error: any) {
     console.error("Erreur lors de la validation du paiement:", error);
-    console.error("Message d'erreur complet:", error.message);
     toast({
       title: "Erreur",
       description: error.message || "Une erreur est survenue lors de la validation du paiement",

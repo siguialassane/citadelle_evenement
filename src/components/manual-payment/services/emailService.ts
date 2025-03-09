@@ -1,6 +1,6 @@
 
 // Ce service gère l'envoi des emails dans l'application
-// Il encapsule toute la logique d'envoi d'emails pour simplifier l'utilisation
+// Mise à jour: Correction du problème d'envoi d'email - Uniformisation avec le service de confirmation
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -77,16 +77,27 @@ export const sendAdminNotification = async (
  */
 export const sendParticipantInitialEmail = async (participantData: any, paymentMethod: string, phoneNumber: string) => {
   try {
-    // S'assurer que l'adresse email est valide et bien formatée
-    if (!participantData.email || !participantData.email.trim() || !participantData.email.includes('@')) {
-      console.error("Email du participant invalide ou manquant:", participantData.email);
-      console.warn("L'email au participant ne sera pas envoyé en raison d'une adresse invalide");
+    console.log("===== PRÉPARATION EMAIL INITIAL AU PARTICIPANT =====");
+    
+    // Vérification simplifiée de l'email
+    if (!participantData || !participantData.email) {
+      console.error("Données du participant ou email manquants");
+      return false;
+    }
+    
+    // Traitement direct de l'email
+    const email = participantData.email.trim();
+    console.log("Email utilisé pour l'envoi initial:", email);
+    
+    // Vérification supplémentaire
+    if (!email || email === '') {
+      console.error("Email vide après trim()");
       return false;
     }
     
     const appUrl = window.location.origin;
     const participantTemplateParams = {
-      to_email: participantData.email.trim(),
+      to_email: email,
       to_name: `${participantData.first_name} ${participantData.last_name}`,
       from_name: "IFTAR 2024",
       prenom: participantData.first_name,
@@ -103,9 +114,9 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     console.log("Service EmailJS:", EMAILJS_SERVICE_ID);
     console.log("Template participant:", PARTICIPANT_INITIAL_TEMPLATE_ID);
     console.log("Clé publique:", EMAILJS_PUBLIC_KEY);
-    console.log("Email du destinataire:", participantData.email.trim());
+    console.log("Email du destinataire:", email);
 
-    // Utiliser le service et template pour l'email INITIAL
+    // Envoi avec EmailJS
     const participantResponse = await emailjs.send(
       EMAILJS_SERVICE_ID,
       PARTICIPANT_INITIAL_TEMPLATE_ID, 
@@ -117,6 +128,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     return true;
   } catch (emailError) {
     console.error("Erreur lors de l'envoi de l'email initial au participant:", emailError);
+    console.error("Détails de l'erreur:", emailError);
     return false;
   }
 };

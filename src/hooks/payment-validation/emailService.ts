@@ -1,7 +1,6 @@
 
 // Service pour l'envoi d'emails de confirmation et de notification
-// Créé lors de la refactorisation du hook usePaymentValidation pour isoler la logique d'envoi d'emails
-// Mise à jour: Uniformisation du traitement des emails pour éviter les erreurs 422
+// Mise à jour: Correction du problème d'envoi d'email - Simplification radicale du traitement des emails
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -13,22 +12,6 @@ import {
 } from "@/components/manual-payment/config";
 import { EmailConfirmationParams } from './types';
 
-// Valide une adresse email de manière simplifiée
-export const validateEmail = (email: string): boolean => {
-  if (!email || typeof email !== 'string') {
-    console.error("Adresse email invalide ou manquante:", email);
-    return false;
-  }
-  
-  const trimmedEmail = email.trim();
-  if (!trimmedEmail || !trimmedEmail.includes('@')) {
-    console.error("Adresse email mal formatée:", trimmedEmail);
-    return false;
-  }
-  
-  return true;
-};
-
 // Envoie un email de confirmation au participant avec le QR code
 export const sendConfirmationEmail = async (
   participantData: any, 
@@ -37,50 +20,45 @@ export const sendConfirmationEmail = async (
   try {
     console.log("===== ENVOI EMAIL DE CONFIRMATION AVEC QR CODE =====");
     
-    // Validation des données du participant
-    if (!participantData) {
-      console.error("Données du participant manquantes:", participantData);
+    // Validation simplifiée - Vérification de base
+    if (!participantData || !participantData.email) {
+      console.error("ERREUR CRITIQUE: Données du participant ou email manquants");
+      console.error("Participant data:", participantData);
       return false;
     }
     
-    // Validation explicite de l'email avant traitement
-    const participantEmail = participantData.email;
-    console.log("Email brut récupéré:", participantEmail);
+    // Utilisation directe de l'email avec trim() - comme dans sendParticipantInitialEmail
+    const email = participantData.email.trim();
+    console.log("Email utilisé pour l'envoi de confirmation:", email);
     
-    if (!validateEmail(participantEmail)) {
-      console.error("Email invalide, arrêt de l'envoi.");
+    // Log de vérification avant l'envoi
+    if (!email || email === '') {
+      console.error("ERREUR: Email vide après trim()");
       return false;
     }
-    
-    // Utilisation directe de l'email après validation (comme dans sendParticipantInitialEmail)
-    const emailAddress = participantEmail.trim();
-    console.log("Email nettoyé utilisé pour l'envoi:", emailAddress);
     
     // Récupération de l'URL de base de l'application
     const appUrl = window.location.origin;
-    console.log("URL de base de l'application:", appUrl);
     
     // Détermination du statut pour l'affichage
     const statut = participantData.is_member ? "Membre" : "Non-membre";
-    console.log("Statut du participant:", statut);
     
-    // Construction de l'URL de confirmation avec l'ID du participant
-    const confirmationUrl = `${appUrl}/confirmation/${participantData.id}`;
-    console.log("URL de confirmation générée:", confirmationUrl);
-    
-    // Construction de l'URL du QR code avec l'URL complète comme données
+    // Construction de l'URL du QR code
     const qrCodeData = `${appUrl}/confirmation/${participantData.id}`;
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeData)}`;
-    console.log("URL du QR code générée:", qrCodeUrl);
-    console.log("Données encodées dans le QR code:", qrCodeData);
     
-    // Préparation des paramètres pour le template de confirmation avec QR code
+    console.log("DEBUG - Données pour template email:");
+    console.log("- Email:", email);
+    console.log("- Nom:", `${participantData.first_name} ${participantData.last_name}`);
+    console.log("- URL QR code:", qrCodeUrl);
+    
+    // Préparation des paramètres pour le template
     const templateParams = {
-      to_email: emailAddress,
+      to_email: email, // Utilisation directe de l'email nettoyé
       to_name: `${participantData.first_name} ${participantData.last_name}`,
       from_name: "IFTAR 2024",
-      prenom: participantData.first_name.trim(),
-      nom: participantData.last_name.trim(),
+      prenom: participantData.first_name,
+      nom: participantData.last_name,
       tel: participantData.contact_number,
       status: statut,
       qr_code_url: qrCodeUrl,
@@ -91,11 +69,12 @@ export const sendConfirmationEmail = async (
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    console.log("Paramètres préparés pour le template d'email:", templateParams);
-    console.log("Tentative d'envoi de l'email avec EmailJS (SERVICE UNIFIÉ)...");
-    console.log("Email destinataire:", templateParams.to_email);
+    console.log("Tentative d'envoi avec EmailJS (CONFIG UNIFIÉE)...");
+    console.log("- Service:", EMAILJS_SERVICE_ID);
+    console.log("- Template:", CONFIRMATION_TEMPLATE_ID);
+    console.log("- Destinataire:", templateParams.to_email);
 
-    // Utilisation du service et des identifiants unifiés
+    // Envoi direct avec EmailJS
     const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
       CONFIRMATION_TEMPLATE_ID,
@@ -104,11 +83,11 @@ export const sendConfirmationEmail = async (
     );
 
     console.log("Réponse EmailJS:", response);
-    console.log("Email de confirmation avec QR code envoyé avec succès");
+    console.log("Email de confirmation envoyé avec succès");
     return true;
   } catch (error: any) {
-    console.error("Erreur lors de l'envoi de l'email de confirmation:", error);
-    console.error("Message d'erreur spécifique:", error.message);
+    console.error("ERREUR DÉTAILLÉE lors de l'envoi de l'email de confirmation:", error);
+    console.error("Message d'erreur:", error.message);
     
     // Log plus détaillé pour aider au débogage
     if (error.status) {
@@ -127,12 +106,16 @@ export const sendAdminNotification = async (params: EmailConfirmationParams): Pr
   try {
     console.log("Envoi de notification de confirmation à l'administrateur...");
     
+    // Vérification de l'email 
+    const participantEmail = params.participantEmail.trim();
+    console.log("Email participant utilisé pour notification admin:", participantEmail);
+    
     const adminNotifParams = {
       to_email: ADMIN_EMAIL,
       from_name: "Système d'Inscription IFTAR",
       admin_name: "Administrateur",
       participant_name: params.participantName,
-      participant_email: params.participantEmail.trim(),
+      participant_email: participantEmail,
       status: params.isMember ? "Membre" : "Non-membre",
       payment_method: params.paymentMethod,
       payment_amount: `${params.amount} XOF`,
@@ -142,11 +125,8 @@ export const sendAdminNotification = async (params: EmailConfirmationParams): Pr
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
     
-    console.log("Notification admin de confirmation avec service unifié...");
-    console.log("- Service EmailJS:", EMAILJS_SERVICE_ID);
-    console.log("- Template admin:", ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID);
-    console.log("- Clé publique:", EMAILJS_PUBLIC_KEY);
-    console.log("- Email destinataire:", adminNotifParams.to_email);
+    console.log("Notification admin avec service unifié...");
+    console.log("- Destinataire admin:", adminNotifParams.to_email);
     
     const adminNotifResponse = await emailjs.send(
       EMAILJS_SERVICE_ID,
@@ -155,12 +135,19 @@ export const sendAdminNotification = async (params: EmailConfirmationParams): Pr
       EMAILJS_PUBLIC_KEY
     );
     
-    console.log("Email de notification admin (post-confirmation) envoyé avec succès:", adminNotifResponse);
+    console.log("Email de notification admin envoyé avec succès:", adminNotifResponse);
     return true;
   } catch (adminNotifError: any) {
-    console.error("Erreur lors de l'envoi de la notification admin post-confirmation:", adminNotifError);
+    console.error("Erreur lors de l'envoi de la notification admin:", adminNotifError);
     console.error("Message d'erreur:", adminNotifError.message);
     // Ne pas bloquer le processus si cette notification échoue
     return false;
   }
+};
+
+// Fonction simplifiée pour vérifier si un email est valide
+export const validateEmail = (email: string): boolean => {
+  if (!email) return false;
+  email = email.trim();
+  return email.length > 0 && email.includes('@');
 };
