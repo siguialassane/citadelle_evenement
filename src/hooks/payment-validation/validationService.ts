@@ -1,6 +1,5 @@
-
 // Service pour la validation des paiements
-// Mise à jour: Utilisation du second service EmailJS pour les confirmations après validation admin
+// Mise à jour: Correction du problème d'envoi d'email - Simplification du processus de validation
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse, EmailConfirmationParams } from "./types";
@@ -40,16 +39,16 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
     }
 
     // Envoi de l'email de confirmation APRÈS avoir tout validé
-    console.log("=== PRÉPARATION DE L'ENVOI D'EMAIL DE CONFIRMATION (SERVICE #2) ===");
+    console.log("=== PRÉPARATION DE L'ENVOI D'EMAIL DE CONFIRMATION ===");
     
     try {
-      // Envoi de l'email de confirmation avec QR code en utilisant le SECOND service
+      // Envoi de l'email de confirmation avec QR code
       const emailSuccess = await sendConfirmationEmail(participantData, qrCodeId);
       
       if (emailSuccess) {
-        console.log("✅ Email de confirmation envoyé avec succès (SERVICE #2)");
+        console.log("✅ Email de confirmation envoyé avec succès");
         
-        // Notification à l'administrateur avec le SECOND service
+        // Notification à l'administrateur
         const notificationParams: EmailConfirmationParams = {
           participantId: participantData.id,
           participantEmail: participantData.email,

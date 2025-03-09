@@ -1,11 +1,11 @@
 
 // Service pour l'envoi d'emails de confirmation et de notification
-// Mise à jour: Séparation claire des services EmailJS - Utilisation du SECOND service pour les confirmations
+// Mise à jour: Correction du problème d'envoi d'email - Simplification radicale du traitement des emails
 
 import emailjs from '@emailjs/browser';
 import { 
-  CONFIRMATION_EMAILJS_SERVICE_ID,
-  CONFIRMATION_EMAILJS_PUBLIC_KEY,
+  EMAILJS_SERVICE_ID,
+  EMAILJS_PUBLIC_KEY,
   CONFIRMATION_TEMPLATE_ID,
   ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID,
   ADMIN_EMAIL
@@ -18,7 +18,7 @@ export const sendConfirmationEmail = async (
   qrCodeId: string
 ): Promise<boolean> => {
   try {
-    console.log("===== ENVOI EMAIL DE CONFIRMATION AVEC QR CODE (SERVICE #2) =====");
+    console.log("===== ENVOI EMAIL DE CONFIRMATION AVEC QR CODE =====");
     
     // Validation simplifiée - Vérification de base
     if (!participantData || !participantData.email) {
@@ -27,7 +27,7 @@ export const sendConfirmationEmail = async (
       return false;
     }
     
-    // Utilisation directe de l'email avec trim()
+    // Utilisation directe de l'email avec trim() - comme dans sendParticipantInitialEmail
     const email = participantData.email.trim();
     console.log("Email utilisé pour l'envoi de confirmation:", email);
     
@@ -47,21 +47,18 @@ export const sendConfirmationEmail = async (
     const qrCodeData = `${appUrl}/confirmation/${participantData.id}`;
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeData)}`;
     
-    console.log("DEBUG - Données pour template email de CONFIRMATION (SERVICE #2):");
+    console.log("DEBUG - Données pour template email:");
     console.log("- Email:", email);
     console.log("- Nom:", `${participantData.first_name} ${participantData.last_name}`);
     console.log("- URL QR code:", qrCodeUrl);
     
-    // Préparation des paramètres standardisés pour le template
+    // Préparation des paramètres pour le template
     const templateParams = {
-      to_email: email,
+      to_email: email, // Utilisation directe de l'email nettoyé
       to_name: `${participantData.first_name} ${participantData.last_name}`,
       from_name: "IFTAR 2024",
       prenom: participantData.first_name,
       nom: participantData.last_name,
-      participant_email: email,
-      participant_phone: participantData.contact_number,
-      participant_name: `${participantData.first_name} ${participantData.last_name}`,
       tel: participantData.contact_number,
       status: statut,
       qr_code_url: qrCodeUrl,
@@ -72,21 +69,20 @@ export const sendConfirmationEmail = async (
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    console.log("Tentative d'envoi avec EmailJS (SECOND SERVICE)...");
-    console.log("- Service:", CONFIRMATION_EMAILJS_SERVICE_ID);
+    console.log("Tentative d'envoi avec EmailJS (CONFIG UNIFIÉE)...");
+    console.log("- Service:", EMAILJS_SERVICE_ID);
     console.log("- Template:", CONFIRMATION_TEMPLATE_ID);
-    console.log("- Clé API:", CONFIRMATION_EMAILJS_PUBLIC_KEY);
     console.log("- Destinataire:", templateParams.to_email);
 
-    // Envoi direct avec EmailJS (SECOND SERVICE)
+    // Envoi direct avec EmailJS
     const response = await emailjs.send(
-      CONFIRMATION_EMAILJS_SERVICE_ID,
+      EMAILJS_SERVICE_ID,
       CONFIRMATION_TEMPLATE_ID,
       templateParams,
-      CONFIRMATION_EMAILJS_PUBLIC_KEY
+      EMAILJS_PUBLIC_KEY
     );
 
-    console.log("Réponse EmailJS (SERVICE CONFIRMATION):", response);
+    console.log("Réponse EmailJS:", response);
     console.log("Email de confirmation envoyé avec succès");
     return true;
   } catch (error: any) {
@@ -108,7 +104,7 @@ export const sendConfirmationEmail = async (
 // Envoie une notification à l'administrateur suite à la validation d'un paiement
 export const sendAdminNotification = async (params: EmailConfirmationParams): Promise<boolean> => {
   try {
-    console.log("Envoi de notification de confirmation à l'administrateur (SERVICE #2)...");
+    console.log("Envoi de notification de confirmation à l'administrateur...");
     
     // Vérification de l'email 
     const participantEmail = params.participantEmail.trim();
@@ -120,7 +116,6 @@ export const sendAdminNotification = async (params: EmailConfirmationParams): Pr
       admin_name: "Administrateur",
       participant_name: params.participantName,
       participant_email: participantEmail,
-      participant_phone: params.participantPhone,
       status: params.isMember ? "Membre" : "Non-membre",
       payment_method: params.paymentMethod,
       payment_amount: `${params.amount} XOF`,
@@ -130,17 +125,14 @@ export const sendAdminNotification = async (params: EmailConfirmationParams): Pr
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
     
-    console.log("Notification admin avec second service...");
-    console.log("- Service:", CONFIRMATION_EMAILJS_SERVICE_ID);
-    console.log("- Template:", ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID);
-    console.log("- Clé API:", CONFIRMATION_EMAILJS_PUBLIC_KEY);
+    console.log("Notification admin avec service unifié...");
     console.log("- Destinataire admin:", adminNotifParams.to_email);
     
     const adminNotifResponse = await emailjs.send(
-      CONFIRMATION_EMAILJS_SERVICE_ID,
+      EMAILJS_SERVICE_ID,
       ADMIN_CONFIRMATION_NOTIFICATION_TEMPLATE_ID,
       adminNotifParams,
-      CONFIRMATION_EMAILJS_PUBLIC_KEY
+      EMAILJS_PUBLIC_KEY
     );
     
     console.log("Email de notification admin envoyé avec succès:", adminNotifResponse);
