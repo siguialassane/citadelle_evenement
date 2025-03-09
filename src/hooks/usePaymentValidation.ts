@@ -1,6 +1,6 @@
 
 // Hook personnalisé pour gérer la logique de validation des paiements
-// Mise à jour: Correction de l'envoi d'email de confirmation et gestion des erreurs améliorée
+// Mise à jour: Correction de l'envoi d'email de confirmation et utilisation des bonnes constantes
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,9 +8,9 @@ import { toast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import emailjs from '@emailjs/browser';
 import { 
-  PAYMENT_CONFIRMATION_EMAILJS_SERVICE_ID, 
-  PAYMENT_CONFIRMATION_EMAILJS_TEMPLATE_ID, 
-  PAYMENT_CONFIRMATION_EMAILJS_PUBLIC_KEY 
+  CONFIRMATION_EMAILJS_SERVICE_ID, 
+  CONFIRMATION_EMAILJS_TEMPLATE_ID, 
+  CONFIRMATION_EMAILJS_PUBLIC_KEY 
 } from "@/components/manual-payment/config";
 import { Payment } from "@/types/payment";
 
@@ -219,11 +219,13 @@ export const usePaymentValidation = (paymentId?: string) => {
       if (fetchError) throw fetchError;
       if (!participantData) throw new Error("Participant non trouvé");
 
-      console.log("Préparation de l'envoi de l'email de confirmation - participant data:", participantData);
+      console.log("---VALIDATION DE PAIEMENT PAR ADMIN---");
+      console.log("Paiement validé pour le participant:", participantData.email);
       console.log("QR code ID généré:", qrCodeId);
       
       try {
-        // UNIQUEMENT envoyer l'email de confirmation lors de la validation
+        // UNIQUEMENT envoyer l'email de confirmation APRÈS validation par l'admin
+        console.log("Lancement de l'envoi d'email de confirmation...");
         const emailResult = await sendConfirmationEmail(participantData, qrCodeId);
         console.log("Résultat de l'envoi d'email de confirmation:", emailResult);
         
@@ -314,24 +316,29 @@ export const usePaymentValidation = (paymentId?: string) => {
 
   const sendConfirmationEmail = async (participantData: any, qrCodeId: string) => {
     try {
-      console.log("---ENVOI EMAIL DE CONFIRMATION---");
-      console.log("Début de l'envoi de l'email de confirmation au participant après validation...");
-      console.log("Service ID:", PAYMENT_CONFIRMATION_EMAILJS_SERVICE_ID);
-      console.log("Template ID:", PAYMENT_CONFIRMATION_EMAILJS_TEMPLATE_ID);
-      console.log("Public Key:", PAYMENT_CONFIRMATION_EMAILJS_PUBLIC_KEY);
+      console.log("===== ENVOI EMAIL DE CONFIRMATION AVEC QR CODE =====");
+      console.log("Début de l'envoi de l'email de confirmation au participant après validation par l'admin");
+      console.log("Service ID:", CONFIRMATION_EMAILJS_SERVICE_ID);
+      console.log("Template ID:", CONFIRMATION_EMAILJS_TEMPLATE_ID);
+      console.log("Public Key:", CONFIRMATION_EMAILJS_PUBLIC_KEY);
       
-      console.log("Données complètes du participant:", JSON.stringify(participantData));
+      console.log("Données du participant:", JSON.stringify({
+        id: participantData.id,
+        email: participantData.email,
+        name: `${participantData.first_name} ${participantData.last_name}`
+      }));
       
       const appUrl = window.location.origin;
       
       const statut = participantData.is_member ? "Membre" : "Non-membre";
       
+      // Construction de l'URL de confirmation
       const confirmationUrl = `${appUrl}/confirmation/${participantData.id}`;
       
-      // S'assurer que l'URL du QR code est encodée correctement
+      // S'assurer que l'URL du QR code est correctement encodée
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(confirmationUrl)}`;
       
-      // Préparation des paramètres pour le template de confirmation
+      // Préparation des paramètres pour le template de confirmation avec QR code
       const templateParams = {
         to_email: participantData.email.trim(),
         prenom: participantData.first_name.trim(),
@@ -345,27 +352,29 @@ export const usePaymentValidation = (paymentId?: string) => {
         receipt_url: `${appUrl}/confirmation/${participantData.id}`,
         badge_url: `${appUrl}/confirmation/${participantData.id}`,
         
+        // Variables requises par EmailJS
         to_name: `${participantData.first_name} ${participantData.last_name}`,
         from_name: "IFTAR 2024",
         reply_to: "ne-pas-repondre@lacitadelle.ci"
       };
 
-      console.log("Paramètres pour EmailJS (confirmation après validation):", JSON.stringify(templateParams));
+      console.log("URLs générées:");
       console.log("URL de confirmation:", confirmationUrl);
       console.log("URL du QR code:", qrCodeUrl);
+      console.log("URL du reçu:", `${appUrl}/confirmation/${participantData.id}`);
 
-      // Utilisation du template de confirmation de paiement avec QR code
+      // Utilisation du template de confirmation avec QR code
       const response = await emailjs.send(
-        PAYMENT_CONFIRMATION_EMAILJS_SERVICE_ID,
-        PAYMENT_CONFIRMATION_EMAILJS_TEMPLATE_ID,
+        CONFIRMATION_EMAILJS_SERVICE_ID,
+        CONFIRMATION_EMAILJS_TEMPLATE_ID,
         templateParams,
-        PAYMENT_CONFIRMATION_EMAILJS_PUBLIC_KEY
+        CONFIRMATION_EMAILJS_PUBLIC_KEY
       );
 
       console.log("Email de confirmation avec QR code envoyé avec succès:", response);
       return true;
     } catch (error) {
-      console.error("Erreur détaillée lors de l'envoi de l'email de confirmation au participant:", error);
+      console.error("Erreur lors de l'envoi de l'email de confirmation au participant:", error);
       throw error;
     }
   };

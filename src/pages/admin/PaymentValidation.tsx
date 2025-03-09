@@ -1,9 +1,8 @@
 
 // Ce fichier a été refactorisé pour organiser le code en composants plus petits
 // Il utilise maintenant différents composants pour une meilleure maintenance
-// Le hook usePaymentValidation extrait toute la logique métier
+// Mise à jour: Clarification du flux de validation et envoi d'emails
 
-import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, AlertCircle, Clock } from "lucide-react";
@@ -41,8 +40,11 @@ const PaymentValidation = () => {
   };
 
   const handleValidatePayment = async (paymentId: string) => {
+    // Cette fonction déclenche l'envoi de l'email de confirmation avec QR code
+    console.log("Validation du paiement par l'administrateur, ID:", paymentId);
     const success = await validatePayment(paymentId);
     if (success) {
+      console.log("Validation réussie et email de confirmation envoyé");
       setTimeout(() => {
         navigate("/admin/payment-validation");
       }, 1500);

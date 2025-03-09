@@ -1,6 +1,6 @@
 
 // Ce hook gère toute la logique du paiement manuel
-// Mise à jour: Correction du problème d'envoi des emails et utilisation des bons identifiants EmailJS
+// Mise à jour: Utilisation des bonnes constantes renommées pour l'envoi d'emails initiaux uniquement
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -13,9 +13,9 @@ import {
   ADMIN_EMAILJS_TEMPLATE_ID, 
   ADMIN_EMAILJS_PUBLIC_KEY,
   ADMIN_EMAIL,
-  EMAILJS_SERVICE_ID, 
-  EMAILJS_TEMPLATE_ID, 
-  EMAILJS_PUBLIC_KEY
+  INITIAL_EMAILJS_SERVICE_ID, 
+  INITIAL_EMAILJS_TEMPLATE_ID, 
+  INITIAL_EMAILJS_PUBLIC_KEY
 } from "./config";
 import { PaymentMethod, Participant, CopyStates } from "./types";
 
@@ -51,7 +51,7 @@ export function useManualPayment(participant: Participant) {
   // Fonction pour envoyer l'email de notification UNIQUEMENT à l'administrateur
   const sendAdminNotification = async (manualPaymentId: string) => {
     try {
-      console.log("Envoi de notification à l'administrateur UNIQUEMENT...");
+      console.log("Envoi de notification à l'administrateur...");
       
       // URL de base de l'application (important pour générer des liens absolus)
       const appUrl = window.location.origin;
@@ -71,17 +71,17 @@ export function useManualPayment(participant: Participant) {
         payment_phone: phoneNumber,
         comments: comments || "Aucun commentaire",
         payment_id: manualPaymentId,
-        participant_id: participant.id, // Ajout de l'ID du participant pour les liens
+        participant_id: participant.id,
         app_url: appUrl,
         current_date: currentDate,
-        validation_link: validationLink, // Ajout du lien de validation complet
-        // Variables requises par EmailJS
+        validation_link: validationLink,
         reply_to: "ne-pas-repondre@lacitadelle.ci"
       };
 
-      console.log("Paramètres pour EmailJS (admin):", templateParams);
+      console.log("Envoi de l'email à l'administrateur...");
+      console.log("Service admin:", ADMIN_EMAILJS_SERVICE_ID);
+      console.log("Template admin:", ADMIN_EMAILJS_TEMPLATE_ID);
       console.log("URL de validation admin:", validationLink);
-      console.log("URL de la page de paiement en attente:", `${appUrl}/payment-pending/${participant.id}`);
 
       // N'envoyer QUE l'email à l'administrateur
       const response = await emailjs.send(
@@ -95,7 +95,7 @@ export function useManualPayment(participant: Participant) {
       
       try {
         // Envoyer un email au participant pour lui confirmer que sa demande est en cours de traitement
-        // Cette partie est séparée de l'email de confirmation finale avec QR code
+        // Cette partie est uniquement l'email INITIAL d'attente de validation
         const participantTemplateParams = {
           to_email: participant.email,
           to_name: `${participant.first_name} ${participant.last_name}`,
@@ -110,12 +110,16 @@ export function useManualPayment(participant: Participant) {
           reply_to: "ne-pas-repondre@lacitadelle.ci"
         };
 
-        // Utiliser le service et template pour l'email INITIAL uniquement (et pas celui de confirmation)
+        console.log("Envoi de l'email initial au participant...");
+        console.log("Service participant:", INITIAL_EMAILJS_SERVICE_ID);
+        console.log("Template participant:", INITIAL_EMAILJS_TEMPLATE_ID);
+
+        // Utiliser le service et template pour l'email INITIAL uniquement
         const participantResponse = await emailjs.send(
-          EMAILJS_SERVICE_ID,
-          EMAILJS_TEMPLATE_ID, 
+          INITIAL_EMAILJS_SERVICE_ID,
+          INITIAL_EMAILJS_TEMPLATE_ID, 
           participantTemplateParams,
-          EMAILJS_PUBLIC_KEY
+          INITIAL_EMAILJS_PUBLIC_KEY
         );
 
         console.log("Email initial au participant envoyé avec succès:", participantResponse);
