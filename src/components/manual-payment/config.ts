@@ -38,9 +38,10 @@ export const EVENT_LOCATION = {
   name: "NOOM HOTEL ABIDJAN PLATEAU",
   address: "Avenue du Général de Gaulle, Abidjan, Côte d'Ivoire",
   coordinates: {
-    latitude: 5.321714,
-    longitude: -4.020447
+    latitude: 5.323753,
+    longitude: -4.015204
   },
-  // Lien Google Maps avec coordonnées GPS précises
-  mapsUrl: "https://www.google.com/maps?q=5.321714,-4.020447"
+  // Lien Google Maps avec coordonnées GPS mises à jour
+  mapsUrl: "https://www.google.com/maps?q=5.323753,-4.015204"
 };
+
