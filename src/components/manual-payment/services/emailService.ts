@@ -1,8 +1,10 @@
+
 // Ce service gère l'envoi des emails initiaux dans l'application
 // Mise à jour: Correction du montant affiché dans les emails à 30000 XOF
 // Correction: Ajout de paramètres supplémentaires pour garantir la redirection correcte
 // Mise à jour: Ajout du lien Google Maps pour la localisation de l'événement
 // Mise à jour: Ajout de l'envoi d'email d'échec pour les paiements rejetés
+// Mise à jour: Amélioration du template d'échec de paiement avec instructions pour la réclamation
 
 import emailjs from '@emailjs/browser';
 import { 
