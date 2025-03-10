@@ -99,12 +99,21 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     const pendingUrl = `${appUrl}/payment-pending/${participantData.id}?type=initial`;
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
     
+    // Ajouter des logs pour vérifier les données du participant
+    console.log("Données participant pour email initial:", {
+      email: email,
+      nom_complet: `${participantData.first_name} ${participantData.last_name}`,
+      participant_email: participantData.email // Vérifier que cette valeur existe
+    });
+    
     const templateParams: EmailTemplateParams = {
       to_email: email, // UNIQUEMENT l'email du participant
       to_name: `${participantData.first_name} ${participantData.last_name}`,
       from_name: "IFTAR 2024",
       prenom: participantData.first_name,
       nom: participantData.last_name,
+      participant_name: `${participantData.first_name} ${participantData.last_name}`, // Ajouté pour le template
+      participant_email: participantData.email, // Ajouté pour le template
       participant_phone: participantData.contact_number || "Non disponible",
       status: memberStatus,
       payment_method: paymentMethod,
@@ -117,6 +126,13 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       event_address: EVENT_LOCATION.address,
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
+
+    // Ajouter un log pour vérifier les paramètres envoyés au template
+    console.log("Paramètres EmailJS pour template_2ncsaxe:", {
+      participant_name: templateParams.participant_name,
+      participant_email: templateParams.participant_email,
+      to_name: templateParams.to_name
+    });
 
     // IMPORTANT: N'utilise que le template PARTICIPANT_INITIAL_TEMPLATE_ID pour le participant
     const response = await emailjs.send(
