@@ -1,6 +1,8 @@
+
 // Service pour la validation des paiements
 // Mise à jour: Suppression de l'envoi d'email à l'administrateur après validation
 // Amélioration de la journalisation pour le débogage des emails
+// Mise à jour: Ajout du lien Google Maps dans l'email de confirmation
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse } from "./types";
@@ -50,9 +52,10 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
 
     // Envoi de l'email de confirmation APRÈS avoir tout validé
     console.log("=== PRÉPARATION DE L'ENVOI D'EMAIL DE CONFIRMATION ===");
+    console.log("Le lien Google Maps sera inclus dans l'email de confirmation");
     
     try {
-      // Envoi de l'email de confirmation avec QR code
+      // Envoi de l'email de confirmation avec QR code et lien Google Maps
       const emailSuccess = await sendConfirmationEmail(participantData, qrCodeId);
       
       if (emailSuccess) {

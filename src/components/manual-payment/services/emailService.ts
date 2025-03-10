@@ -2,6 +2,7 @@
 // Ce service gère l'envoi des emails initiaux dans l'application
 // Mise à jour: Correction du montant affiché dans les emails à 30000 XOF
 // Correction: Ajout de paramètres supplémentaires pour garantir la redirection correcte
+// Mise à jour: Ajout du lien Google Maps pour la localisation de l'événement
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -9,7 +10,8 @@ import {
   EMAILJS_PUBLIC_KEY,
   PARTICIPANT_INITIAL_TEMPLATE_ID,
   ADMIN_NOTIFICATION_TEMPLATE_ID,
-  PAYMENT_AMOUNT
+  PAYMENT_AMOUNT,
+  EVENT_LOCATION
 } from "../config";
 
 /**
@@ -104,6 +106,10 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     // URL améliorée pour la page en attente (ajout de type=initial)
     const pendingUrl = `${appUrl}/payment-pending/${participantData.id}?type=initial`;
     
+    // URL Google Maps pour la localisation de l'événement
+    const eventLocationUrl = EVENT_LOCATION.mapsUrl;
+    console.log("URL de localisation Google Maps:", eventLocationUrl);
+    
     const participantTemplateParams = {
       to_email: email,
       to_name: `${participantData.first_name} ${participantData.last_name}`,
@@ -115,6 +121,9 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       payment_phone: phoneNumber,
       app_url: appUrl,
       pending_url: pendingUrl,
+      maps_url: eventLocationUrl, // URL Google Maps
+      event_location: EVENT_LOCATION.name, // Nom du lieu
+      event_address: EVENT_LOCATION.address, // Adresse complète
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
@@ -126,6 +135,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     console.log("URL page pending:", pendingUrl);
     console.log("Montant du paiement:", `${PAYMENT_AMOUNT} XOF`);
     console.log("Numéro utilisé pour le paiement:", phoneNumber);
+    console.log("URL de localisation:", eventLocationUrl);
 
     // Envoi avec EmailJS - service général
     const participantResponse = await emailjs.send(

@@ -2,13 +2,15 @@
 // Service pour l'envoi d'emails de confirmation après validation des paiements
 // Mise à jour: Correction du montant affiché à 30000 XOF
 // Amélioration des URL de QR code avec paramètres plus robustes
+// Mise à jour: Ajout du lien Google Maps pour la localisation de l'événement
 
 import emailjs from '@emailjs/browser';
 import { 
   CONFIRMATION_EMAILJS_SERVICE_ID, 
   CONFIRMATION_EMAILJS_PUBLIC_KEY,
   CONFIRMATION_TEMPLATE_ID,
-  PAYMENT_AMOUNT
+  PAYMENT_AMOUNT,
+  EVENT_LOCATION
 } from "@/components/manual-payment/config";
 
 /**
@@ -41,6 +43,10 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     // URL du reçu avec l'ID du participant
     const receiptUrl = `${appUrl}/receipt/${participantData.id}`;
     
+    // URL Google Maps pour la localisation de l'événement
+    const eventLocationUrl = EVENT_LOCATION.mapsUrl;
+    console.log("URL de localisation Google Maps:", eventLocationUrl);
+    
     const formattedDate = new Date().toLocaleDateString('fr-FR');
     
     console.log("QR Code ID:", qrCodeId);
@@ -48,6 +54,7 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     console.log("URL de la page de confirmation:", confirmationPageUrl);
     console.log("URL de l'image QR code:", qrCodeImageUrl);
     console.log("URL du reçu:", receiptUrl);
+    console.log("URL de localisation:", eventLocationUrl);
     console.log("Email du participant:", participantData.email);
     console.log("Montant corrigé du paiement:", `${PAYMENT_AMOUNT} XOF`);
     
@@ -69,6 +76,9 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
       receipt_url: receiptUrl, // URL pour télécharger le reçu
       confirmation_date: formattedDate,
       app_url: appUrl,
+      maps_url: eventLocationUrl, // URL Google Maps
+      event_location: EVENT_LOCATION.name, // Nom du lieu
+      event_address: EVENT_LOCATION.address, // Adresse complète
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
     
