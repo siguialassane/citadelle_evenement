@@ -125,6 +125,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       maps_url: EVENT_LOCATION.mapsUrl,
       event_location: EVENT_LOCATION.name,
       event_address: EVENT_LOCATION.address,
+      current_date: new Date().toLocaleString('fr-FR'), // Ajout de la date actuelle formatée
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
@@ -132,7 +133,8 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     console.log("Paramètres EmailJS pour template_2ncsaxe:", {
       participant_name: templateParams.participant_name,
       participant_email: templateParams.participant_email,
-      to_name: templateParams.to_name
+      to_name: templateParams.to_name,
+      current_date: templateParams.current_date // Log de la date pour vérification
     });
 
     // IMPORTANT: N'utilise que le template PARTICIPANT_INITIAL_TEMPLATE_ID pour le participant
