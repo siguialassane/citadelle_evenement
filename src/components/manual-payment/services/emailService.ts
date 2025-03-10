@@ -5,6 +5,7 @@
 // Mise à jour: Ajout du lien Google Maps pour la localisation de l'événement
 // Mise à jour: Séparation claire entre les emails initiaux et les emails de rejet
 // Mise à jour: Utilisation d'un NOUVEAU service TOTALEMENT DISTINCT pour les emails de rejet
+// Mise à jour: Correction des templates pour éviter les doublons d'envoi
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -21,7 +22,7 @@ import {
 
 /**
  * Envoie un email à l'administrateur pour notifier d'un nouveau paiement
- * Utilise UNIQUEMENT le service pour les emails initiaux
+ * Utilise UNIQUEMENT le service pour les emails initiaux et le template admin dédié
  */
 export const sendAdminNotification = async (
   adminEmail: string,
@@ -35,13 +36,14 @@ export const sendAdminNotification = async (
   try {
     console.log("Envoi de notification à l'administrateur pour nouveau paiement...");
     console.log("Utilisation du service pour emails INITIAUX UNIQUEMENT:", EMAILJS_SERVICE_ID);
+    console.log("Utilisation du template ADMIN DÉDIÉ:", ADMIN_NOTIFICATION_TEMPLATE_ID);
     
     // URL de base de l'application
     const appUrl = window.location.origin;
     const validationLink = `${appUrl}/admin/payment-validation/${manualPaymentId}`;
     const currentDate = new Date().toLocaleString('fr-FR');
 
-    // Envoi d'email à l'administrateur
+    // Envoi d'email à l'administrateur avec le template dédié aux notifications admin
     const templateParams = {
       to_email: adminEmail.trim(),
       from_name: "Système d'Inscription IFTAR",
@@ -61,21 +63,20 @@ export const sendAdminNotification = async (
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    console.log("Envoi de l'email à l'administrateur - service initial uniquement...");
+    console.log("Envoi de l'email à l'administrateur - template admin dédié...");
     console.log("Service EmailJS initial:", EMAILJS_SERVICE_ID);
-    console.log("Template admin initial:", ADMIN_NOTIFICATION_TEMPLATE_ID);
-    console.log("Clé publique initiale:", EMAILJS_PUBLIC_KEY);
+    console.log("Template ADMIN dédié:", ADMIN_NOTIFICATION_TEMPLATE_ID);
     console.log("URL de validation admin:", validationLink);
 
-    // Envoyer l'email à l'administrateur avec le service dédié aux emails INITIAUX
+    // Envoyer l'email à l'administrateur avec le template ADMIN spécifique
     const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
-      ADMIN_NOTIFICATION_TEMPLATE_ID,
+      ADMIN_NOTIFICATION_TEMPLATE_ID, // Template spécifique pour l'administrateur
       templateParams,
       EMAILJS_PUBLIC_KEY
     );
 
-    console.log("Email de notification admin initial envoyé avec succès:", response);
+    console.log("Email de notification admin envoyé avec succès:", response);
     return true;
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email à l'administrateur:", error);
@@ -85,12 +86,13 @@ export const sendAdminNotification = async (
 
 /**
  * Envoie un email initial au participant pour l'informer que sa demande est en cours de traitement
- * Utilise UNIQUEMENT le service pour les emails initiaux
+ * Utilise UNIQUEMENT le service et template pour les emails au participant
  */
 export const sendParticipantInitialEmail = async (participantData: any, paymentMethod: string, phoneNumber: string) => {
   try {
     console.log("===== PRÉPARATION EMAIL INITIAL AU PARTICIPANT =====");
-    console.log("Utilisation du service pour emails INITIAUX UNIQUEMENT:", EMAILJS_SERVICE_ID);
+    console.log("Utilisation du service pour emails INITIAUX au PARTICIPANT:", EMAILJS_SERVICE_ID);
+    console.log("Utilisation du template PARTICIPANT DÉDIÉ:", PARTICIPANT_INITIAL_TEMPLATE_ID);
     
     // Vérification améliorée de l'email
     if (!participantData || !participantData.email) {
@@ -100,7 +102,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     
     // Traitement amélioré de l'email
     const email = participantData.email.trim();
-    console.log("Email utilisé pour l'envoi initial (après trim):", email);
+    console.log("Email utilisé pour l'envoi initial au participant (après trim):", email);
     
     // Vérification supplémentaire pour éviter l'erreur "recipient address is empty"
     if (!email || email === '') {
@@ -114,34 +116,35 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     
     // URL Google Maps pour la localisation de l'événement
     const eventLocationUrl = EVENT_LOCATION.mapsUrl;
-    console.log("URL de localisation Google Maps:", eventLocationUrl);
+    
+    // Formatage du statut de membre
+    const memberStatus = participantData.is_member ? "Membre" : "Non membre";
     
     const participantTemplateParams = {
-      to_email: email,
+      to_email: email, // Email du participant uniquement
       to_name: `${participantData.first_name} ${participantData.last_name}`,
       from_name: "IFTAR 2024",
       prenom: participantData.first_name,
       nom: participantData.last_name,
+      participant_phone: participantData.contact_number || "Non disponible",
+      status: memberStatus, // Statut de membre
       payment_method: paymentMethod,
-      payment_amount: `${PAYMENT_AMOUNT} XOF`, // Utilisation de la constante de configuration
+      payment_amount: `${PAYMENT_AMOUNT} XOF`,
       payment_phone: phoneNumber,
       app_url: appUrl,
       pending_url: pendingUrl,
-      maps_url: eventLocationUrl, // URL Google Maps
-      event_location: EVENT_LOCATION.name, // Nom du lieu
-      event_address: EVENT_LOCATION.address, // Adresse complète
+      maps_url: eventLocationUrl,
+      event_location: EVENT_LOCATION.name,
+      event_address: EVENT_LOCATION.address,
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    console.log("Envoi de l'email initial au participant - service initial uniquement...");
-    console.log("Service EmailJS initial:", EMAILJS_SERVICE_ID);
-    console.log("Template participant initial:", PARTICIPANT_INITIAL_TEMPLATE_ID);
-    console.log("Clé publique initiale:", EMAILJS_PUBLIC_KEY);
+    console.log("Envoi de l'email initial au participant UNIQUEMENT...");
 
-    // Envoi avec EmailJS - service dédié aux emails INITIAUX
+    // Envoi avec EmailJS - service dédié aux emails PARTICIPANT initial
     const participantResponse = await emailjs.send(
-      EMAILJS_SERVICE_ID, // Service dédié aux emails INITIAUX UNIQUEMENT
-      PARTICIPANT_INITIAL_TEMPLATE_ID,
+      EMAILJS_SERVICE_ID,
+      PARTICIPANT_INITIAL_TEMPLATE_ID, // Template spécifique pour le participant initial
       participantTemplateParams,
       EMAILJS_PUBLIC_KEY
     );

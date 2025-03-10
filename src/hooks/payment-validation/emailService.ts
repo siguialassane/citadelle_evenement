@@ -3,6 +3,7 @@
 // Mise à jour: Séparation complète des services d'envoi
 // Mise à jour: Un seul type d'email par action
 // Mise à jour: Ajout du statut de membre et du numéro de téléphone dans l'email
+// Mise à jour: Correction pour utiliser exclusivement le service de confirmation
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -16,6 +17,23 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
   try {
     console.log("==== ENVOI EMAIL DE CONFIRMATION UNIQUEMENT ====");
     console.log("Service de confirmation exclusif:", CONFIRMATION_EMAILJS_SERVICE_ID);
+    console.log("Template de confirmation exclusif:", CONFIRMATION_TEMPLATE_ID);
+    
+    // Vérification améliorée de l'email
+    if (!participantData || !participantData.email) {
+      console.error("Données du participant ou email manquants pour la confirmation");
+      return false;
+    }
+    
+    // Traitement amélioré de l'email
+    const email = participantData.email.trim();
+    console.log("Email utilisé pour l'envoi de confirmation (après trim):", email);
+    
+    // Vérification supplémentaire pour éviter l'erreur "recipient address is empty"
+    if (!email || email === '') {
+      console.error("Email vide après trim() pour la confirmation");
+      return false;
+    }
     
     const appUrl = window.location.origin;
     const confirmationPageUrl = `${appUrl}/confirmation/${qrCodeId}?type=qr&pid=${participantData.id}`;
@@ -27,7 +45,7 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
     
     const templateParams = {
-      to_email: participantData.email.trim(),
+      to_email: email, // Email du participant uniquement
       prenom: participantData.first_name,
       nom: participantData.last_name,
       participant_name: `${participantData.first_name} ${participantData.last_name}`,
