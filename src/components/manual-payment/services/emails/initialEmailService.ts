@@ -9,6 +9,7 @@ import {
   ADMIN_NOTIFICATION_TEMPLATE_ID,
   PAYMENT_AMOUNT,
   EVENT_LOCATION,
+  ADMIN_EMAIL
 } from "../../config";
 
 /**
@@ -25,6 +26,13 @@ export const sendAdminNotification = async (
 ) => {
   try {
     console.log("Envoi de notification à l'administrateur pour nouveau paiement...");
+    
+    // Si l'email administrateur est vide, ne pas envoyer d'email
+    if (!adminEmail || adminEmail.trim() === '') {
+      console.log("Email administrateur non défini. Notification admin non envoyée.");
+      return true; // On considère comme réussi pour ne pas bloquer le processus
+    }
+    
     console.log("Service pour emails INITIAUX UNIQUEMENT:", EMAILJS_SERVICE_ID);
     
     const validation = validateEmailData(adminEmail, participantData);
@@ -57,6 +65,7 @@ export const sendAdminNotification = async (
       nom: participantData.last_name,
     };
 
+    // IMPORTANT: N'utilise que le template ADMIN_NOTIFICATION_TEMPLATE_ID pour l'admin
     const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
       ADMIN_NOTIFICATION_TEMPLATE_ID,
@@ -91,7 +100,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
     
     const templateParams: EmailTemplateParams = {
-      to_email: email,
+      to_email: email, // UNIQUEMENT l'email du participant
       to_name: `${participantData.first_name} ${participantData.last_name}`,
       from_name: "IFTAR 2024",
       prenom: participantData.first_name,
@@ -109,6 +118,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
+    // IMPORTANT: N'utilise que le template PARTICIPANT_INITIAL_TEMPLATE_ID pour le participant
     const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
       PARTICIPANT_INITIAL_TEMPLATE_ID,
@@ -123,4 +133,3 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     return false;
   }
 };
-
