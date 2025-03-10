@@ -2,6 +2,7 @@
 // Service d'envoi d'emails pour la validation des paiements
 // Mise à jour: Séparation complète des services d'envoi
 // Mise à jour: Un seul type d'email par action
+// Mise à jour: Ajout du statut de membre et du numéro de téléphone dans l'email
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -22,11 +23,16 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedConfirmationUrl}&qzone=2`;
     const receiptUrl = `${appUrl}/receipt/${participantData.id}`;
     
+    // Formatage du statut de membre
+    const memberStatus = participantData.is_member ? "Membre" : "Non membre";
+    
     const templateParams = {
       to_email: participantData.email.trim(),
       prenom: participantData.first_name,
       nom: participantData.last_name,
       participant_name: `${participantData.first_name} ${participantData.last_name}`,
+      participant_phone: participantData.contact_number || "Non disponible",
+      status: memberStatus, // Statut de membre (Membre ou Non membre)
       qr_code_url: qrCodeImageUrl,
       confirmation_url: confirmationPageUrl,
       receipt_url: receiptUrl,
