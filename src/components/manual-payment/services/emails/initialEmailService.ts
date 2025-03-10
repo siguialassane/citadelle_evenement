@@ -34,6 +34,7 @@ export const sendAdminNotification = async (
     }
     
     console.log("Service pour emails INITIAUX UNIQUEMENT:", EMAILJS_SERVICE_ID);
+    console.log("Email administrateur utilisé:", adminEmail);
     
     const validation = validateEmailData(adminEmail, participantData);
     if (!validation.isValid) {
@@ -64,6 +65,13 @@ export const sendAdminNotification = async (
       prenom: participantData.first_name,
       nom: participantData.last_name,
     };
+    
+    // Afficher tous les paramètres envoyés au template admin pour débogage
+    console.log("Paramètres EmailJS pour template_dp1tu2w:", {
+      to_email: templateParams.to_email,
+      participant_name: templateParams.participant_name,
+      participant_email: templateParams.participant_email
+    });
 
     // IMPORTANT: N'utilise que le template ADMIN_NOTIFICATION_TEMPLATE_ID pour l'admin
     const response = await emailjs.send(

@@ -4,13 +4,14 @@
 // Correction: Validation des adresses email avant envoi pour éviter les erreurs 422
 // Mise à jour: Suppression de la référence de transaction
 // Mise à jour: Ne plus utiliser l'email administrateur par défaut
+// Mise à jour: Ajout de logs supplémentaires pour le débogage des emails
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { PAYMENT_AMOUNT } from "./config";
 import { PaymentMethod, Participant, CopyStates } from "./types";
-import { sendParticipantInitialEmail } from "./services/emailService";
+import { sendParticipantInitialEmail, sendAdminNotification } from "./services/emailService";
 import { registerManualPayment } from "./services/paymentService";
 
 export function useManualPayment(participant: Participant) {
@@ -56,8 +57,7 @@ export function useManualPayment(participant: Participant) {
         comments
       );
 
-      // Ne plus envoyer de notification à l'administrateur par email
-      // L'admin se connectera au tableau de bord pour voir les nouveaux paiements
+      console.log("Paiement manuel enregistré avec ID:", manualPayment.id);
 
       // Tenter d'envoyer l'email initial au participant
       const participantEmailSent = await sendParticipantInitialEmail(
