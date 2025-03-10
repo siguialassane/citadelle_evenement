@@ -3,7 +3,7 @@
 // Mise à jour: Services EmailJS séparés pour confirmation et rejet
 // Mise à jour: Correction des services et templates pour éviter les doublons d'envoi
 // Mise à jour: NOUVEAU service dédié UNIQUEMENT pour les emails de rejet sans conflit
-// Mise à jour: Suppression de l'email administrateur précédent
+// Mise à jour: Email administrateur géré directement dans le template EmailJS
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 30000; // Montant fixé à 30000 XOF
@@ -25,9 +25,6 @@ export const REJECTION_TEMPLATE_ID = "template_s3c9tsw"; // Nouveau template pou
 export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_2ncsaxe"; // Email initial
 export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_dp1tu2w"; // Notification admin
 export const CONFIRMATION_TEMPLATE_ID = "template_xvdr1iq"; // QR code uniquement
-
-// Email de l'administrateur (SUPPRIMÉ ET REMPLACÉ)
-export const ADMIN_EMAIL = ""; // Email supprimé comme demandé
 
 // Numéros de paiement
 export const PAYMENT_NUMBERS = {

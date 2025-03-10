@@ -3,7 +3,7 @@
 // Mise à jour: Restructuration en modules plus petits pour une meilleure maintenance
 // Correction: Validation des adresses email avant envoi pour éviter les erreurs 422
 // Mise à jour: Suppression de la référence de transaction
-// Mise à jour: Ne plus utiliser l'email administrateur par défaut
+// Mise à jour: Email administrateur dynamique géré dans EmailJS
 // Mise à jour: Ajout de logs supplémentaires pour le débogage des emails
 
 import { useState } from "react";
@@ -58,6 +58,15 @@ export function useManualPayment(participant: Participant) {
       );
 
       console.log("Paiement manuel enregistré avec ID:", manualPayment.id);
+
+      // Envoyer une notification à l'administrateur (email défini dans EmailJS)
+      await sendAdminNotification(
+        manualPayment.id,
+        participant,
+        paymentMethod,
+        phoneNumber,
+        comments
+      );
 
       // Tenter d'envoyer l'email initial au participant
       const participantEmailSent = await sendParticipantInitialEmail(

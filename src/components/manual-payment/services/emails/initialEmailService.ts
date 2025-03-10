@@ -8,35 +8,26 @@ import {
   PARTICIPANT_INITIAL_TEMPLATE_ID,
   ADMIN_NOTIFICATION_TEMPLATE_ID,
   PAYMENT_AMOUNT,
-  EVENT_LOCATION,
-  ADMIN_EMAIL
+  EVENT_LOCATION
 } from "../../config";
 
 /**
  * Envoie un email à l'administrateur pour notifier d'un nouveau paiement
+ * L'email du destinataire est désormais géré directement dans le template EmailJS
  */
 export const sendAdminNotification = async (
-  adminEmail: string,
   manualPaymentId: string,
   participantData: any,
   paymentMethod: string,
   phoneNumber: string,
-  comments: string,
-  transactionReference: string
+  comments: string
 ) => {
   try {
     console.log("Envoi de notification à l'administrateur pour nouveau paiement...");
-    
-    // Si l'email administrateur est vide, ne pas envoyer d'email
-    if (!adminEmail || adminEmail.trim() === '') {
-      console.log("Email administrateur non défini. Notification admin non envoyée.");
-      return true; // On considère comme réussi pour ne pas bloquer le processus
-    }
-    
     console.log("Service pour emails INITIAUX UNIQUEMENT:", EMAILJS_SERVICE_ID);
-    console.log("Email administrateur utilisé:", adminEmail);
     
-    const validation = validateEmailData(adminEmail, participantData);
+    // Vérification des données du participant
+    const validation = validateEmailData(participantData?.email, participantData);
     if (!validation.isValid) {
       console.error(validation.error);
       return false;
@@ -45,15 +36,16 @@ export const sendAdminNotification = async (
     const appUrl = window.location.origin;
     const validationLink = `${appUrl}/admin/payment-validation/${manualPaymentId}`;
 
+    // Préparation des paramètres pour le template EmailJS
+    // Le destinataire est défini directement dans le template EmailJS
     const templateParams: EmailTemplateParams = {
-      to_email: prepareEmailData(adminEmail),
+      to_email: 'DYNAMIC_ADMIN_EMAIL', // Valeur fictive, sera remplacée par EmailJS
       from_name: "Système d'Inscription IFTAR",
       participant_name: `${participantData.first_name} ${participantData.last_name}`,
       participant_email: participantData.email,
       participant_phone: participantData.contact_number,
       payment_amount: `${PAYMENT_AMOUNT} XOF`,
       payment_method: paymentMethod,
-      transaction_reference: transactionReference,
       payment_phone: phoneNumber,
       comments: comments || "Aucun commentaire",
       payment_id: manualPaymentId,
@@ -66,14 +58,15 @@ export const sendAdminNotification = async (
       nom: participantData.last_name,
     };
     
-    // Afficher tous les paramètres envoyés au template admin pour débogage
+    // Afficher les paramètres envoyés au template admin pour débogage
     console.log("Paramètres EmailJS pour template_dp1tu2w:", {
-      to_email: templateParams.to_email,
       participant_name: templateParams.participant_name,
-      participant_email: templateParams.participant_email
+      participant_email: templateParams.participant_email,
+      payment_id: templateParams.payment_id,
+      validation_link: templateParams.validation_link
     });
 
-    // IMPORTANT: N'utilise que le template ADMIN_NOTIFICATION_TEMPLATE_ID pour l'admin
+    // Envoi de l'email via EmailJS avec le template ADMIN_NOTIFICATION_TEMPLATE_ID
     const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
       ADMIN_NOTIFICATION_TEMPLATE_ID,
