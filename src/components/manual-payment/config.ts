@@ -5,6 +5,7 @@
 // Mise à jour: Nouveaux numéros de paiement et suppression de MTN
 // Mise à jour: Montant modifié à 30000 XOF
 // Mise à jour: Adresse mise à jour avec code plus 8XFG+9H3 pour Google Maps
+// Mise à jour: Ajout du template pour les emails d'échec de paiement
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 30000; // Montant fixé à 30000 XOF
@@ -22,6 +23,7 @@ export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
 export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_2ncsaxe"; // Email initial (en attente)
 export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_dp1tu2w"; // Notification admin initiale
 export const CONFIRMATION_TEMPLATE_ID = "template_xvdr1iq"; // Confirmation avec QR code
+export const REJECTION_TEMPLATE_ID = "template_dwx7qnw"; // Échec de paiement
 
 // Email de l'administrateur
 export const ADMIN_EMAIL = "siguialassane93@gmail.com";

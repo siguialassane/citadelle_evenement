@@ -1,4 +1,3 @@
-
 // Service pour les opérations Supabase liées à la validation des paiements
 // Mise à jour: Correction définitive de l'association du QR code au participant
 // IMPORTANT: Consolidation de la logique des QR codes pour éviter les erreurs
@@ -205,3 +204,30 @@ const formatSinglePayment = (payment: any): Payment => {
     participant: payment.participants
   };
 };
+
+/**
+ * Récupère les détails d'un paiement spécifique
+ */
+export const fetchPaymentDetails = async (paymentId: string) => {
+  try {
+    console.log("Récupération des détails du paiement:", paymentId);
+    
+    const { data: payment, error } = await supabase
+      .from('manual_payments')
+      .select('*')
+      .eq('id', paymentId)
+      .single();
+    
+    if (error) {
+      console.error("Erreur lors de la récupération des détails du paiement:", error);
+      throw error;
+    }
+    
+    console.log("Détails du paiement récupérés:", payment);
+    return payment;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des détails du paiement:", error);
+    throw error;
+  }
+};
+
