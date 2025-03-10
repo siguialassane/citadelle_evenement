@@ -1,6 +1,8 @@
+
 // Ce fichier contient les constantes et configurations pour le paiement manuel
 // Mise à jour: Services EmailJS séparés pour confirmation et rejet
 // Mise à jour: Correction des services et templates pour éviter les doublons d'envoi
+// Mise à jour: NOUVEAU service dédié UNIQUEMENT pour les emails de rejet sans conflit
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 30000; // Montant fixé à 30000 XOF
@@ -13,15 +15,15 @@ export const EMAILJS_PUBLIC_KEY = "pWG3H0YqA-EKu4hqC";
 export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_is5645q";
 export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
 
-// Service UNIQUEMENT pour les emails de rejet
-export const REJECTION_EMAILJS_SERVICE_ID = "service_rm2toad";
-export const REJECTION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
+// Service UNIQUEMENT pour les emails de rejet - NOUVELLES INFORMATIONS
+export const REJECTION_EMAILJS_SERVICE_ID = "service_1gvwp2w";
+export const REJECTION_EMAILJS_PUBLIC_KEY = "wdtFy3bjHd5FNRQLg";
+export const REJECTION_TEMPLATE_ID = "template_s3c9tsw"; // Nouveau template pour le rejet
 
 // Templates pour les différents types d'emails
 export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_2ncsaxe"; // Email initial
 export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_dp1tu2w"; // Notification admin
 export const CONFIRMATION_TEMPLATE_ID = "template_xvdr1iq"; // QR code uniquement
-export const REJECTION_TEMPLATE_ID = "template_dwx7qnw"; // Rejet uniquement
 
 // Email de l'administrateur
 export const ADMIN_EMAIL = "siguialassane93@gmail.com";
