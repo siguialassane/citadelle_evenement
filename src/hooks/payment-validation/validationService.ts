@@ -1,3 +1,4 @@
+
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse } from "./types";
 import { 
@@ -104,9 +105,7 @@ export const rejectPayment = async (paymentId: string): Promise<ValidationRespon
     
     // Récupérer les données du paiement et du participant avant de rejeter
     // pour pouvoir envoyer l'email ensuite
-    const paymentData = await import("./supabaseService").then(module => 
-      module.fetchPaymentDetails(paymentId)
-    );
+    const paymentData = await fetchPaymentDetails(paymentId);
     
     if (!paymentData || !paymentData.participant_id) {
       console.error("Données du paiement introuvables pour l'ID:", paymentId);
@@ -173,6 +172,7 @@ export const rejectPayment = async (paymentId: string): Promise<ValidationRespon
     return { success: false, error: error.message };
   }
 };
+
 /**
  * Récupère les détails d'un paiement spécifique
  */
@@ -180,17 +180,13 @@ export const fetchPaymentDetails = async (paymentId: string) => {
   try {
     console.log("Récupération des détails du paiement:", paymentId);
     
-    const { data: payment, error } = await import("./supabaseService").then(module => 
-      module.supabase
-      .from('manual_payments')
-      .select('*')
-      .eq('id', paymentId)
-      .single()
-    );
+    // Importer la fonction de supabaseService au lieu d'essayer d'accéder à supabase directement
+    const { fetchPaymentById } = await import("./supabaseService");
+    const payment = await fetchPaymentById(paymentId);
     
-    if (error) {
-      console.error("Erreur lors de la récupération des détails du paiement:", error);
-      throw error;
+    if (!payment) {
+      console.error("Paiement non trouvé pour l'ID:", paymentId);
+      throw new Error("Paiement non trouvé");
     }
     
     console.log("Détails du paiement récupérés:", payment);
