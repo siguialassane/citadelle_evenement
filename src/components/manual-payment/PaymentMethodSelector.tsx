@@ -1,6 +1,7 @@
 
 // Ce composant gère la sélection de la méthode de paiement
 // Mise à jour: Augmentation de la taille des images pour une meilleure visibilité
+// Mise à jour: Correction des images inversées entre Wave et Orange Money
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -35,7 +36,7 @@ export function PaymentMethodSelector({
             <div className="text-center">
               <div className="w-24 h-24 mx-auto mb-2">
                 <img 
-                  src="/lovable-uploads/b9ea8b89-890d-460c-b608-1a123b2052a9.png" 
+                  src="/lovable-uploads/860c57aa-e79f-4298-97a8-84c1792cf18f.png" 
                   alt="Orange Money" 
                   className="w-full h-full object-contain"
                 />
@@ -52,7 +53,7 @@ export function PaymentMethodSelector({
             <div className="text-center">
               <div className="w-24 h-24 mx-auto mb-2">
                 <img 
-                  src="/lovable-uploads/b2c951b6-9240-4fd5-86ee-052c25606c40.png" 
+                  src="/lovable-uploads/dad97159-25eb-40ed-9b77-fc76570cf1ee.png" 
                   alt="Moov Money" 
                   className="w-full h-full object-contain"
                 />
@@ -69,7 +70,7 @@ export function PaymentMethodSelector({
             <div className="text-center">
               <div className="w-24 h-24 mx-auto mb-2">
                 <img 
-                  src="/lovable-uploads/860c57aa-e79f-4298-97a8-84c1792cf18f.png" 
+                  src="/lovable-uploads/b9ea8b89-890d-460c-b608-1a123b2052a9.png" 
                   alt="Wave" 
                   className="w-full h-full object-contain"
                 />
@@ -83,3 +84,4 @@ export function PaymentMethodSelector({
     </div>
   );
 }
+
