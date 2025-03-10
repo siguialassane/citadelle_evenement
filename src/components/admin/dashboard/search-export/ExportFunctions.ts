@@ -5,6 +5,62 @@ import jsPDF from "jspdf";
 import { toast } from "@/hooks/use-toast";
 import { type Participant } from "../../../../types/participant";
 
+// Fonction utilitaire pour déterminer le statut de paiement global du participant
+const getPaymentStatus = (participant: Participant): string => {
+  // Vérifier d'abord les paiements standard
+  if (participant.payments && participant.payments.length > 0) {
+    const payment = participant.payments[0];
+    const status = payment.status.toUpperCase();
+    
+    if (["APPROVED", "SUCCESS", "COMPLETED"].includes(status)) {
+      return "Confirmé";
+    } else if (status === "PENDING") {
+      return "En cours";
+    } else if (["FAILED", "CANCELLED", "REJECTED"].includes(status)) {
+      return "Rejeté";
+    } else {
+      return payment.status;
+    }
+  }
+  
+  // Vérifier ensuite les paiements manuels
+  if (participant.manual_payments && participant.manual_payments.length > 0) {
+    const manualPayment = participant.manual_payments[0];
+    const status = manualPayment.status.toLowerCase();
+    
+    if (status === "completed") {
+      return "Confirmé";
+    } else if (status === "pending") {
+      return "En attente";
+    } else if (status === "rejected") {
+      return "Rejeté";
+    } else {
+      return manualPayment.status;
+    }
+  }
+  
+  // Aucun paiement trouvé
+  return "Non payé";
+};
+
+// Fonction utilitaire pour obtenir le montant du paiement
+const getPaymentAmount = (participant: Participant): string => {
+  // Vérifier d'abord les paiements standard
+  if (participant.payments && participant.payments.length > 0) {
+    const payment = participant.payments[0];
+    return `${payment.amount} ${payment.currency || 'XOF'}`;
+  }
+  
+  // Vérifier ensuite les paiements manuels
+  if (participant.manual_payments && participant.manual_payments.length > 0) {
+    const manualPayment = participant.manual_payments[0];
+    return `${manualPayment.amount} XOF`;
+  }
+  
+  // Aucun paiement trouvé
+  return "N/A";
+};
+
 export const exportToCSV = (participants: Participant[]) => {
   const headers = [
     "Nom", 
@@ -26,8 +82,8 @@ export const exportToCSV = (participants: Participant[]) => {
     participant.is_member ? "Oui" : "Non",
     participant.check_in_status ? "Oui" : "Non",
     new Date(participant.created_at).toLocaleDateString(),
-    participant.payments?.[0]?.status || "Non payé",
-    participant.payments?.[0]?.amount ? `${participant.payments[0].amount} ${participant.payments[0].currency || 'XOF'}` : "N/A"
+    getPaymentStatus(participant),
+    getPaymentAmount(participant)
   ]);
   
   const csvContent = [
@@ -161,16 +217,9 @@ export const exportToPDF = async (
       pdf.text(new Date(participant.created_at).toLocaleDateString('fr-FR'), xPosition + 2, yPosition + 5);
       xPosition += columnWidths[4];
       
-      const paymentStatus = participant.payments?.[0]?.status?.toUpperCase() || "NON PAYÉ";
-      pdf.text(
-        paymentStatus === "SUCCESS" || paymentStatus === "APPROVED" 
-          ? "Confirmé" 
-          : paymentStatus === "PENDING" 
-            ? "En cours" 
-            : "Non payé", 
-        xPosition + 2, 
-        yPosition + 5
-      );
+      // Utilisation de la fonction utilitaire pour obtenir le statut de paiement formaté
+      const paymentStatus = getPaymentStatus(participant);
+      pdf.text(paymentStatus, xPosition + 2, yPosition + 5);
       
       drawRowLines(yPosition + lineHeight);
       
