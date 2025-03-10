@@ -1,6 +1,6 @@
 
 // Ce fichier contient les constantes et configurations pour le paiement manuel
-// Mise à jour: Suppression du template de notification admin après confirmation
+// Mise à jour: Montant corrigé à 30000 XOF dans tous les services
 // Correction: Paramètres alignés avec les templates utilisés
 // Mise à jour: Nouveaux numéros de paiement et suppression de MTN
 // Mise à jour: Montant modifié à 30000 XOF

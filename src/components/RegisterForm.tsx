@@ -1,10 +1,6 @@
-
 // Ce fichier contient le formulaire d'inscription pour les participants
 // Modifications:
-// - Ajustement des couleurs pour correspondre au thème principal
-// - Ajout du logo au bas du formulaire
-// - Conservation de toutes les fonctionnalités existantes
-// - Amélioration du style visuel
+// - Correction du format du numéro de téléphone pour imposer exactement 10 chiffres après +225
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -21,14 +17,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import EventLogo from "./EventLogo";
 
-// Définition du schéma de validation
+// Définition du schéma de validation amélioré
 const formSchema = z.object({
   firstName: z.string().min(2, { message: "Le prénom doit contenir au moins 2 caractères" }),
   lastName: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères" }),
   contactNumber: z
     .string()
-    .regex(/^\+225[ ]?[0-9]{8,10}$/, { 
-      message: "Le numéro doit commencer par +225 suivi de 8 à 10 chiffres" 
+    .regex(/^\+225[0-9]{10}$/, { 
+      message: "Le numéro doit être au format +225 suivi de 10 chiffres exactement" 
     }),
   email: z.string().email({ message: "Adresse email invalide" }),
   isMember: z.boolean().default(false),
@@ -47,7 +43,7 @@ export function RegisterForm() {
     defaultValues: {
       firstName: "",
       lastName: "",
-      contactNumber: "+225 ",
+      contactNumber: "+225",
       email: "",
       isMember: false,
     },
@@ -99,25 +95,30 @@ export function RegisterForm() {
     }
   }
 
-  // Gérer le format du numéro de téléphone avec plus de flexibilité
+  // Gérer le format du numéro de téléphone avec plus de précision
   const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     
     // S'assurer que le préfixe +225 est toujours présent
     if (!value.startsWith("+225")) {
-      value = "+225 ";
-    } else {
-      // Extraire tous les chiffres après le code pays
-      const digits = value.replace(/\D/g, "").substring(3);
-      // Limiter à 10 chiffres maximum et reformater
-      value = `+225 ${digits.substring(0, 10)}`;
+      value = "+225";
     }
     
-    // Définir la valeur dans le formulaire
-    form.setValue("contactNumber", value);
+    // Extraire uniquement les chiffres après le +225
+    const prefix = "+225";
+    const afterPrefix = value.substring(prefix.length).replace(/\D/g, "");
+    
+    // Limiter à exactement 10 chiffres après le préfixe
+    const cleanDigits = afterPrefix.substring(0, 10);
+    
+    // Reconstruire le numéro avec le préfixe
+    const formattedNumber = `${prefix}${cleanDigits}`;
+    
+    // Mettre à jour le formulaire
+    form.setValue("contactNumber", formattedNumber);
     
     // Log pour debug
-    console.log("Numéro formaté pour l'UI:", value);
+    console.log("Numéro formaté:", formattedNumber);
   };
 
   return (
@@ -175,13 +176,16 @@ export function RegisterForm() {
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600 h-4 w-4" />
                       <Input 
                         className="pl-10 border-green-200 focus:border-green-400 focus:ring-green-400" 
-                        placeholder="+225 0000000000" 
+                        placeholder="+225" 
                         {...field} 
                         onChange={handlePhoneInput}
                       />
                     </div>
                   </FormControl>
                   <FormMessage />
+                  <FormDescription className="text-xs text-gray-500">
+                    Format: +225 suivi de 10 chiffres
+                  </FormDescription>
                 </FormItem>
               )}
             />

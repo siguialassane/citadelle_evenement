@@ -1,13 +1,14 @@
 
 // Service pour l'envoi d'emails de confirmation après validation des paiements
-// Mise à jour: Suppression de l'envoi d'email à l'administrateur après validation
+// Mise à jour: Correction du montant affiché à 30000 XOF
 // Amélioration des URL de QR code avec paramètres plus robustes
 
 import emailjs from '@emailjs/browser';
 import { 
   CONFIRMATION_EMAILJS_SERVICE_ID, 
   CONFIRMATION_EMAILJS_PUBLIC_KEY,
-  CONFIRMATION_TEMPLATE_ID
+  CONFIRMATION_TEMPLATE_ID,
+  PAYMENT_AMOUNT
 } from "@/components/manual-payment/config";
 
 /**
@@ -48,6 +49,7 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     console.log("URL de l'image QR code:", qrCodeImageUrl);
     console.log("URL du reçu:", receiptUrl);
     console.log("Email du participant:", participantData.email);
+    console.log("Montant corrigé du paiement:", `${PAYMENT_AMOUNT} XOF`);
     
     // Déterminer le statut du participant
     const status = participantData.is_member ? "Membre" : "Non-membre";
@@ -60,7 +62,7 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
       participant_name: `${participantData.first_name} ${participantData.last_name}`,
       participant_phone: participantData.contact_number,
       from_name: "IFTAR 2024",
-      payment_amount: "1000 XOF",
+      payment_amount: `${PAYMENT_AMOUNT} XOF`, // Montant corrigé
       status: status,
       qr_code_url: qrCodeImageUrl, // URL de l'image QR code pour la balise <img>
       confirmation_url: confirmationPageUrl, // URL directe pour accéder à la page de confirmation

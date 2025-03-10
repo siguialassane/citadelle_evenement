@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 type PaymentFormProps = {
   phoneNumber: string;
@@ -23,8 +24,47 @@ export function PaymentForm({
   isProcessing,
   handleSubmit
 }: PaymentFormProps) {
+  // État local pour afficher les erreurs de validation
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  
+  // Fonction pour valider le format du numéro de téléphone
+  const validatePhoneNumber = (value: string) => {
+    // Retirer tout ce qui n'est pas un chiffre
+    const digits = value.replace(/\D/g, "");
+    
+    // Vérifier si le nombre de chiffres est exact (10)
+    if (digits.length !== 10) {
+      setPhoneError("Le numéro doit contenir exactement 10 chiffres");
+      return false;
+    } else {
+      setPhoneError(null);
+      return true;
+    }
+  };
+  
+  // Gérer le changement du numéro de téléphone
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Limiter à 10 chiffres maximum
+    const input = e.target.value;
+    const digits = input.replace(/\D/g, "");
+    const formatted = digits.substring(0, 10);
+    
+    setPhoneNumber(formatted);
+    validatePhoneNumber(formatted);
+  };
+  
+  // Gérer la soumission du formulaire avec validation
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Valider le numéro avant de soumettre
+    if (validatePhoneNumber(phoneNumber)) {
+      handleSubmit(e);
+    }
+  };
+  
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+    <form onSubmit={handleFormSubmit} className="bg-gray-50 p-6 rounded-lg border border-gray-200">
       <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
         <span className="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center mr-2 text-sm">3</span>
         Soumettez votre paiement
@@ -41,10 +81,16 @@ export function PaymentForm({
             type="text"
             placeholder="Ex: 0701234567"
             value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
+            onChange={handlePhoneChange}
             required
-            className="w-full"
+            className={`w-full ${phoneError ? 'border-red-500' : ''}`}
           />
+          {phoneError && (
+            <p className="text-sm text-red-500 mt-1">{phoneError}</p>
+          )}
+          <p className="text-xs text-gray-500 mt-1">
+            Entrez les 10 chiffres sans le préfixe +225
+          </p>
         </div>
         
         {/* Commentaires (optionnel) */}
@@ -66,7 +112,7 @@ export function PaymentForm({
         <Button 
           type="submit" 
           className="w-full"
-          disabled={isProcessing}
+          disabled={isProcessing || !!phoneError}
         >
           {isProcessing ? (
             <>

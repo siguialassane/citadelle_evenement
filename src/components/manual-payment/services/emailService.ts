@@ -1,6 +1,6 @@
 
 // Ce service gère l'envoi des emails initiaux dans l'application
-// Mise à jour: Amélioration de la génération des URL pour les QR codes
+// Mise à jour: Correction du montant affiché dans les emails à 30000 XOF
 // Correction: Ajout de paramètres supplémentaires pour garantir la redirection correcte
 
 import emailjs from '@emailjs/browser';
@@ -8,7 +8,8 @@ import {
   EMAILJS_SERVICE_ID, 
   EMAILJS_PUBLIC_KEY,
   PARTICIPANT_INITIAL_TEMPLATE_ID,
-  ADMIN_NOTIFICATION_TEMPLATE_ID
+  ADMIN_NOTIFICATION_TEMPLATE_ID,
+  PAYMENT_AMOUNT
 } from "../config";
 
 /**
@@ -38,7 +39,7 @@ export const sendAdminNotification = async (
       participant_name: `${participantData.first_name} ${participantData.last_name}`,
       participant_email: participantData.email,
       participant_phone: participantData.contact_number,
-      payment_amount: `${1000} XOF`, // Utilisation de la constante directement
+      payment_amount: `${PAYMENT_AMOUNT} XOF`, // Utilisation de la constante de configuration
       payment_method: paymentMethod,
       transaction_reference: transactionReference,
       payment_phone: phoneNumber,
@@ -56,6 +57,9 @@ export const sendAdminNotification = async (
     console.log("Template admin initial:", ADMIN_NOTIFICATION_TEMPLATE_ID);
     console.log("Clé publique générale:", EMAILJS_PUBLIC_KEY);
     console.log("URL de validation admin:", validationLink);
+    console.log("Montant du paiement:", `${PAYMENT_AMOUNT} XOF`);
+    console.log("Numéro utilisé pour le paiement:", phoneNumber);
+    console.log("Date courante:", currentDate);
 
     // Envoyer l'email à l'administrateur
     const response = await emailjs.send(
@@ -107,7 +111,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       prenom: participantData.first_name,
       nom: participantData.last_name,
       payment_method: paymentMethod,
-      payment_amount: `${1000} XOF`,
+      payment_amount: `${PAYMENT_AMOUNT} XOF`, // Utilisation de la constante de configuration
       payment_phone: phoneNumber,
       app_url: appUrl,
       pending_url: pendingUrl,
@@ -120,6 +124,8 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     console.log("Clé publique générale:", EMAILJS_PUBLIC_KEY);
     console.log("Email du destinataire:", email);
     console.log("URL page pending:", pendingUrl);
+    console.log("Montant du paiement:", `${PAYMENT_AMOUNT} XOF`);
+    console.log("Numéro utilisé pour le paiement:", phoneNumber);
 
     // Envoi avec EmailJS - service général
     const participantResponse = await emailjs.send(
