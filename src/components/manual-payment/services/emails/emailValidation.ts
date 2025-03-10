@@ -1,5 +1,7 @@
 
 // Utilitaires de validation d'email
+import { EmailValidationResult } from './types';
+
 export const validateEmailData = (email: string | undefined, participantData: any): EmailValidationResult => {
   if (!participantData) {
     return { isValid: false, error: "Données du participant manquantes" };
@@ -20,4 +22,3 @@ export const validateEmailData = (email: string | undefined, participantData: an
 export const prepareEmailData = (email: string): string => {
   return email.trim();
 };
-
