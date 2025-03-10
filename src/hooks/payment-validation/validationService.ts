@@ -4,6 +4,7 @@
 // Mise à jour: Ajout de vérifications supplémentaires pour éviter les envois d'emails en double
 // Mise à jour: Refactorisation des fonctions pour plus de clarté et de fiabilité
 // Mise à jour: Séparation claire entre les processus de validation et de rejet
+// Mise à jour: Utilisation des services EmailJS dédiés pour chaque type d'email
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse } from "./types";
@@ -77,17 +78,20 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
       throw new Error("Nom du participant incomplet");
     }
 
-    // Envoi de l'email de confirmation APRÈS avoir tout validé
-    console.log("=== PRÉPARATION DE L'ENVOI D'EMAIL DE CONFIRMATION ===");
-    console.log("Le lien Google Maps sera inclus dans l'email de confirmation");
+    // Envoi de l'email de confirmation AVEC DELAY pour éviter tout conflit
+    console.log("=== PRÉPARATION DE L'ENVOI D'EMAIL DE CONFIRMATION AVEC SERVICE DÉDIÉ ===");
+    console.log("Utilisation du service CONFIRMATION_EMAILJS_SERVICE_ID séparé du service de rejet");
     
     try {
+      // Petit délai pour s'assurer que la transaction a bien été enregistrée
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Envoi de l'email de confirmation avec QR code et lien Google Maps
       // IMPORTANT: Utilisation du service dédié aux confirmations seulement
       const emailSuccess = await sendConfirmationEmail(participantData, qrCodeId);
       
       if (emailSuccess) {
-        console.log("✅ Email de confirmation envoyé avec succès");
+        console.log("✅ Email de confirmation envoyé avec succès via le service dédié aux confirmations");
       } else {
         console.error("❌ L'email de confirmation n'a pas pu être envoyé");
         toast({
@@ -184,8 +188,11 @@ export const rejectPayment = async (paymentId: string): Promise<ValidationRespon
       throw new Error("Données du participant introuvables");
     }
     
-    // Envoyer l'email d'échec au participant
-    // IMPORTANT: Utilisation du service dédié aux rejets seulement
+    // Petit délai pour s'assurer que la transaction a bien été enregistrée
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Envoyer l'email d'échec au participant avec le NOUVEAU service dédié
+    // IMPORTANT: Utilisation du service REJECTION_EMAILJS_SERVICE_ID dédié aux rejets seulement
     try {
       const emailSuccess = await sendPaymentRejectionEmail(
         participantData,
@@ -193,7 +200,7 @@ export const rejectPayment = async (paymentId: string): Promise<ValidationRespon
       );
       
       if (emailSuccess) {
-        console.log("✅ Email d'échec envoyé avec succès au participant");
+        console.log("✅ Email d'échec envoyé avec succès au participant via le service dédié aux rejets");
       } else {
         console.error("❌ L'email d'échec n'a pas pu être envoyé");
         toast({

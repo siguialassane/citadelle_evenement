@@ -5,6 +5,7 @@
 // Mise à jour: Ajout du lien Google Maps pour la localisation de l'événement
 // Mise à jour: Séparation claire entre les emails initiaux et les emails de rejet
 // Mise à jour: Utilisation de services dédiés pour chaque type d'email
+// Mise à jour: NOUVEAU SERVICE dédié exclusivement aux emails de rejet
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -15,8 +16,8 @@ import {
   REJECTION_TEMPLATE_ID,
   PAYMENT_AMOUNT,
   EVENT_LOCATION,
-  CONFIRMATION_EMAILJS_SERVICE_ID,
-  CONFIRMATION_EMAILJS_PUBLIC_KEY
+  REJECTION_EMAILJS_SERVICE_ID,
+  REJECTION_EMAILJS_PUBLIC_KEY
 } from "../config";
 
 /**
@@ -157,12 +158,12 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
 
 /**
  * Envoie un email d'échec au participant pour l'informer que son paiement a été rejeté
- * Utilise UNIQUEMENT le service dédié aux emails de rejet
+ * Utilise EXCLUSIVEMENT le service dédié aux emails de rejet
  */
 export const sendPaymentRejectionEmail = async (participantData: any, rejectionReason: string = '') => {
   try {
     console.log("===== PRÉPARATION EMAIL D'ÉCHEC DE PAIEMENT AU PARTICIPANT =====");
-    console.log("Utilisation EXCLUSIVE du service pour emails de REJET:", CONFIRMATION_EMAILJS_SERVICE_ID);
+    console.log("Utilisation EXCLUSIVE du nouveau service pour emails de REJET:", REJECTION_EMAILJS_SERVICE_ID);
     
     // Vérification améliorée de l'email
     if (!participantData || !participantData.email) {
@@ -197,20 +198,20 @@ export const sendPaymentRejectionEmail = async (participantData: any, rejectionR
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    console.log("Envoi de l'email d'échec au participant - service dédié au REJET...");
-    console.log("Service EmailJS pour rejet:", CONFIRMATION_EMAILJS_SERVICE_ID);
+    console.log("Envoi de l'email d'échec au participant - NOUVEAU service dédié au REJET...");
+    console.log("Service EmailJS pour rejet:", REJECTION_EMAILJS_SERVICE_ID);
     console.log("Template échec de paiement:", REJECTION_TEMPLATE_ID);
-    console.log("Clé publique pour rejet:", CONFIRMATION_EMAILJS_PUBLIC_KEY);
+    console.log("Clé publique pour rejet:", REJECTION_EMAILJS_PUBLIC_KEY);
 
-    // Utilisation du service et de la clé spécifiés UNIQUEMENT pour les emails de rejet
+    // Utilisation du NOUVEAU service dédié UNIQUEMENT pour les emails de rejet
     const rejectionResponse = await emailjs.send(
-      CONFIRMATION_EMAILJS_SERVICE_ID, // Service dédié aux emails de REJET/CONFIRMATION
+      REJECTION_EMAILJS_SERVICE_ID, // NOUVEAU service dédié aux emails de REJET uniquement
       REJECTION_TEMPLATE_ID,
       participantTemplateParams,
-      CONFIRMATION_EMAILJS_PUBLIC_KEY
+      REJECTION_EMAILJS_PUBLIC_KEY
     );
 
-    console.log("Email d'échec au participant envoyé avec succès:", rejectionResponse);
+    console.log("Email d'échec au participant envoyé avec succès via le NOUVEAU service:", rejectionResponse);
     return true;
   } catch (emailError) {
     console.error("Erreur lors de l'envoi de l'email d'échec au participant:", emailError);

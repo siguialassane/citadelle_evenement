@@ -3,7 +3,8 @@
 // Mise à jour: Correction du montant affiché à 30000 XOF
 // Amélioration des URL de QR code avec paramètres plus robustes
 // Mise à jour: Ajout du lien Google Maps pour la localisation de l'événement
-// Mise à jour: Séparation claire du service de confirmation des autres services d'envoi d'emails
+// Mise à jour: Service dédié UNIQUEMENT pour les emails de CONFIRMATION
+// Mise à jour: Séparation complète des services d'envoi d'emails pour éviter les doubles envois
 
 import emailjs from '@emailjs/browser';
 import { 

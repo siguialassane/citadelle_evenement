@@ -4,6 +4,7 @@
 // Amélioration: Meilleure gestion des erreurs et organisation du code
 // Mise à jour: Ajout de la gestion des paiements déjà traités
 // Mise à jour: Correction de la séparation des services d'envoi d'emails
+// Mise à jour: Ajout de délais pour éviter les conflits entre les emails
 
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -138,7 +139,7 @@ export const usePaymentValidation = (paymentId?: string) => {
       setState(prev => ({ ...prev, isValidating: true }));
 
       console.log("Début du processus de validation avec services d'email SÉPARÉS");
-      console.log("Rappel: les emails de confirmation et rejet utilisent des services DIFFÉRENTS");
+      console.log("Configuration: Service CONFIRMATION_EMAILJS_SERVICE_ID pour la confirmation UNIQUEMENT");
 
       const paymentToValidate = state.currentPayment || 
                                state.payments.find(p => p.id === paymentId);
@@ -149,6 +150,29 @@ export const usePaymentValidation = (paymentId?: string) => {
           title: "Erreur",
           description: "Paiement non trouvé",
           variant: "destructive",
+        });
+        setState(prev => ({ ...prev, isValidating: false }));
+        return false;
+      }
+      
+      // IMPORTANT: Vérifier le statut du paiement avant de continuer
+      if (paymentToValidate.status === 'completed') {
+        console.log("Ce paiement a déjà été validé, annulation du processus");
+        toast({
+          title: "Information",
+          description: "Ce paiement a déjà été validé précédemment.",
+          variant: "default",
+        });
+        setState(prev => ({ ...prev, isValidating: false }));
+        return true;
+      }
+      
+      if (paymentToValidate.status === 'rejected') {
+        console.log("Ce paiement a déjà été rejeté, impossible de le valider");
+        toast({
+          title: "Information",
+          description: "Ce paiement a déjà été rejeté précédemment et ne peut pas être validé.",
+          variant: "default",
         });
         setState(prev => ({ ...prev, isValidating: false }));
         return false;
@@ -199,7 +223,44 @@ export const usePaymentValidation = (paymentId?: string) => {
       setState(prev => ({ ...prev, isRejecting: true }));
 
       console.log("Début du processus de rejet avec services d'email SÉPARÉS");
-      console.log("Rappel: les emails de confirmation et rejet utilisent des services DIFFÉRENTS");
+      console.log("Configuration: NOUVEAU service REJECTION_EMAILJS_SERVICE_ID pour le rejet UNIQUEMENT");
+
+      // IMPORTANT: Vérifier le statut du paiement avant de continuer
+      const paymentToReject = state.currentPayment || 
+                             state.payments.find(p => p.id === paymentId);
+      
+      if (!paymentToReject) {
+        console.error("Paiement non trouvé pour rejet:", paymentId);
+        toast({
+          title: "Erreur",
+          description: "Paiement non trouvé",
+          variant: "destructive",
+        });
+        setState(prev => ({ ...prev, isRejecting: false }));
+        return false;
+      }
+      
+      if (paymentToReject.status === 'completed') {
+        console.log("Ce paiement a déjà été validé, impossible de le rejeter");
+        toast({
+          title: "Information",
+          description: "Ce paiement a déjà été validé précédemment et ne peut pas être rejeté.",
+          variant: "default",
+        });
+        setState(prev => ({ ...prev, isRejecting: false }));
+        return false;
+      }
+      
+      if (paymentToReject.status === 'rejected') {
+        console.log("Ce paiement a déjà été rejeté, annulation du processus");
+        toast({
+          title: "Information",
+          description: "Ce paiement a déjà été rejeté précédemment.",
+          variant: "default",
+        });
+        setState(prev => ({ ...prev, isRejecting: false }));
+        return true;
+      }
 
       const result = await rejectPayment(paymentId);
 
