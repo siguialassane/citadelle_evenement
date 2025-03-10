@@ -1,9 +1,3 @@
-// Service pour la validation des paiements
-// Mise à jour: Suppression de l'envoi d'email à l'administrateur après validation
-// Amélioration de la journalisation pour le débogage des emails
-// Mise à jour: Ajout du lien Google Maps dans l'email de confirmation
-// Mise à jour: Ajout de l'envoi d'email d'échec pour les paiements rejetés
-
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse } from "./types";
 import { 
@@ -177,5 +171,32 @@ export const rejectPayment = async (paymentId: string): Promise<ValidationRespon
       variant: "destructive",
     });
     return { success: false, error: error.message };
+  }
+};
+/**
+ * Récupère les détails d'un paiement spécifique
+ */
+export const fetchPaymentDetails = async (paymentId: string) => {
+  try {
+    console.log("Récupération des détails du paiement:", paymentId);
+    
+    const { data: payment, error } = await import("./supabaseService").then(module => 
+      module.supabase
+      .from('manual_payments')
+      .select('*')
+      .eq('id', paymentId)
+      .single()
+    );
+    
+    if (error) {
+      console.error("Erreur lors de la récupération des détails du paiement:", error);
+      throw error;
+    }
+    
+    console.log("Détails du paiement récupérés:", payment);
+    return payment;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des détails du paiement:", error);
+    throw error;
   }
 };
