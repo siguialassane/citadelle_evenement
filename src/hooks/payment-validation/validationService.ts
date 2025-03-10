@@ -1,10 +1,6 @@
-
 // Service pour la validation des paiements manuels
-// Mise à jour: Correction du problème d'envoi simultané des emails de confirmation et de rejet
-// Mise à jour: Ajout de vérifications supplémentaires pour éviter les envois d'emails en double
-// Mise à jour: Refactorisation des fonctions pour plus de clarté et de fiabilité
-// Mise à jour: Séparation claire entre les processus de validation et de rejet
-// Mise à jour: Utilisation des services EmailJS dédiés pour chaque type d'email
+// Mise à jour: Séparation complète des chemins d'envoi d'emails
+// Mise à jour: Services EmailJS dédiés pour chaque type d'email
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse } from "./types";
@@ -17,220 +13,124 @@ import {
 import { sendConfirmationEmail } from "./emailService";
 import { sendPaymentRejectionEmail } from "@/components/manual-payment/services/emailService";
 
-// Valide un paiement et envoie les emails nécessaires
 export const validatePayment = async (paymentId: string, paymentData: any): Promise<ValidationResponse> => {
   try {
-    console.log("==== DÉBUT DU PROCESSUS DE VALIDATION DE PAIEMENT ====");
-    console.log(`Validation du paiement ID: ${paymentId}`);
+    console.log("==== DÉBUT DU PROCESSUS DE VALIDATION UNIQUEMENT ====");
+    console.log("Service EmailJS pour confirmation:", "service_is5645q");
     
     if (!paymentData) {
-      console.error("Données de paiement introuvables pour l'ID:", paymentId);
       throw new Error("Données de paiement manquantes");
     }
     
-    // Vérifier d'abord si le paiement n'est pas déjà validé ou rejeté
-    // pour éviter le double traitement
+    // Vérifications du statut
     if (paymentData.status === 'completed') {
-      console.log("Ce paiement a déjà été validé, annulation du processus");
       toast({
-        title: "Information",
+        title: "Déjà validé",
         description: "Ce paiement a déjà été validé précédemment.",
-        variant: "default",
       });
       return { success: true, alreadyProcessed: true };
     }
     
     if (paymentData.status === 'rejected') {
-      console.log("Ce paiement a déjà été rejeté, annulation du processus");
       toast({
-        title: "Information",
-        description: "Ce paiement a déjà été rejeté précédemment et ne peut pas être validé.",
-        variant: "default",
+        title: "Impossible",
+        description: "Ce paiement a déjà été rejeté et ne peut pas être validé.",
       });
-      return { success: false, alreadyProcessed: true, error: "Paiement déjà rejeté" };
+      return { success: false, alreadyProcessed: true };
     }
     
-    // IMPORTANT: Mettre à jour le statut du paiement AVANT d'envoyer les emails
-    // pour éviter les doublons si l'envoi d'email échoue et que l'admin réessaie
+    // Mise à jour de la base de données AVANT l'envoi d'email
     const { qrCodeId, participantId } = await validatePaymentInDatabase(paymentId);
-    
-    // Récupérer les données complètes du participant
     const participantData = await fetchParticipantData(participantId);
     
-    console.log("Données du participant récupérées:", participantData);
-    console.log("Email du participant:", participantData.email);
-    console.log("Téléphone du participant:", participantData.contact_number);
-    console.log("Statut d'adhésion:", participantData.is_member ? "Membre" : "Non-membre");
-
-    // Vérification approfondie des données du participant
-    if (!participantData) {
-      console.error("Données du participant introuvables");
-      throw new Error("Données du participant introuvables");
+    if (!participantData?.email) {
+      throw new Error("Données du participant incomplètes");
     }
 
-    if (!participantData.email) {
-      console.error("Email du participant manquant");
-      throw new Error("Email du participant manquant");
-    }
-
-    if (!participantData.first_name || !participantData.last_name) {
-      console.error("Nom du participant incomplet");
-      throw new Error("Nom du participant incomplet");
-    }
-
-    // Envoi de l'email de confirmation AVEC DELAY pour éviter tout conflit
-    console.log("=== PRÉPARATION DE L'ENVOI D'EMAIL DE CONFIRMATION AVEC SERVICE DÉDIÉ ===");
-    console.log("Utilisation du service CONFIRMATION_EMAILJS_SERVICE_ID séparé du service de rejet");
+    // UNIQUEMENT envoi de l'email de confirmation
+    const emailSuccess = await sendConfirmationEmail(participantData, qrCodeId);
     
-    try {
-      // Petit délai pour s'assurer que la transaction a bien été enregistrée
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Envoi de l'email de confirmation avec QR code et lien Google Maps
-      // IMPORTANT: Utilisation du service dédié aux confirmations seulement
-      const emailSuccess = await sendConfirmationEmail(participantData, qrCodeId);
-      
-      if (emailSuccess) {
-        console.log("✅ Email de confirmation envoyé avec succès via le service dédié aux confirmations");
-      } else {
-        console.error("❌ L'email de confirmation n'a pas pu être envoyé");
-        toast({
-          title: "Attention",
-          description: "Le paiement a été validé mais l'envoi de l'email de confirmation a échoué. Veuillez contacter le participant manuellement.",
-          variant: "default",
-        });
-      }
-    } catch (emailError: any) {
-      console.error("Erreur lors de l'envoi de l'email de confirmation:", emailError);
-      console.error("Détails de l'erreur:", emailError);
+    if (!emailSuccess) {
+      console.error("Erreur lors de l'envoi de l'email de confirmation");
       toast({
         title: "Attention",
-        description: "Le paiement a été validé mais l'envoi de l'email de confirmation a échoué.",
-        variant: "destructive",
+        description: "Paiement validé mais l'email n'a pas pu être envoyé.",
       });
     }
 
-    // Notification de succès à l'admin
     toast({
-      title: "Paiement validé avec succès",
-      description: `Un email de confirmation a été envoyé à ${participantData.email}`,
-      variant: "default",
+      title: "Validation réussie",
+      description: "Le participant va recevoir un email de confirmation.",
     });
     
-    console.log("==== FIN DU PROCESSUS DE VALIDATION DE PAIEMENT ====");
     return { success: true };
 
   } catch (error: any) {
-    console.error("Erreur lors de la validation du paiement:", error);
-    console.error("Détails de l'erreur:", error);
-    toast({
-      title: "Erreur",
-      description: error.message || "Une erreur est survenue lors de la validation du paiement",
-      variant: "destructive",
-    });
-    return { success: false, error: error.message };
+    console.error("Erreur de validation:", error);
+    throw error;
   }
 };
 
-// Rejette un paiement et envoie un email d'échec au participant
 export const rejectPayment = async (paymentId: string): Promise<ValidationResponse> => {
   try {
-    console.log("==== DÉBUT DU PROCESSUS DE REJET DE PAIEMENT ====");
-    console.log(`Rejet du paiement ID: ${paymentId}`);
+    console.log("==== DÉBUT DU PROCESSUS DE REJET UNIQUEMENT ====");
+    console.log("Service EmailJS pour rejet:", "service_rm2toad");
     
-    // Récupérer les données du paiement 
     const paymentData = await fetchPaymentById(paymentId);
     
-    if (!paymentData || !paymentData.participant_id) {
-      console.error("Données du paiement introuvables pour l'ID:", paymentId);
-      throw new Error("Données du paiement manquantes");
+    if (!paymentData?.participant_id) {
+      throw new Error("Données de paiement introuvables");
     }
     
-    // Vérifier d'abord si le paiement n'est pas déjà validé ou rejeté
-    // pour éviter le double traitement
+    // Vérifications du statut
     if (paymentData.status === 'completed') {
-      console.log("Ce paiement a déjà été validé, impossible de le rejeter");
       toast({
-        title: "Information",
-        description: "Ce paiement a déjà été validé précédemment et ne peut pas être rejeté.",
-        variant: "default",
+        title: "Impossible",
+        description: "Ce paiement a déjà été validé et ne peut pas être rejeté.",
       });
-      return { success: false, alreadyProcessed: true, error: "Paiement déjà validé" };
+      return { success: false, alreadyProcessed: true };
     }
     
     if (paymentData.status === 'rejected') {
-      console.log("Ce paiement a déjà été rejeté, annulation du processus");
       toast({
-        title: "Information",
+        title: "Déjà rejeté",
         description: "Ce paiement a déjà été rejeté précédemment.",
-        variant: "default",
       });
       return { success: true, alreadyProcessed: true };
     }
     
-    // IMPORTANT: Mettre à jour la base de données AVANT d'envoyer les emails
-    // pour éviter les doublons si l'envoi d'email échoue et que l'admin réessaie
-    const result = await rejectPaymentInDatabase(paymentId);
-
-    if (!result.success) {
-      throw new Error(result.error || "Erreur lors du rejet du paiement");
-    }
-    
-    console.log("Paiement rejeté avec succès dans la base de données");
-    
-    // Récupérer les données complètes du participant APRÈS avoir rejeté le paiement
+    // Mise à jour de la base de données AVANT l'envoi d'email
+    await rejectPaymentInDatabase(paymentId);
     const participantData = await fetchParticipantData(paymentData.participant_id);
     
-    console.log("Données du participant récupérées:", participantData);
-    
     if (!participantData) {
-      console.error("Données du participant introuvables");
-      throw new Error("Données du participant introuvables");
+      throw new Error("Participant introuvable");
     }
+
+    // UNIQUEMENT envoi de l'email de rejet
+    const emailSuccess = await sendPaymentRejectionEmail(
+      participantData,
+      "Votre paiement n'a pas pu être validé. Veuillez réessayer."
+    );
     
-    // Petit délai pour s'assurer que la transaction a bien été enregistrée
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Envoyer l'email d'échec au participant avec le NOUVEAU service dédié
-    // IMPORTANT: Utilisation du service REJECTION_EMAILJS_SERVICE_ID dédié aux rejets seulement
-    try {
-      const emailSuccess = await sendPaymentRejectionEmail(
-        participantData,
-        "Votre paiement a été vérifié mais n'a pas pu être confirmé. Veuillez réessayer ou utiliser une autre méthode de paiement."
-      );
-      
-      if (emailSuccess) {
-        console.log("✅ Email d'échec envoyé avec succès au participant via le service dédié aux rejets");
-      } else {
-        console.error("❌ L'email d'échec n'a pas pu être envoyé");
-        toast({
-          title: "Attention",
-          description: "Le paiement a été rejeté mais l'envoi de l'email d'échec a échoué. Veuillez contacter le participant manuellement.",
-          variant: "default",
-        });
-      }
-    } catch (emailError: any) {
-      console.error("Erreur lors de l'envoi de l'email d'échec:", emailError);
-      console.error("Détails de l'erreur:", emailError);
-      // On continue malgré l'erreur d'email
+    if (!emailSuccess) {
+      console.error("Erreur lors de l'envoi de l'email de rejet");
+      toast({
+        title: "Attention",
+        description: "Paiement rejeté mais l'email n'a pas pu être envoyé.",
+      });
     }
 
     toast({
-      title: "Paiement rejeté avec succès",
-      description: "Le paiement a été rejeté et le participant a été notifié par email.",
-      variant: "default",
+      title: "Rejet effectué",
+      description: "Le participant va recevoir un email de notification.",
     });
     
-    console.log("==== FIN DU PROCESSUS DE REJET DE PAIEMENT ====");
     return { success: true };
+
   } catch (error: any) {
-    console.error("Erreur lors du rejet du paiement:", error);
-    toast({
-      title: "Erreur",
-      description: error.message || "Une erreur est survenue lors du rejet du paiement",
-      variant: "destructive",
-    });
-    return { success: false, error: error.message };
+    console.error("Erreur de rejet:", error);
+    throw error;
   }
 };
 
