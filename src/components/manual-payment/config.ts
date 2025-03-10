@@ -4,7 +4,7 @@
 // Correction: Paramètres alignés avec les templates utilisés
 // Mise à jour: Nouveaux numéros de paiement et suppression de MTN
 // Mise à jour: Montant modifié à 30000 XOF
-// Mise à jour: Ajout de la localisation exacte de NOOM HOTEL PLATEAU pour Google Maps
+// Mise à jour: Adresse mise à jour avec code plus 8XFG+9H3 pour Google Maps
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 30000; // Montant fixé à 30000 XOF
@@ -36,12 +36,11 @@ export const PAYMENT_NUMBERS = {
 // Localisation exacte de NOOM HOTEL PLATEAU
 export const EVENT_LOCATION = {
   name: "NOOM HOTEL ABIDJAN PLATEAU",
-  address: "Avenue du Général de Gaulle, Abidjan, Côte d'Ivoire",
+  address: "8XFG+9H3, Boulevard de Gaulle, BP 7393, Abidjan",
   coordinates: {
     latitude: 5.323753,
     longitude: -4.015204
   },
-  // Lien Google Maps avec coordonnées GPS mises à jour
-  mapsUrl: "https://www.google.com/maps?q=5.323753,-4.015204"
+  // Lien Google Maps avec l'adresse mise à jour
+  mapsUrl: "https://www.google.com/maps?q=8XFG%2B9H3,+Boulevard+de+Gaulle,+BP+7393,+Abidjan"
 };
-
