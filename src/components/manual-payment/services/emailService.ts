@@ -1,10 +1,10 @@
-
 // Ce service gère l'envoi des emails initiaux dans l'application
 // Mise à jour: Correction du montant affiché dans les emails à 30000 XOF
 // Correction: Ajout de paramètres supplémentaires pour garantir la redirection correcte
 // Mise à jour: Ajout du lien Google Maps pour la localisation de l'événement
 // Mise à jour: Ajout de l'envoi d'email d'échec pour les paiements rejetés
 // Mise à jour: Amélioration du template d'échec de paiement avec instructions pour la réclamation
+// Mise à jour: Utilisation du service_is5645q et de la clé j9nKf3IoZXvL8mSae pour les emails de rejet
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -14,7 +14,9 @@ import {
   ADMIN_NOTIFICATION_TEMPLATE_ID,
   REJECTION_TEMPLATE_ID,
   PAYMENT_AMOUNT,
-  EVENT_LOCATION
+  EVENT_LOCATION,
+  CONFIRMATION_EMAILJS_SERVICE_ID,
+  CONFIRMATION_EMAILJS_PUBLIC_KEY
 } from "../config";
 
 /**
@@ -198,19 +200,19 @@ export const sendPaymentRejectionEmail = async (participantData: any, rejectionR
     };
 
     console.log("Envoi de l'email d'échec au participant...");
-    console.log("Service EmailJS:", EMAILJS_SERVICE_ID);
+    console.log("Service EmailJS pour rejet:", CONFIRMATION_EMAILJS_SERVICE_ID);
     console.log("Template échec de paiement:", REJECTION_TEMPLATE_ID);
-    console.log("Clé publique:", EMAILJS_PUBLIC_KEY);
+    console.log("Clé publique pour rejet:", CONFIRMATION_EMAILJS_PUBLIC_KEY);
     console.log("Email du destinataire:", email);
     console.log("URL pour réessayer:", tryAgainUrl);
     console.log("Raison du rejet:", rejectionReason || "Non spécifiée");
 
-    // Envoi avec EmailJS
+    // Utilisation du service et de la clé spécifiés pour les emails de rejet
     const rejectionResponse = await emailjs.send(
-      EMAILJS_SERVICE_ID,
+      CONFIRMATION_EMAILJS_SERVICE_ID,
       REJECTION_TEMPLATE_ID,
       participantTemplateParams,
-      EMAILJS_PUBLIC_KEY
+      CONFIRMATION_EMAILJS_PUBLIC_KEY
     );
 
     console.log("Email d'échec au participant envoyé avec succès:", rejectionResponse);
