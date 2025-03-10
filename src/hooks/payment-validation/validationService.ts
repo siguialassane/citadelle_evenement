@@ -1,10 +1,16 @@
 
+// Service pour la validation des paiements manuels
+// Mise à jour: Correction du problème d'envoi simultané des emails de confirmation et de rejet
+// Mise à jour: Ajout de vérifications supplémentaires pour éviter les envois d'emails en double
+// Mise à jour: Refactorisation des fonctions pour plus de clarté et de fiabilité
+
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse } from "./types";
 import { 
   validatePaymentInDatabase, 
   fetchParticipantData,
-  rejectPaymentInDatabase
+  rejectPaymentInDatabase,
+  fetchPaymentById
 } from "./supabaseService";
 import { sendConfirmationEmail } from "./emailService";
 import { sendPaymentRejectionEmail } from "@/components/manual-payment/services/emailService";
@@ -18,6 +24,28 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
     if (!paymentData) {
       console.error("Données de paiement introuvables pour l'ID:", paymentId);
       throw new Error("Données de paiement manquantes");
+    }
+    
+    // Vérifier d'abord si le paiement n'est pas déjà validé ou rejeté
+    // pour éviter le double traitement
+    if (paymentData.status === 'completed') {
+      console.log("Ce paiement a déjà été validé, annulation du processus");
+      toast({
+        title: "Information",
+        description: "Ce paiement a déjà été validé précédemment.",
+        variant: "default",
+      });
+      return { success: true, alreadyProcessed: true };
+    }
+    
+    if (paymentData.status === 'rejected') {
+      console.log("Ce paiement a déjà été rejeté, annulation du processus");
+      toast({
+        title: "Information",
+        description: "Ce paiement a déjà été rejeté précédemment.",
+        variant: "default",
+      });
+      return { success: false, alreadyProcessed: true, error: "Paiement déjà rejeté" };
     }
     
     // Mettre à jour le statut du paiement et générer le QR code
@@ -103,13 +131,34 @@ export const rejectPayment = async (paymentId: string): Promise<ValidationRespon
     console.log("==== DÉBUT DU PROCESSUS DE REJET DE PAIEMENT ====");
     console.log(`Rejet du paiement ID: ${paymentId}`);
     
-    // Récupérer les données du paiement et du participant avant de rejeter
-    // pour pouvoir envoyer l'email ensuite
-    const paymentData = await fetchPaymentDetails(paymentId);
+    // Récupérer les données du paiement 
+    const paymentData = await fetchPaymentById(paymentId);
     
     if (!paymentData || !paymentData.participant_id) {
       console.error("Données du paiement introuvables pour l'ID:", paymentId);
       throw new Error("Données du paiement manquantes");
+    }
+    
+    // Vérifier d'abord si le paiement n'est pas déjà validé ou rejeté
+    // pour éviter le double traitement
+    if (paymentData.status === 'completed') {
+      console.log("Ce paiement a déjà été validé, impossible de le rejeter");
+      toast({
+        title: "Information",
+        description: "Ce paiement a déjà été validé précédemment et ne peut pas être rejeté.",
+        variant: "default",
+      });
+      return { success: false, alreadyProcessed: true, error: "Paiement déjà validé" };
+    }
+    
+    if (paymentData.status === 'rejected') {
+      console.log("Ce paiement a déjà été rejeté, annulation du processus");
+      toast({
+        title: "Information",
+        description: "Ce paiement a déjà été rejeté précédemment.",
+        variant: "default",
+      });
+      return { success: true, alreadyProcessed: true };
     }
     
     // Récupérer les données complètes du participant

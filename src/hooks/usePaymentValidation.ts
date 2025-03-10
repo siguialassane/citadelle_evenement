@@ -2,6 +2,7 @@
 // Hook personnalisé pour gérer la logique de validation des paiements
 // Refactorisé: Séparation des responsabilités en services spécialisés
 // Amélioration: Meilleure gestion des erreurs et organisation du code
+// Mise à jour: Ajout de la gestion des paiements déjà traités
 
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -140,6 +141,12 @@ export const usePaymentValidation = (paymentId?: string) => {
       
       const result = await validatePayment(paymentId, paymentToValidate);
 
+      // Ne pas mettre à jour l'interface si le paiement était déjà traité
+      if (result.alreadyProcessed) {
+        setState(prev => ({ ...prev, isValidating: false }));
+        return true;
+      }
+
       if (result.success) {
         // Mise à jour locale des données
         const updatedPayments = state.payments.map(payment => 
@@ -172,6 +179,12 @@ export const usePaymentValidation = (paymentId?: string) => {
       setState(prev => ({ ...prev, isRejecting: true }));
 
       const result = await rejectPayment(paymentId);
+
+      // Ne pas mettre à jour l'interface si le paiement était déjà traité
+      if (result.alreadyProcessed) {
+        setState(prev => ({ ...prev, isRejecting: false }));
+        return true;
+      }
 
       if (result.success) {
         // Mise à jour locale des données
