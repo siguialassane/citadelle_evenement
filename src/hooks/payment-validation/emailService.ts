@@ -3,6 +3,7 @@
 // Mise à jour: Correction du montant affiché à 30000 XOF
 // Amélioration des URL de QR code avec paramètres plus robustes
 // Mise à jour: Ajout du lien Google Maps pour la localisation de l'événement
+// Mise à jour: Séparation claire du service de confirmation des autres services d'envoi d'emails
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -15,10 +16,12 @@ import {
 
 /**
  * Envoie un email de confirmation au participant avec son QR code
+ * Ce service utilise EXCLUSIVEMENT le service et la clé dédiés aux confirmations
  */
 export const sendConfirmationEmail = async (participantData: any, qrCodeId: string): Promise<boolean> => {
   try {
     console.log("==== PRÉPARATION EMAIL DE CONFIRMATION AVEC QR CODE ====");
+    console.log("Utilisation EXCLUSIVE du service de confirmation:", CONFIRMATION_EMAILJS_SERVICE_ID);
     
     if (!participantData.email) {
       console.error("Email du participant manquant");
@@ -82,17 +85,16 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
     
-    console.log("Envoi de l'email de confirmation avec QR code - paramètres:", confirmationParams);
-    console.log("Service EmailJS dédié à la confirmation:", CONFIRMATION_EMAILJS_SERVICE_ID);
-    console.log("Template confirmation:", CONFIRMATION_TEMPLATE_ID);
+    console.log("Envoi de l'email de confirmation avec QR code - service dédié:", CONFIRMATION_EMAILJS_SERVICE_ID);
+    console.log("Template confirmation exclusif:", CONFIRMATION_TEMPLATE_ID);
     console.log("Clé publique dédiée:", CONFIRMATION_EMAILJS_PUBLIC_KEY);
     
-    // Envoi de l'email de confirmation avec le service dédié
+    // Envoi de l'email de confirmation avec le service dédié aux CONFIRMATIONS UNIQUEMENT
     const response = await emailjs.send(
-      CONFIRMATION_EMAILJS_SERVICE_ID,
-      CONFIRMATION_TEMPLATE_ID, // Utilisation unique de ce template pour la confirmation
+      CONFIRMATION_EMAILJS_SERVICE_ID, // Service dédié aux confirmations UNIQUEMENT
+      CONFIRMATION_TEMPLATE_ID, // Template dédié aux confirmations
       confirmationParams,
-      CONFIRMATION_EMAILJS_PUBLIC_KEY
+      CONFIRMATION_EMAILJS_PUBLIC_KEY // Clé publique dédiée
     );
     
     console.log("Email de confirmation envoyé avec succès:", response);

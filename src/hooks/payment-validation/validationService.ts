@@ -3,6 +3,7 @@
 // Mise à jour: Correction du problème d'envoi simultané des emails de confirmation et de rejet
 // Mise à jour: Ajout de vérifications supplémentaires pour éviter les envois d'emails en double
 // Mise à jour: Refactorisation des fonctions pour plus de clarté et de fiabilité
+// Mise à jour: Séparation claire entre les processus de validation et de rejet
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse } from "./types";
@@ -42,13 +43,14 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
       console.log("Ce paiement a déjà été rejeté, annulation du processus");
       toast({
         title: "Information",
-        description: "Ce paiement a déjà été rejeté précédemment.",
+        description: "Ce paiement a déjà été rejeté précédemment et ne peut pas être validé.",
         variant: "default",
       });
       return { success: false, alreadyProcessed: true, error: "Paiement déjà rejeté" };
     }
     
-    // Mettre à jour le statut du paiement et générer le QR code
+    // IMPORTANT: Mettre à jour le statut du paiement AVANT d'envoyer les emails
+    // pour éviter les doublons si l'envoi d'email échoue et que l'admin réessaie
     const { qrCodeId, participantId } = await validatePaymentInDatabase(paymentId);
     
     // Récupérer les données complètes du participant
@@ -81,6 +83,7 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
     
     try {
       // Envoi de l'email de confirmation avec QR code et lien Google Maps
+      // IMPORTANT: Utilisation du service dédié aux confirmations seulement
       const emailSuccess = await sendConfirmationEmail(participantData, qrCodeId);
       
       if (emailSuccess) {
@@ -161,7 +164,17 @@ export const rejectPayment = async (paymentId: string): Promise<ValidationRespon
       return { success: true, alreadyProcessed: true };
     }
     
-    // Récupérer les données complètes du participant
+    // IMPORTANT: Mettre à jour la base de données AVANT d'envoyer les emails
+    // pour éviter les doublons si l'envoi d'email échoue et que l'admin réessaie
+    const result = await rejectPaymentInDatabase(paymentId);
+
+    if (!result.success) {
+      throw new Error(result.error || "Erreur lors du rejet du paiement");
+    }
+    
+    console.log("Paiement rejeté avec succès dans la base de données");
+    
+    // Récupérer les données complètes du participant APRÈS avoir rejeté le paiement
     const participantData = await fetchParticipantData(paymentData.participant_id);
     
     console.log("Données du participant récupérées:", participantData);
@@ -171,16 +184,8 @@ export const rejectPayment = async (paymentId: string): Promise<ValidationRespon
       throw new Error("Données du participant introuvables");
     }
     
-    // Mettre à jour le statut du paiement dans la base de données
-    const result = await rejectPaymentInDatabase(paymentId);
-
-    if (!result.success) {
-      throw new Error(result.error || "Erreur lors du rejet du paiement");
-    }
-    
-    console.log("Paiement rejeté avec succès dans la base de données");
-    
     // Envoyer l'email d'échec au participant
+    // IMPORTANT: Utilisation du service dédié aux rejets seulement
     try {
       const emailSuccess = await sendPaymentRejectionEmail(
         participantData,

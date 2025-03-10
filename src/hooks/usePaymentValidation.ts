@@ -3,6 +3,7 @@
 // Refactorisé: Séparation des responsabilités en services spécialisés
 // Amélioration: Meilleure gestion des erreurs et organisation du code
 // Mise à jour: Ajout de la gestion des paiements déjà traités
+// Mise à jour: Correction de la séparation des services d'envoi d'emails
 
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -136,18 +137,35 @@ export const usePaymentValidation = (paymentId?: string) => {
     try {
       setState(prev => ({ ...prev, isValidating: true }));
 
+      console.log("Début du processus de validation avec services d'email SÉPARÉS");
+      console.log("Rappel: les emails de confirmation et rejet utilisent des services DIFFÉRENTS");
+
       const paymentToValidate = state.currentPayment || 
                                state.payments.find(p => p.id === paymentId);
       
+      if (!paymentToValidate) {
+        console.error("Paiement non trouvé pour validation:", paymentId);
+        toast({
+          title: "Erreur",
+          description: "Paiement non trouvé",
+          variant: "destructive",
+        });
+        setState(prev => ({ ...prev, isValidating: false }));
+        return false;
+      }
+      
+      console.log("Validation du paiement:", paymentToValidate);
       const result = await validatePayment(paymentId, paymentToValidate);
 
       // Ne pas mettre à jour l'interface si le paiement était déjà traité
       if (result.alreadyProcessed) {
+        console.log("Paiement déjà traité, aucune action supplémentaire nécessaire");
         setState(prev => ({ ...prev, isValidating: false }));
         return true;
       }
 
       if (result.success) {
+        console.log("Validation réussie, mise à jour de l'interface utilisateur");
         // Mise à jour locale des données
         const updatedPayments = state.payments.map(payment => 
           payment.id === paymentId 
@@ -165,10 +183,12 @@ export const usePaymentValidation = (paymentId?: string) => {
         filterPayments(state.searchQuery);
         return true;
       } else {
+        console.error("Échec de la validation:", result.error);
         setState(prev => ({ ...prev, isValidating: false }));
         return false;
       }
     } catch (error) {
+      console.error("Erreur lors de la validation du paiement:", error);
       setState(prev => ({ ...prev, isValidating: false }));
       return false;
     }
@@ -178,15 +198,20 @@ export const usePaymentValidation = (paymentId?: string) => {
     try {
       setState(prev => ({ ...prev, isRejecting: true }));
 
+      console.log("Début du processus de rejet avec services d'email SÉPARÉS");
+      console.log("Rappel: les emails de confirmation et rejet utilisent des services DIFFÉRENTS");
+
       const result = await rejectPayment(paymentId);
 
       // Ne pas mettre à jour l'interface si le paiement était déjà traité
       if (result.alreadyProcessed) {
+        console.log("Paiement déjà traité, aucune action supplémentaire nécessaire");
         setState(prev => ({ ...prev, isRejecting: false }));
         return true;
       }
 
       if (result.success) {
+        console.log("Rejet réussi, mise à jour de l'interface utilisateur");
         // Mise à jour locale des données
         const updatedPayments = state.payments.map(payment => 
           payment.id === paymentId 
@@ -204,10 +229,12 @@ export const usePaymentValidation = (paymentId?: string) => {
         filterPayments(state.searchQuery);
         return true;
       } else {
+        console.error("Échec du rejet:", result.error);
         setState(prev => ({ ...prev, isRejecting: false }));
         return false;
       }
     } catch (error) {
+      console.error("Erreur lors du rejet du paiement:", error);
       setState(prev => ({ ...prev, isRejecting: false }));
       return false;
     }

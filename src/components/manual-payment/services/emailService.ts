@@ -1,10 +1,10 @@
-// Ce service gère l'envoi des emails initiaux dans l'application
+
+// Ce service gère l'envoi des emails initiaux et de rejet dans l'application
 // Mise à jour: Correction du montant affiché dans les emails à 30000 XOF
 // Correction: Ajout de paramètres supplémentaires pour garantir la redirection correcte
 // Mise à jour: Ajout du lien Google Maps pour la localisation de l'événement
-// Mise à jour: Ajout de l'envoi d'email d'échec pour les paiements rejetés
-// Mise à jour: Amélioration du template d'échec de paiement avec instructions pour la réclamation
-// Mise à jour: Utilisation du service_is5645q et de la clé j9nKf3IoZXvL8mSae pour les emails de rejet
+// Mise à jour: Séparation claire entre les emails initiaux et les emails de rejet
+// Mise à jour: Utilisation de services dédiés pour chaque type d'email
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -21,6 +21,7 @@ import {
 
 /**
  * Envoie un email à l'administrateur pour notifier d'un nouveau paiement
+ * Utilise UNIQUEMENT le service pour les emails initiaux
  */
 export const sendAdminNotification = async (
   adminEmail: string,
@@ -33,6 +34,7 @@ export const sendAdminNotification = async (
 ) => {
   try {
     console.log("Envoi de notification à l'administrateur pour nouveau paiement...");
+    console.log("Utilisation du service pour emails INITIAUX UNIQUEMENT:", EMAILJS_SERVICE_ID);
     
     // URL de base de l'application
     const appUrl = window.location.origin;
@@ -59,16 +61,13 @@ export const sendAdminNotification = async (
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    console.log("Envoi de l'email à l'administrateur - service général...");
-    console.log("Service EmailJS général:", EMAILJS_SERVICE_ID);
+    console.log("Envoi de l'email à l'administrateur - service initial uniquement...");
+    console.log("Service EmailJS initial:", EMAILJS_SERVICE_ID);
     console.log("Template admin initial:", ADMIN_NOTIFICATION_TEMPLATE_ID);
-    console.log("Clé publique générale:", EMAILJS_PUBLIC_KEY);
+    console.log("Clé publique initiale:", EMAILJS_PUBLIC_KEY);
     console.log("URL de validation admin:", validationLink);
-    console.log("Montant du paiement:", `${PAYMENT_AMOUNT} XOF`);
-    console.log("Numéro utilisé pour le paiement:", phoneNumber);
-    console.log("Date courante:", currentDate);
 
-    // Envoyer l'email à l'administrateur
+    // Envoyer l'email à l'administrateur avec le service dédié aux emails INITIAUX
     const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
       ADMIN_NOTIFICATION_TEMPLATE_ID,
@@ -86,10 +85,12 @@ export const sendAdminNotification = async (
 
 /**
  * Envoie un email initial au participant pour l'informer que sa demande est en cours de traitement
+ * Utilise UNIQUEMENT le service pour les emails initiaux
  */
 export const sendParticipantInitialEmail = async (participantData: any, paymentMethod: string, phoneNumber: string) => {
   try {
     console.log("===== PRÉPARATION EMAIL INITIAL AU PARTICIPANT =====");
+    console.log("Utilisation du service pour emails INITIAUX UNIQUEMENT:", EMAILJS_SERVICE_ID);
     
     // Vérification améliorée de l'email
     if (!participantData || !participantData.email) {
@@ -132,20 +133,15 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    console.log("Envoi de l'email initial au participant - service général...");
-    console.log("Service EmailJS général:", EMAILJS_SERVICE_ID);
+    console.log("Envoi de l'email initial au participant - service initial uniquement...");
+    console.log("Service EmailJS initial:", EMAILJS_SERVICE_ID);
     console.log("Template participant initial:", PARTICIPANT_INITIAL_TEMPLATE_ID);
-    console.log("Clé publique générale:", EMAILJS_PUBLIC_KEY);
-    console.log("Email du destinataire:", email);
-    console.log("URL page pending:", pendingUrl);
-    console.log("Montant du paiement:", `${PAYMENT_AMOUNT} XOF`);
-    console.log("Numéro utilisé pour le paiement:", phoneNumber);
-    console.log("URL de localisation:", eventLocationUrl);
+    console.log("Clé publique initiale:", EMAILJS_PUBLIC_KEY);
 
-    // Envoi avec EmailJS - service général
+    // Envoi avec EmailJS - service dédié aux emails INITIAUX
     const participantResponse = await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      PARTICIPANT_INITIAL_TEMPLATE_ID, 
+      EMAILJS_SERVICE_ID, // Service dédié aux emails INITIAUX UNIQUEMENT
+      PARTICIPANT_INITIAL_TEMPLATE_ID,
       participantTemplateParams,
       EMAILJS_PUBLIC_KEY
     );
@@ -161,10 +157,12 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
 
 /**
  * Envoie un email d'échec au participant pour l'informer que son paiement a été rejeté
+ * Utilise UNIQUEMENT le service dédié aux emails de rejet
  */
 export const sendPaymentRejectionEmail = async (participantData: any, rejectionReason: string = '') => {
   try {
     console.log("===== PRÉPARATION EMAIL D'ÉCHEC DE PAIEMENT AU PARTICIPANT =====");
+    console.log("Utilisation EXCLUSIVE du service pour emails de REJET:", CONFIRMATION_EMAILJS_SERVICE_ID);
     
     // Vérification améliorée de l'email
     if (!participantData || !participantData.email) {
@@ -199,17 +197,14 @@ export const sendPaymentRejectionEmail = async (participantData: any, rejectionR
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    console.log("Envoi de l'email d'échec au participant...");
+    console.log("Envoi de l'email d'échec au participant - service dédié au REJET...");
     console.log("Service EmailJS pour rejet:", CONFIRMATION_EMAILJS_SERVICE_ID);
     console.log("Template échec de paiement:", REJECTION_TEMPLATE_ID);
     console.log("Clé publique pour rejet:", CONFIRMATION_EMAILJS_PUBLIC_KEY);
-    console.log("Email du destinataire:", email);
-    console.log("URL pour réessayer:", tryAgainUrl);
-    console.log("Raison du rejet:", rejectionReason || "Non spécifiée");
 
-    // Utilisation du service et de la clé spécifiés pour les emails de rejet
+    // Utilisation du service et de la clé spécifiés UNIQUEMENT pour les emails de rejet
     const rejectionResponse = await emailjs.send(
-      CONFIRMATION_EMAILJS_SERVICE_ID,
+      CONFIRMATION_EMAILJS_SERVICE_ID, // Service dédié aux emails de REJET/CONFIRMATION
       REJECTION_TEMPLATE_ID,
       participantTemplateParams,
       CONFIRMATION_EMAILJS_PUBLIC_KEY
