@@ -1,4 +1,3 @@
-
 import emailjs from '@emailjs/browser';
 import { validateEmailData, prepareEmailData } from './emailValidation';
 import { EmailTemplateParams } from './types';
@@ -36,22 +35,33 @@ export const sendAdminNotification = async (
     const appUrl = window.location.origin;
     const validationLink = `${appUrl}/admin/payment-validation/${manualPaymentId}`;
 
+    // Formater les données pour s'assurer qu'elles ne sont pas vides
+    const formattedComments = comments?.trim() || "Aucun commentaire";
+    const formattedPaymentMethod = paymentMethod?.toUpperCase() || "NON SPÉCIFIÉ";
+    const formattedPhoneNumber = phoneNumber?.trim() || "NON SPÉCIFIÉ";
+    const currentDate = new Date().toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
     // Préparation des paramètres pour le template EmailJS
-    // Le destinataire est défini directement dans le template EmailJS
     const templateParams: EmailTemplateParams = {
       to_email: 'DYNAMIC_ADMIN_EMAIL', // Valeur fictive, sera remplacée par EmailJS
       from_name: "Système d'Inscription IFTAR",
       participant_name: `${participantData.first_name} ${participantData.last_name}`,
       participant_email: participantData.email,
-      participant_phone: participantData.contact_number,
+      participant_phone: participantData.contact_number || "NON SPÉCIFIÉ",
       payment_amount: `${PAYMENT_AMOUNT} XOF`,
-      payment_method: paymentMethod,
-      payment_phone: phoneNumber,
-      comments: comments || "Aucun commentaire",
+      payment_method: formattedPaymentMethod,
+      payment_phone: formattedPhoneNumber,
+      comments: formattedComments,
       payment_id: manualPaymentId,
       participant_id: participantData.id,
       app_url: appUrl,
-      current_date: new Date().toLocaleString('fr-FR'),
+      current_date: currentDate,
       validation_link: validationLink,
       reply_to: "ne-pas-repondre@lacitadelle.ci",
       prenom: participantData.first_name,
@@ -63,7 +73,11 @@ export const sendAdminNotification = async (
       participant_name: templateParams.participant_name,
       participant_email: templateParams.participant_email,
       payment_id: templateParams.payment_id,
-      validation_link: templateParams.validation_link
+      validation_link: templateParams.validation_link,
+      comments: templateParams.comments,
+      current_date: templateParams.current_date,
+      payment_phone: templateParams.payment_phone,
+      payment_method: templateParams.payment_method
     });
 
     // Envoi de l'email via EmailJS avec le template ADMIN_NOTIFICATION_TEMPLATE_ID
