@@ -1,4 +1,3 @@
-
 // Composant pour afficher le tableau des participants
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +49,33 @@ export const ParticipantTable = ({
   
   const handleRedirectToPayment = (participantId: string) => {
     navigate(`/payment/${participantId}`);
+  };
+
+  // Fonction pour dédupliquer la liste des participants
+  const getUniqueParticipants = (participants: Participant[]) => {
+    const uniqueParticipants = new Map();
+    
+    participants.forEach(participant => {
+      // Si le participant existe déjà, mettre à jour seulement si le nouveau a un paiement confirmé
+      const existingParticipant = uniqueParticipants.get(participant.id);
+      
+      if (!existingParticipant) {
+        uniqueParticipants.set(participant.id, participant);
+      } else {
+        // Si le nouveau participant a un paiement confirmé, il remplace l'ancien
+        const hasConfirmedPayment = participant.payments?.some(p => 
+          ["APPROVED", "SUCCESS", "COMPLETED"].includes(p.status.toUpperCase())
+        ) || participant.manual_payments?.some(p => 
+          p.status.toLowerCase() === "completed"
+        );
+        
+        if (hasConfirmedPayment) {
+          uniqueParticipants.set(participant.id, participant);
+        }
+      }
+    });
+    
+    return Array.from(uniqueParticipants.values());
   };
   
   const getPaymentStatusBadge = (participant: Participant) => {
@@ -108,6 +134,9 @@ export const ParticipantTable = ({
     setDeleteDialogOpen(true);
   };
 
+  // Utiliser la liste dédupliquée pour le rendu
+  const uniqueParticipants = getUniqueParticipants(participants);
+
   return (
     <>
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -136,7 +165,7 @@ export const ParticipantTable = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : participants.length === 0 ? (
+            ) : uniqueParticipants.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-10">
                   {searchTerm ? (
@@ -153,7 +182,7 @@ export const ParticipantTable = ({
                 </TableCell>
               </TableRow>
             ) : (
-              participants.map(participant => (
+              uniqueParticipants.map(participant => (
                 <TableRow key={participant.id}>
                   <TableCell className="font-medium">
                     {participant.last_name} {participant.first_name}
