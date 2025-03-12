@@ -67,7 +67,7 @@ export function PaymentForm({
     <form onSubmit={handleFormSubmit} className="bg-gray-50 p-6 rounded-lg border border-gray-200">
       <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
         <span className="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center mr-2 text-sm">3</span>
-        <span className="text-xl font-semibold text-red-600">Précisé le numéro qui a servie au paiement</span>
+        <span className="text-xl font-semibold text-red-600">PRECISEZ SVP LE NUMERO DE TELEPHONE AYANT SERVI AU PAIEMENT</span>
       </h3>
       
       <div className="space-y-4">
