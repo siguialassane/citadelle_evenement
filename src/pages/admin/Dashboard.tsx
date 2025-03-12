@@ -6,7 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { type Participant } from "../../types/participant";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell } from "lucide-react";
+import { Bell, Mail } from "lucide-react";
 
 // Composants refactorisés
 import { Header } from "@/components/admin/dashboard/Header";
@@ -14,6 +14,7 @@ import { SearchAndExport } from "@/components/admin/dashboard/search-export";
 import { ParticipantTable } from "@/components/admin/dashboard/ParticipantTable";
 import { ParticipantDetails } from "@/components/admin/dashboard/ParticipantDetails";
 import { DeleteConfirmation } from "@/components/admin/dashboard/DeleteConfirmation";
+import { EmailSendingDialog } from "@/components/admin/dashboard/email-sending/EmailSendingDialog";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ const AdminDashboard = () => {
   const [pdfDownloaded, setPdfDownloaded] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pendingPayments, setPendingPayments] = useState<number>(0);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -211,28 +213,43 @@ const AdminDashboard = () => {
     navigate("/admin/payment-validation");
   };
 
+  const openEmailDialog = () => {
+    setEmailDialogOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header onLogout={handleLogout} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
           <h1 className="text-2xl font-bold text-gray-900">
             Tableau de bord
           </h1>
-          <Button 
-            onClick={goToPaymentValidation} 
-            className="flex items-center gap-2"
-            variant="outline"
-          >
-            {pendingPayments > 0 && (
-              <Badge className="bg-red-500 text-white">
-                {pendingPayments}
-              </Badge>
-            )}
-            <Bell className="h-4 w-4 mr-1" />
-            Validation des paiements
-          </Button>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <Button 
+              onClick={openEmailDialog} 
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+            >
+              <Mail className="h-4 w-4" />
+              Envoi Email
+            </Button>
+            
+            <Button 
+              onClick={goToPaymentValidation} 
+              className="flex items-center gap-2"
+              variant="outline"
+            >
+              {pendingPayments > 0 && (
+                <Badge className="bg-red-500 text-white">
+                  {pendingPayments}
+                </Badge>
+              )}
+              <Bell className="h-4 w-4" />
+              Validation des paiements
+            </Button>
+          </div>
         </div>
 
         <SearchAndExport 
@@ -266,6 +283,12 @@ const AdminDashboard = () => {
       <DeleteConfirmation 
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
+      />
+      
+      <EmailSendingDialog 
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        participants={participants}
       />
     </div>
   );

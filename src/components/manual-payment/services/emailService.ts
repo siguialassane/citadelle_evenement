@@ -4,4 +4,4 @@
 
 export { sendAdminNotification, sendParticipantInitialEmail } from './emails/initialEmailService';
 export { sendPaymentRejectionEmail } from './emails/rejectionEmailService';
-
+export { sendPersonalThanksEmail, sendPublicThanksEmail } from './emails/thanksEmailService';
