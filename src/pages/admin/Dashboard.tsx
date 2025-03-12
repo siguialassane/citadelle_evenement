@@ -1,3 +1,4 @@
+
 // Tableau de bord administrateur refactorisé en composants plus petits
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -6,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { type Participant } from "../../types/participant";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Mail } from "lucide-react";
+import { Bell, Mail, CheckCircle } from "lucide-react";
 
 // Composants refactorisés
 import { Header } from "@/components/admin/dashboard/Header";
@@ -14,7 +15,6 @@ import { SearchAndExport } from "@/components/admin/dashboard/search-export";
 import { ParticipantTable } from "@/components/admin/dashboard/ParticipantTable";
 import { ParticipantDetails } from "@/components/admin/dashboard/ParticipantDetails";
 import { DeleteConfirmation } from "@/components/admin/dashboard/DeleteConfirmation";
-import { EmailSendingDialog } from "@/components/admin/dashboard/email-sending/EmailSendingDialog";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -28,9 +28,6 @@ const AdminDashboard = () => {
   const [pdfDownloaded, setPdfDownloaded] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pendingPayments, setPendingPayments] = useState<number>(0);
-  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
-  const [confirmedPayments, setConfirmedPayments] = useState<number>(0);
-  const [checkedInCount, setCheckedInCount] = useState<number>(0);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -67,22 +64,6 @@ const AdminDashboard = () => {
 
     setFilteredParticipants(filtered);
   }, [searchTerm, participants]);
-
-  useEffect(() => {
-    // Calculer les statistiques quand les participants changent
-    if (participants.length > 0) {
-      // Nombre de participants ayant fait le check-in
-      const checkedIn = participants.filter(p => p.check_in_status).length;
-      setCheckedInCount(checkedIn);
-      
-      // Nombre de paiements confirmés
-      const confirmed = participants.filter(p => 
-        (p.payments && p.payments.length > 0 && p.payments[0].status.toLowerCase() === 'completed') ||
-        (p.manual_payments && p.manual_payments.length > 0 && p.manual_payments[0].status.toLowerCase() === 'completed')
-      ).length;
-      setConfirmedPayments(confirmed);
-    }
-  }, [participants]);
 
   const fetchParticipants = async () => {
     setIsLoading(true);
@@ -230,9 +211,9 @@ const AdminDashboard = () => {
   const goToPaymentValidation = () => {
     navigate("/admin/payment-validation");
   };
-
-  const openEmailDialog = () => {
-    setEmailDialogOpen(true);
+  
+  const goToEmailDashboard = () => {
+    navigate("/admin/email-dashboard");
   };
 
   return (
@@ -247,11 +228,11 @@ const AdminDashboard = () => {
           
           <div className="flex flex-wrap items-center gap-3">
             <Button 
-              onClick={openEmailDialog} 
+              onClick={goToEmailDashboard} 
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
             >
               <Mail className="h-4 w-4" />
-              Envoi Email
+              Gestion des emails
             </Button>
             
             <Button 
@@ -270,8 +251,6 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        
-        
         <SearchAndExport 
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
@@ -290,10 +269,10 @@ const AdminDashboard = () => {
           searchTerm={searchTerm}
           onViewDetails={handleViewDetails}
           onCheckIn={handleCheckIn}
+          onDelete={handleRefresh}
         />
       </main>
 
-      
       <ParticipantDetails 
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
@@ -303,12 +282,6 @@ const AdminDashboard = () => {
       <DeleteConfirmation 
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-      />
-      
-      <EmailSendingDialog 
-        open={emailDialogOpen}
-        onOpenChange={setEmailDialogOpen}
-        participants={participants}
       />
     </div>
   );

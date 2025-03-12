@@ -5,8 +5,10 @@ import { validateEmailData } from './emailValidation';
 import { EmailTemplateParams } from './types';
 import { REJECTION_EMAILJS_SERVICE_ID, REJECTION_EMAILJS_PUBLIC_KEY } from "../../config";
 
-// Template ID pour les emails de remerciement
-const THANKS_TEMPLATE_ID = "template_mzzgjud";
+// Nouvelles valeurs pour le service d'envoi d'emails de remerciement
+const THANKS_EMAILJS_SERVICE_ID = "service_ds3ba4m";
+const THANKS_EMAILJS_PUBLIC_KEY = "4tSkd1KJOWW1HDLNC";
+const THANKS_TEMPLATE_ID = "template_u407lzh";
 
 /**
  * Envoie un email de remerciement personnalisé à un participant
@@ -17,6 +19,8 @@ export const sendPersonalThanksEmail = async (
 ): Promise<boolean> => {
   try {
     console.log("===== PRÉPARATION EMAIL DE REMERCIEMENT PERSONNEL =====");
+    console.log("Service ID:", THANKS_EMAILJS_SERVICE_ID);
+    console.log("Template ID:", THANKS_TEMPLATE_ID);
     
     const validation = validateEmailData(participantData?.email, participantData);
     if (!validation.isValid) {
@@ -35,7 +39,7 @@ export const sendPersonalThanksEmail = async (
     const templateParams: EmailTemplateParams = {
       to_email: email,
       to_name: `${firstName} ${lastName}`,
-      from_name: "IFTAR 2024",
+      from_name: "IFTAR 2025",
       prenom: firstName,
       nom: lastName,
       merci_perso: formattedPersonalMessage,
@@ -47,16 +51,16 @@ export const sendPersonalThanksEmail = async (
     console.log("Envoi email personnel à:", email);
     console.log("Paramètres du template:", {
       template_id: THANKS_TEMPLATE_ID,
-      service_id: REJECTION_EMAILJS_SERVICE_ID,
+      service_id: THANKS_EMAILJS_SERVICE_ID,
       participant_name: `${firstName} ${lastName}`,
       merci_perso: formattedPersonalMessage.substring(0, 50) + "..."
     });
     
     const response = await emailjs.send(
-      REJECTION_EMAILJS_SERVICE_ID,
+      THANKS_EMAILJS_SERVICE_ID,
       THANKS_TEMPLATE_ID,
       templateParams,
-      REJECTION_EMAILJS_PUBLIC_KEY
+      THANKS_EMAILJS_PUBLIC_KEY
     );
 
     console.log("Email de remerciement personnel envoyé avec succès:", response);
@@ -77,6 +81,8 @@ export const sendPublicThanksEmail = async (
   try {
     console.log("===== PRÉPARATION EMAILS DE REMERCIEMENT PUBLIC =====");
     console.log(`Tentative d'envoi à ${participantsData.length} participants`);
+    console.log("Service ID:", THANKS_EMAILJS_SERVICE_ID);
+    console.log("Template ID:", THANKS_TEMPLATE_ID);
     
     let successCount = 0;
     let failedCount = 0;
@@ -107,7 +113,7 @@ export const sendPublicThanksEmail = async (
             const templateParams: EmailTemplateParams = {
               to_email: email,
               to_name: `${firstName} ${lastName}`,
-              from_name: "IFTAR 2024",
+              from_name: "IFTAR 2025",
               prenom: firstName,
               nom: lastName,
               merci_perso: "", // Vide pour le message public
@@ -119,15 +125,15 @@ export const sendPublicThanksEmail = async (
             console.log("Envoi email public à:", email);
             console.log("Paramètres pour email public:", {
               template_id: THANKS_TEMPLATE_ID,
-              service_id: REJECTION_EMAILJS_SERVICE_ID,
+              service_id: THANKS_EMAILJS_SERVICE_ID,
               participant_name: `${firstName} ${lastName}`
             });
             
             const response = await emailjs.send(
-              REJECTION_EMAILJS_SERVICE_ID,
+              THANKS_EMAILJS_SERVICE_ID,
               THANKS_TEMPLATE_ID,
               templateParams,
-              REJECTION_EMAILJS_PUBLIC_KEY
+              THANKS_EMAILJS_PUBLIC_KEY
             );
             
             console.log(`Email envoyé à ${email}:`, response.status);

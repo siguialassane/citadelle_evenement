@@ -17,23 +17,38 @@ interface EmailSendingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   participants: Participant[];
+  activeTab?: "private" | "public";
+  personalMessage?: string;
+  publicMessage?: string;
 }
 
-export function EmailSendingDialog({ open, onOpenChange, participants }: EmailSendingDialogProps) {
-  const [activeTab, setActiveTab] = useState<"private" | "public">("private");
+export function EmailSendingDialog({ 
+  open, 
+  onOpenChange, 
+  participants,
+  activeTab: initialActiveTab = "private",
+  personalMessage: initialPersonalMessage = "",
+  publicMessage: initialPublicMessage = ""
+}: EmailSendingDialogProps) {
+  const [activeTab, setActiveTab] = useState<"private" | "public">(initialActiveTab);
   const [selectedParticipants, setSelectedParticipants] = useState<Participant[]>([]);
   const [hiddenParticipants, setHiddenParticipants] = useState<string[]>([]); // IDs des participants masqués
-  const [personalMessage, setPersonalMessage] = useState("");
-  const [publicMessage, setPublicMessage] = useState("");
+  const [personalMessage, setPersonalMessage] = useState(initialPersonalMessage);
+  const [publicMessage, setPublicMessage] = useState(initialPublicMessage);
   const [isPreview, setIsPreview] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [sendingStats, setSendingStats] = useState<{total: number; sent: number; failed: number}>({
     total: 0, sent: 0, failed: 0
   });
 
-  // Réinitialiser les états à la fermeture du dialogue
+  // Réinitialiser les états à la fermeture du dialogue ou quand on reçoit de nouvelles valeurs initiales
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      setSelectedParticipants(participants);
+      setActiveTab(initialActiveTab);
+      setPersonalMessage(initialPersonalMessage);
+      setPublicMessage(initialPublicMessage);
+    } else {
       setSelectedParticipants([]);
       setPersonalMessage("");
       setPublicMessage("");
@@ -41,7 +56,7 @@ export function EmailSendingDialog({ open, onOpenChange, participants }: EmailSe
       setIsSending(false);
       setSendingStats({total: 0, sent: 0, failed: 0});
     }
-  }, [open]);
+  }, [open, participants, initialActiveTab, initialPersonalMessage, initialPublicMessage]);
 
   // Gérer la sélection/désélection des participants
   const handleParticipantSelection = (participant: Participant, selected: boolean) => {
@@ -157,9 +172,15 @@ export function EmailSendingDialog({ open, onOpenChange, participants }: EmailSe
         variant: "destructive",
       });
     } finally {
+      // Laisser le dialogue ouvert pour montrer les statistiques
+      // Mais désactiver l'état d'envoi
       setIsSending(false);
     }
   };
+
+  // Si le composant est utilisé depuis le dashboard d'email, on n'affiche pas
+  // l'interface complète mais juste l'envoi et les statistiques
+  const isStandalone = !initialPersonalMessage && !initialPublicMessage;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -170,88 +191,90 @@ export function EmailSendingDialog({ open, onOpenChange, participants }: EmailSe
 
         {!isSending ? (
           <div className="space-y-4">
-            <Tabs defaultValue="private" value={activeTab} onValueChange={(v) => setActiveTab(v as "private" | "public")}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="private">Emails personnalisés</TabsTrigger>
-                <TabsTrigger value="public">Email public groupé</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="private" className="space-y-4">
-                <Alert>
-                  <AlertDescription>
-                    Les emails personnalisés sont envoyés individuellement à chaque participant sélectionné.
-                    Chaque participant recevra un email avec un message personnalisé.
-                  </AlertDescription>
-                </Alert>
+            {isStandalone && (
+              <Tabs defaultValue={activeTab} value={activeTab} onValueChange={(v) => setActiveTab(v as "private" | "public")}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="private">Emails personnalisés</TabsTrigger>
+                  <TabsTrigger value="public">Email public groupé</TabsTrigger>
+                </TabsList>
                 
-                {isPreview ? (
-                  <MessagePreview 
-                    messageType="personal"
-                    message={personalMessage}
-                    participant={selectedParticipants[0]}
-                    onBack={() => setIsPreview(false)}
-                  />
-                ) : (
-                  <>
-                    <MessageComposer
+                <TabsContent value="private" className="space-y-4">
+                  <Alert>
+                    <AlertDescription>
+                      Les emails personnalisés sont envoyés individuellement à chaque participant sélectionné.
+                      Chaque participant recevra un email avec un message personnalisé.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  {isPreview ? (
+                    <MessagePreview 
                       messageType="personal"
-                      value={personalMessage}
-                      onChange={setPersonalMessage}
-                      onPreview={() => selectedParticipants.length > 0 && setIsPreview(true)}
-                      previewDisabled={selectedParticipants.length === 0}
+                      message={personalMessage}
+                      participant={selectedParticipants[0]}
+                      onBack={() => setIsPreview(false)}
                     />
-                    
-                    <ParticipantSelector
-                      allParticipants={participants}
-                      selectedParticipants={selectedParticipants}
-                      hiddenParticipants={hiddenParticipants}
-                      onSelectParticipant={handleParticipantSelection}
-                      onToggleVisibility={handleToggleParticipantVisibility}
-                      onSelectAll={handleSelectAllVisible}
-                      onDeselectAll={handleDeselectAll}
-                    />
-                  </>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="public" className="space-y-4">
-                <Alert>
-                  <AlertDescription>
-                    L'email public est envoyé à tous les participants sélectionnés.
-                    Tous recevront le même contenu du message public.
-                  </AlertDescription>
-                </Alert>
+                  ) : (
+                    <>
+                      <MessageComposer
+                        messageType="personal"
+                        value={personalMessage}
+                        onChange={setPersonalMessage}
+                        onPreview={() => selectedParticipants.length > 0 && setIsPreview(true)}
+                        previewDisabled={selectedParticipants.length === 0}
+                      />
+                      
+                      <ParticipantSelector
+                        allParticipants={participants}
+                        selectedParticipants={selectedParticipants}
+                        hiddenParticipants={hiddenParticipants}
+                        onSelectParticipant={handleParticipantSelection}
+                        onToggleVisibility={handleToggleParticipantVisibility}
+                        onSelectAll={handleSelectAllVisible}
+                        onDeselectAll={handleDeselectAll}
+                      />
+                    </>
+                  )}
+                </TabsContent>
                 
-                {isPreview ? (
-                  <MessagePreview 
-                    messageType="public"
-                    message={publicMessage}
-                    participant={selectedParticipants[0]}
-                    onBack={() => setIsPreview(false)}
-                  />
-                ) : (
-                  <>
-                    <MessageComposer
+                <TabsContent value="public" className="space-y-4">
+                  <Alert>
+                    <AlertDescription>
+                      L'email public est envoyé à tous les participants sélectionnés.
+                      Tous recevront le même contenu du message public.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  {isPreview ? (
+                    <MessagePreview 
                       messageType="public"
-                      value={publicMessage}
-                      onChange={setPublicMessage}
-                      onPreview={() => selectedParticipants.length > 0 && setIsPreview(true)}
-                      previewDisabled={selectedParticipants.length === 0}
+                      message={publicMessage}
+                      participant={selectedParticipants[0]}
+                      onBack={() => setIsPreview(false)}
                     />
-                    
-                    <ParticipantSelector
-                      allParticipants={participants}
-                      selectedParticipants={selectedParticipants}
-                      hiddenParticipants={hiddenParticipants}
-                      onSelectParticipant={handleParticipantSelection}
-                      onToggleVisibility={handleToggleParticipantVisibility}
-                      onSelectAll={handleSelectAllVisible}
-                      onDeselectAll={handleDeselectAll}
-                    />
-                  </>
-                )}
-              </TabsContent>
-            </Tabs>
+                  ) : (
+                    <>
+                      <MessageComposer
+                        messageType="public"
+                        value={publicMessage}
+                        onChange={setPublicMessage}
+                        onPreview={() => selectedParticipants.length > 0 && setIsPreview(true)}
+                        previewDisabled={selectedParticipants.length === 0}
+                      />
+                      
+                      <ParticipantSelector
+                        allParticipants={participants}
+                        selectedParticipants={selectedParticipants}
+                        hiddenParticipants={hiddenParticipants}
+                        onSelectParticipant={handleParticipantSelection}
+                        onToggleVisibility={handleToggleParticipantVisibility}
+                        onSelectAll={handleSelectAllVisible}
+                        onDeselectAll={handleDeselectAll}
+                      />
+                    </>
+                  )}
+                </TabsContent>
+              </Tabs>
+            )}
           </div>
         ) : (
           <SendingProgress 
@@ -263,7 +286,7 @@ export function EmailSendingDialog({ open, onOpenChange, participants }: EmailSe
 
         <DialogFooter className="flex justify-between">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSending}>
-            Annuler
+            {sendingStats.sent > 0 || sendingStats.failed > 0 ? "Fermer" : "Annuler"}
           </Button>
           
           {!isSending && !isPreview && (

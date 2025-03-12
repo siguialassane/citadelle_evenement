@@ -1,3 +1,4 @@
+
 import emailjs from '@emailjs/browser';
 import { validateEmailData, prepareEmailData } from './emailValidation';
 import { EmailTemplateParams } from './types';
@@ -50,7 +51,7 @@ export const sendAdminNotification = async (
     // Préparation des paramètres pour le template EmailJS
     const templateParams: EmailTemplateParams = {
       to_email: 'DYNAMIC_ADMIN_EMAIL', // Valeur fictive, sera remplacée par EmailJS
-      from_name: "Système d'Inscription IFTAR",
+      from_name: "Système d'Inscription IFTAR 2025",
       participant_name: `${participantData.first_name} ${participantData.last_name}`,
       participant_email: participantData.email,
       participant_phone: participantData.contact_number || "NON SPÉCIFIÉ",
@@ -124,7 +125,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     const templateParams: EmailTemplateParams = {
       to_email: email, // UNIQUEMENT l'email du participant
       to_name: `${participantData.first_name} ${participantData.last_name}`,
-      from_name: "IFTAR 2024",
+      from_name: "IFTAR 2025",
       prenom: participantData.first_name,
       nom: participantData.last_name,
       participant_name: `${participantData.first_name} ${participantData.last_name}`, // Ajouté pour le template

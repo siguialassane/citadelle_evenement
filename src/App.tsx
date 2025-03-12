@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
 import PaymentValidation from "./pages/admin/PaymentValidation";
+import EmailDashboard from "./pages/admin/EmailDashboard";
 import { AdminRoute } from "./components/admin/AdminRoute";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,14 @@ const App = () => (
             element={
               <AdminRoute>
                 <PaymentValidation />
+              </AdminRoute>
+            } 
+          />
+          <Route 
+            path="/admin/email-dashboard" 
+            element={
+              <AdminRoute>
+                <EmailDashboard />
               </AdminRoute>
             } 
           />

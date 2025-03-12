@@ -29,7 +29,7 @@ export const sendPaymentRejectionEmail = async (participantData: any, rejectionR
     const templateParams: EmailTemplateParams = {
       to_email: email,
       to_name: `${participantData.first_name} ${participantData.last_name}`,
-      from_name: "IFTAR 2024",
+      from_name: "IFTAR 2025",
       prenom: participantData.first_name,
       nom: participantData.last_name,
       rejection_reason: rejectionReason || "Le paiement n'a pas pu être vérifié ou confirmé",
@@ -52,4 +52,3 @@ export const sendPaymentRejectionEmail = async (participantData: any, rejectionR
     return false;
   }
 };
-
