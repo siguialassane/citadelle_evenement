@@ -18,10 +18,12 @@ import {
   AlertTriangle,
   Info,
   RefreshCw,
-  Trash
+  Trash,
+  CreditCard
 } from "lucide-react";
 import { type Participant, type Payment } from "../../../types/participant";
 import { ParticipantDeleteDialog } from "./ParticipantDeleteDialog";
+import { useNavigate } from "react-router-dom";
 
 interface ParticipantTableProps {
   participants: Participant[];
@@ -44,6 +46,11 @@ export const ParticipantTable = ({
 }: ParticipantTableProps) => {
   const [participantToDelete, setParticipantToDelete] = useState<Participant | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const navigate = useNavigate();
+  
+  const handleRedirectToPayment = (participantId: string) => {
+    navigate(`/payment/${participantId}`);
+  };
   
   const getPaymentStatusBadge = (participant: Participant) => {
     // Vérifier d'abord les paiements standard
@@ -82,8 +89,18 @@ export const ParticipantTable = ({
       }
     }
     
-    // Aucun paiement trouvé
-    return <Badge variant="outline" className="bg-gray-100 text-gray-800">Non payé</Badge>;
+    // Aucun paiement trouvé - remplacer le badge par un bouton
+    return (
+      <Button 
+        size="sm" 
+        variant="outline" 
+        className="bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center gap-1"
+        onClick={() => handleRedirectToPayment(participant.id)}
+      >
+        <CreditCard className="h-3 w-3" />
+        <span>Non payé</span>
+      </Button>
+    );
   };
 
   const handleDeleteClick = (participant: Participant) => {
