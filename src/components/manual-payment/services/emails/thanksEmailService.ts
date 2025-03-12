@@ -24,19 +24,33 @@ export const sendPersonalThanksEmail = async (
       return false;
     }
     
+    // Préparation des données avec vérification des valeurs null/undefined
+    const email = participantData.email.trim();
+    const firstName = participantData.first_name || '';
+    const lastName = participantData.last_name || '';
+    
+    // Remplacement dynamique de [prénom] par le prénom du participant
+    const formattedPersonalMessage = personalMessage.replace(/\[prénom\]/g, firstName);
+    
     const templateParams: EmailTemplateParams = {
-      to_email: participantData.email,
-      to_name: `${participantData.first_name} ${participantData.last_name}`,
+      to_email: email,
+      to_name: `${firstName} ${lastName}`,
       from_name: "IFTAR 2024",
-      prenom: participantData.first_name,
-      nom: participantData.last_name,
-      merci_perso: personalMessage,
+      prenom: firstName,
+      nom: lastName,
+      merci_perso: formattedPersonalMessage,
       merci_public: "", // Vide pour le message personnel
       app_url: window.location.origin,
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    console.log("Envoi email personnel à:", participantData.email);
+    console.log("Envoi email personnel à:", email);
+    console.log("Paramètres du template:", {
+      template_id: THANKS_TEMPLATE_ID,
+      service_id: REJECTION_EMAILJS_SERVICE_ID,
+      participant_name: `${firstName} ${lastName}`,
+      merci_perso: formattedPersonalMessage.substring(0, 50) + "..."
+    });
     
     const response = await emailjs.send(
       REJECTION_EMAILJS_SERVICE_ID,
@@ -82,19 +96,32 @@ export const sendPublicThanksEmail = async (
               return false;
             }
             
+            // Vérification et préparation des données
+            const email = participant.email.trim();
+            const firstName = participant.first_name || '';
+            const lastName = participant.last_name || '';
+            
+            // Remplacement dynamique de [prénom] par le prénom du participant
+            const formattedPublicMessage = publicMessage.replace(/\[prénom\]/g, firstName);
+            
             const templateParams: EmailTemplateParams = {
-              to_email: participant.email,
-              to_name: `${participant.first_name} ${participant.last_name}`,
+              to_email: email,
+              to_name: `${firstName} ${lastName}`,
               from_name: "IFTAR 2024",
-              prenom: participant.first_name,
-              nom: participant.last_name,
+              prenom: firstName,
+              nom: lastName,
               merci_perso: "", // Vide pour le message public
-              merci_public: publicMessage,
+              merci_public: formattedPublicMessage,
               app_url: window.location.origin,
               reply_to: "ne-pas-repondre@lacitadelle.ci"
             };
             
-            console.log("Envoi email public à:", participant.email);
+            console.log("Envoi email public à:", email);
+            console.log("Paramètres pour email public:", {
+              template_id: THANKS_TEMPLATE_ID,
+              service_id: REJECTION_EMAILJS_SERVICE_ID,
+              participant_name: `${firstName} ${lastName}`
+            });
             
             const response = await emailjs.send(
               REJECTION_EMAILJS_SERVICE_ID,
@@ -103,7 +130,7 @@ export const sendPublicThanksEmail = async (
               REJECTION_EMAILJS_PUBLIC_KEY
             );
             
-            console.log(`Email envoyé à ${participant.email}:`, response.status);
+            console.log(`Email envoyé à ${email}:`, response.status);
             return true;
           } catch (error) {
             console.error(`Erreur d'envoi à ${participant.email}:`, error);
