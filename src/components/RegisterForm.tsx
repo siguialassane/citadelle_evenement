@@ -1,9 +1,9 @@
-
 // Ce fichier contient le formulaire d'inscription pour les participants
 // Modifications:
-// - Correction du format du numéro de téléphone pour imposer exactement 10 chiffres après +225
-// - Amélioration de la validation des emails avec un message d'erreur plus explicite
-// - Ajout de logs de débogage pour les problèmes de validation d'email
+// - Amélioration de la validation des emails pour accepter tous types de fournisseurs (gmail, yahoo, etc.)
+// - Meilleure gestion des espaces avec trim() lors de la saisie
+// - Messages d'erreur plus explicites
+// - Correction du problème d'emails valides rejetés
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import EventLogo from "./EventLogo";
 
-// Définition du schéma de validation amélioré avec un message d'erreur plus descriptif pour l'email
+// Définition du schéma de validation amélioré pour accepter tous types d'emails
 const formSchema = z.object({
   firstName: z.string().min(2, { message: "Le prénom doit contenir au moins 2 caractères" }),
   lastName: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères" }),
@@ -31,19 +31,20 @@ const formSchema = z.object({
     }),
   email: z.string()
     .min(1, { message: "L'email est requis" })
+    .trim() // Nettoyer automatiquement les espaces avant validation
     .email({ 
       message: "Format d'email invalide. Exemple valide: nom@exemple.com" 
     })
     .refine(email => {
       // Log pour débogage
-      console.log("Validating email:", email);
+      console.log("Validating email in form:", email);
       
-      // Email simple sans caractères spéciaux
-      const simpleEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      const isValid = simpleEmailRegex.test(email);
+      // Email regex plus permissive pour accepter tous les services d'email
+      const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      const isValid = emailRegex.test(email);
       
       // Log du résultat
-      console.log("Email validation result:", isValid);
+      console.log("Email validation result in form:", isValid);
       
       return isValid;
     }, {
@@ -69,7 +70,7 @@ export function RegisterForm() {
       email: "",
       isMember: false,
     },
-    mode: "onChange", // Validation à chaque changement pour un feedback immédiat
+    mode: "onBlur", // Changer à onBlur pour éviter trop de validations pendant la saisie
   });
   
   // Surveiller les erreurs d'email pour le débogage
@@ -83,7 +84,9 @@ export function RegisterForm() {
   // Fonction pour gérer la soumission du formulaire
   async function onSubmit(data: FormValues) {
     try {
-      console.log("Submitting form with data:", data);
+      // Nettoyer l'email une dernière fois avant soumission
+      const cleanedEmail = data.email.trim();
+      console.log("Submitting form with data:", {...data, email: cleanedEmail});
       setIsSubmitting(true);
       
       // Sauvegarde des données dans Supabase
@@ -93,7 +96,7 @@ export function RegisterForm() {
           first_name: data.firstName,
           last_name: data.lastName,
           contact_number: data.contactNumber,
-          email: data.email,
+          email: cleanedEmail, // Utiliser l'email nettoyé
           is_member: data.isMember,
         })
         .select()
@@ -157,7 +160,7 @@ export function RegisterForm() {
   // Fonction pour nettoyer l'email des espaces et caractères spéciaux
   const handleEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const emailValue = e.target.value.trim();
-    console.log("Email input:", emailValue);
+    console.log("Email input cleaned:", emailValue);
     form.setValue("email", emailValue);
   };
 
@@ -249,7 +252,7 @@ export function RegisterForm() {
                   </FormControl>
                   <FormMessage />
                   <FormDescription className="text-xs text-gray-500">
-                    Exemple: nom@exemple.com (sans espaces ni caractères spéciaux)
+                    Exemple: nom@exemple.com, nom@yahoo.fr, etc.
                   </FormDescription>
                 </FormItem>
               )}

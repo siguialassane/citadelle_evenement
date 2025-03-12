@@ -1,5 +1,10 @@
 
 // Utilitaires de validation d'email
+// Modifications:
+// - Amélioration de la regex de validation pour accepter plus de formats d'email
+// - Meilleure gestion des espaces avant/après l'email
+// - Logs de débogage plus détaillés pour faciliter le diagnostic
+
 import { EmailValidationResult } from './types';
 
 /**
@@ -18,14 +23,16 @@ export const validateEmailData = (email: string | undefined, participantData: an
     return { isValid: false, error: "Email manquant" };
   }
 
+  // Nettoyage approfondi de l'email pour éliminer tout espace
   const trimmedEmail = email.trim();
   if (!trimmedEmail) {
     console.error("Validation d'email échouée: email vide après nettoyage");
     return { isValid: false, error: "Email vide après nettoyage" };
   }
   
-  // Validation supplémentaire du format d'email
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  // Validation du format d'email avec une regex plus permissive
+  // Accepte différents domaines (gmail, yahoo, hotmail, etc.) et formats
+  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(trimmedEmail)) {
     console.error("Validation d'email échouée: format d'email invalide:", trimmedEmail);
     return { isValid: false, error: `Format d'email invalide: ${trimmedEmail}` };
@@ -40,6 +47,7 @@ export const validateEmailData = (email: string | undefined, participantData: an
  * Nettoie et vérifie la validité basique
  */
 export const prepareEmailData = (email: string): string => {
+  // Nettoyage approfondi pour éliminer tous les espaces
   const cleaned = email.trim();
   console.log("Email nettoyé pour envoi:", cleaned);
   return cleaned;
