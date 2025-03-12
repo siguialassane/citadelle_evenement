@@ -27,6 +27,7 @@ interface ParticipantTableProps {
   participants: Participant[];
   isLoading: boolean;
   searchTerm: string;
+  pdfDownloaded?: boolean;
   onViewDetails: (participant: Participant) => void;
   onCheckIn: (participantId: string, currentStatus: boolean | null) => void;
   onDelete?: () => void;
@@ -36,6 +37,7 @@ export const ParticipantTable = ({
   participants,
   isLoading,
   searchTerm,
+  pdfDownloaded = false,
   onViewDetails,
   onCheckIn,
   onDelete
@@ -197,15 +199,17 @@ export const ParticipantTable = ({
                         )}
                       </Button>
                       
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex items-center gap-1 border-red-200 text-red-700 hover:bg-red-50"
-                        onClick={() => handleDeleteClick(participant)}
-                      >
-                        <Trash className="h-3 w-3" />
-                        <span className="hidden sm:inline">Supprimer</span>
-                      </Button>
+                      {pdfDownloaded && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex items-center gap-1 border-red-200 text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeleteClick(participant)}
+                        >
+                          <Trash className="h-3 w-3" />
+                          <span className="hidden sm:inline">Supprimer</span>
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

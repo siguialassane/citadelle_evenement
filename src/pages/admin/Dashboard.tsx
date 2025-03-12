@@ -1,4 +1,3 @@
-
 // Tableau de bord administrateur refactorisé en composants plus petits
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -267,6 +266,7 @@ const AdminDashboard = () => {
           participants={filteredParticipants}
           isLoading={isLoading}
           searchTerm={searchTerm}
+          pdfDownloaded={pdfDownloaded}
           onViewDetails={handleViewDetails}
           onCheckIn={handleCheckIn}
           onDelete={handleRefresh}
