@@ -73,8 +73,8 @@ export function PaymentForm({
       <div className="space-y-4">
         {/* Numéro utilisé pour le paiement */}
         <div>
-          <Label htmlFor="phoneNumber" className="block mb-1">
-            Numéro utilisé pour le paiement <span className="text-red-500">*</span>
+          <Label htmlFor="phoneNumber" className="block mb-1 text-red-600 text-lg font-semibold">
+            Précisé le numéro qui a servie au paiement <span className="text-red-500">*</span>
           </Label>
           <Input
             id="phoneNumber"
