@@ -9,6 +9,53 @@ const THANKS_EMAILJS_SERVICE_ID = "service_ds3ba4m";
 const THANKS_EMAILJS_PUBLIC_KEY = "4tSkd1KJOWW1HDLNC";
 const THANKS_TEMPLATE_ID = "template_u407lzh";
 
+// Format HTML pour l'email
+const EMAIL_HTML_TEMPLATE = `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .header { text-align: center; padding: 20px; background: #f5f5f5; color: green; }
+        .content { padding: 20px; }
+        .personal-message, .public-message { 
+            margin-bottom: 15px; 
+            padding: 15px; 
+            border-left: 3px solid #2e7d32; 
+            background-color: #f9f9f9; 
+        }
+        .footer { text-align: center; padding: 20px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Merci pour votre participation à l'IFTAR 2025</h1>
+    </div>
+    
+    <div class="content">
+        <p>Cher(e) {{prenom}} {{nom}},</p>
+        
+        <!-- Message personnel -->
+        {{#if merci_perso}}
+        <div class="personal-message">
+            {{merci_perso}}
+        </div>
+        {{/if}}
+        
+        <!-- Message public -->
+        {{#if merci_public}}
+        <div class="public-message">
+            {{merci_public}}
+        </div>
+        {{/if}}
+    </div>
+    
+    <div class="footer">
+        <p>Que Allah accepte nos prières et nos actes d'adoration.</p>
+        <p>Cordialement,<br>L'équipe organisatrice de l'IFTAR 2025</p>
+    </div>
+</body>
+</html>`;
+
 /**
  * Envoie un email de remerciement personnalisé à un participant
  */
@@ -33,7 +80,8 @@ export const sendPersonalThanksEmail = async (
     const firstName = participantData.first_name || '';
     const lastName = participantData.last_name || '';
     
-    // Remplacement dynamique de [prénom] par le prénom du participant
+    // Remplacement dynamique de [prénom] par le prénom du participant directement
+    // avant d'envoyer pour éviter les problèmes avec les templates EmailJS
     const formattedPersonalMessage = personalMessage.replace(/\[prénom\]/g, firstName);
     
     const templateParams: EmailTemplateParams = {
@@ -45,7 +93,15 @@ export const sendPersonalThanksEmail = async (
       merci_perso: formattedPersonalMessage,
       merci_public: "", // Vide pour le message personnel
       app_url: window.location.origin,
-      reply_to: "ne-pas-repondre@lacitadelle.ci"
+      reply_to: "ne-pas-repondre@lacitadelle.ci",
+      html_content: EMAIL_HTML_TEMPLATE.replace("{{prenom}}", firstName)
+        .replace("{{nom}}", lastName)
+        .replace("{{#if merci_perso}}", "")
+        .replace("{{merci_perso}}", formattedPersonalMessage)
+        .replace("{{/if}}", "")
+        .replace("{{#if merci_public}}", "<!-- Pas de message public -->")
+        .replace("{{merci_public}}", "")
+        .replace("{{/if}}", "<!-- Fin de section -->")
     };
 
     console.log("Envoi email personnel à:", email);
@@ -120,7 +176,15 @@ export const sendPublicThanksEmail = async (
               merci_perso: "", // Vide pour le message public
               merci_public: formattedPublicMessage,
               app_url: window.location.origin,
-              reply_to: "ne-pas-repondre@lacitadelle.ci"
+              reply_to: "ne-pas-repondre@lacitadelle.ci",
+              html_content: EMAIL_HTML_TEMPLATE.replace("{{prenom}}", firstName)
+                .replace("{{nom}}", lastName)
+                .replace("{{#if merci_perso}}", "<!-- Pas de message personnel -->")
+                .replace("{{merci_perso}}", "")
+                .replace("{{/if}}", "<!-- Fin de section -->")
+                .replace("{{#if merci_public}}", "")
+                .replace("{{merci_public}}", formattedPublicMessage)
+                .replace("{{/if}}", "")
             };
             
             console.log("Envoi email public à:", email);

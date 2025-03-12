@@ -66,8 +66,8 @@ export function MessagePreview({
 
       <div className="bg-amber-50 border border-amber-200 p-3 rounded-md text-sm">
         <p className="text-amber-800">
-          <span className="font-medium">Note:</span> Ceci est une prévisualisation simplifié. 
-          Le rendu final de l'email peut légèrement différer selon le client mail du destinataire.
+          <span className="font-medium">Note:</span> Ceci est une prévisualisation simplifiée. 
+          Le rendu final de l'email suit le format HTML demandé et peut légèrement différer selon le client mail du destinataire.
         </p>
       </div>
     </div>
