@@ -3,7 +3,6 @@
 import emailjs from '@emailjs/browser';
 import { validateEmailData } from './emailValidation';
 import { EmailTemplateParams } from './types';
-import { REJECTION_EMAILJS_SERVICE_ID, REJECTION_EMAILJS_PUBLIC_KEY } from "../../config";
 
 // Nouvelles valeurs pour le service d'envoi d'emails de remerciement
 const THANKS_EMAILJS_SERVICE_ID = "service_ds3ba4m";
@@ -21,6 +20,7 @@ export const sendPersonalThanksEmail = async (
     console.log("===== PRÉPARATION EMAIL DE REMERCIEMENT PERSONNEL =====");
     console.log("Service ID:", THANKS_EMAILJS_SERVICE_ID);
     console.log("Template ID:", THANKS_TEMPLATE_ID);
+    console.log("Public Key:", THANKS_EMAILJS_PUBLIC_KEY);
     
     const validation = validateEmailData(participantData?.email, participantData);
     if (!validation.isValid) {
@@ -83,6 +83,7 @@ export const sendPublicThanksEmail = async (
     console.log(`Tentative d'envoi à ${participantsData.length} participants`);
     console.log("Service ID:", THANKS_EMAILJS_SERVICE_ID);
     console.log("Template ID:", THANKS_TEMPLATE_ID);
+    console.log("Public Key:", THANKS_EMAILJS_PUBLIC_KEY);
     
     let successCount = 0;
     let failedCount = 0;

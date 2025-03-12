@@ -1,4 +1,3 @@
-
 // Dialogue principal pour l'envoi d'emails
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -124,18 +123,26 @@ export function EmailSendingDialog({
     });
 
     try {
+      console.log("Début de l'envoi des emails avec les nouvelles clés EmailJS");
+      console.log("Service: service_ds3ba4m");
+      console.log("Template: template_u407lzh");
+      console.log("Public Key: 4tSkd1KJOWW1HDLNC");
+      
       if (activeTab === "private") {
         // Envoi d'emails personnels individuellement
         let sentCount = 0;
         let failedCount = 0;
 
         for (const participant of selectedParticipants) {
+          console.log(`Envoi email personnel à participant: ${participant.email}`);
           const success = await sendPersonalThanksEmail(participant, personalMessage);
           
           if (success) {
             sentCount++;
+            console.log(`Email envoyé avec succès à ${participant.email}`);
           } else {
             failedCount++;
+            console.error(`Échec de l'envoi à ${participant.email}`);
           }
           
           setSendingStats({
@@ -151,6 +158,7 @@ export function EmailSendingDialog({
         }
       } else {
         // Envoi d'emails publics en groupe
+        console.log(`Envoi email public à ${selectedParticipants.length} participants`);
         const result = await sendPublicThanksEmail(selectedParticipants, publicMessage);
         
         setSendingStats({
