@@ -1,6 +1,9 @@
+
 // Ce fichier contient le formulaire d'inscription pour les participants
 // Modifications:
 // - Correction du format du numéro de téléphone pour imposer exactement 10 chiffres après +225
+// - Amélioration de la validation des emails avec un message d'erreur plus explicite
+// - Ajout de logs de débogage pour les problèmes de validation d'email
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -12,12 +15,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from "@/hooks/use-toast";
 import { User, Mail, Phone, Check } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import EventLogo from "./EventLogo";
 
-// Définition du schéma de validation amélioré
+// Définition du schéma de validation amélioré avec un message d'erreur plus descriptif pour l'email
 const formSchema = z.object({
   firstName: z.string().min(2, { message: "Le prénom doit contenir au moins 2 caractères" }),
   lastName: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères" }),
@@ -26,7 +29,26 @@ const formSchema = z.object({
     .regex(/^\+225[0-9]{10}$/, { 
       message: "Le numéro doit être au format +225 suivi de 10 chiffres exactement" 
     }),
-  email: z.string().email({ message: "Adresse email invalide" }),
+  email: z.string()
+    .min(1, { message: "L'email est requis" })
+    .email({ 
+      message: "Format d'email invalide. Exemple valide: nom@exemple.com" 
+    })
+    .refine(email => {
+      // Log pour débogage
+      console.log("Validating email:", email);
+      
+      // Email simple sans caractères spéciaux
+      const simpleEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      const isValid = simpleEmailRegex.test(email);
+      
+      // Log du résultat
+      console.log("Email validation result:", isValid);
+      
+      return isValid;
+    }, {
+      message: "L'email contient des caractères non autorisés ou un format incorrect"
+    }),
   isMember: z.boolean().default(false),
 });
 
@@ -47,11 +69,21 @@ export function RegisterForm() {
       email: "",
       isMember: false,
     },
+    mode: "onChange", // Validation à chaque changement pour un feedback immédiat
   });
+  
+  // Surveiller les erreurs d'email pour le débogage
+  useEffect(() => {
+    const emailError = form.formState.errors.email;
+    if (emailError) {
+      console.log("Email error:", emailError);
+    }
+  }, [form.formState.errors.email]);
 
   // Fonction pour gérer la soumission du formulaire
   async function onSubmit(data: FormValues) {
     try {
+      console.log("Submitting form with data:", data);
       setIsSubmitting(true);
       
       // Sauvegarde des données dans Supabase
@@ -68,6 +100,7 @@ export function RegisterForm() {
         .single();
       
       if (error) {
+        console.error("Supabase error:", error);
         throw error;
       }
 
@@ -119,6 +152,13 @@ export function RegisterForm() {
     
     // Log pour debug
     console.log("Numéro formaté:", formattedNumber);
+  };
+
+  // Fonction pour nettoyer l'email des espaces et caractères spéciaux
+  const handleEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const emailValue = e.target.value.trim();
+    console.log("Email input:", emailValue);
+    form.setValue("email", emailValue);
   };
 
   return (
@@ -199,10 +239,18 @@ export function RegisterForm() {
                   <FormControl>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600 h-4 w-4" />
-                      <Input className="pl-10 border-green-200 focus:border-green-400 focus:ring-green-400" placeholder="votre.email@exemple.com" {...field} />
+                      <Input 
+                        className="pl-10 border-green-200 focus:border-green-400 focus:ring-green-400" 
+                        placeholder="votre.email@exemple.com" 
+                        {...field} 
+                        onBlur={handleEmailInput}
+                      />
                     </div>
                   </FormControl>
                   <FormMessage />
+                  <FormDescription className="text-xs text-gray-500">
+                    Exemple: nom@exemple.com (sans espaces ni caractères spéciaux)
+                  </FormDescription>
                 </FormItem>
               )}
             />
