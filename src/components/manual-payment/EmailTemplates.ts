@@ -269,7 +269,7 @@ export const PARTICIPANT_PAYMENT_PENDING_TEMPLATE = `<!DOCTYPE html>
 
         <p><strong>Statut :</strong> En attente de validation</p>
 
-        <a href="{{app_url}}/redirect/pending/{{participant_id}}" class="pending-btn">Suivre mon paiement</a>
+        <a href="{{app_url}}/payment-pending/{{participant_id}}" class="pending-btn">Suivre mon paiement</a>
         
         <p>Cet email a été envoyé automatiquement suite à la soumission de votre paiement. Un administrateur va vérifier votre paiement et vous recevrez un email de confirmation une fois validé.</p>
         <p>Pour toute question, n'hésitez pas à contacter notre équipe support.</p>

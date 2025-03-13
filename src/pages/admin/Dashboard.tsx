@@ -1,3 +1,4 @@
+
 // Tableau de bord administrateur refactorisé en composants plus petits
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -6,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { type Participant } from "../../types/participant";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Mail, CheckCircle } from "lucide-react";
+import { Bell, Mail, CheckCircle, QrCode } from "lucide-react";
 
 // Composants refactorisés
 import { Header } from "@/components/admin/dashboard/Header";
@@ -215,6 +216,10 @@ const AdminDashboard = () => {
     navigate("/admin/email-dashboard");
   };
 
+  const goToQrCodeScan = () => {
+    navigate("/admin/qr-scan");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header onLogout={handleLogout} />
@@ -232,6 +237,14 @@ const AdminDashboard = () => {
             >
               <Mail className="h-4 w-4" />
               Gestion des emails
+            </Button>
+            
+            <Button 
+              onClick={goToQrCodeScan} 
+              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
+            >
+              <QrCode className="h-4 w-4" />
+              Scanner QR Code
             </Button>
             
             <Button 

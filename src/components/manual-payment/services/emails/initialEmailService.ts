@@ -33,13 +33,8 @@ export const sendAdminNotification = async (
       return false;
     }
 
-    // CRUCIAL: Construire des URLs complètes sans variables de template
     const appUrl = window.location.origin;
-    // Construction explicite de l'URL complète
     const validationLink = `${appUrl}/admin/payment-validation/${manualPaymentId}`;
-    
-    // Vérification de l'URL de validation
-    console.log("URL de validation admin COMPLÈTE générée:", validationLink);
 
     // Formater les données pour s'assurer qu'elles ne sont pas vides
     const formattedComments = comments?.trim() || "Aucun commentaire";
@@ -68,27 +63,30 @@ export const sendAdminNotification = async (
       participant_id: participantData.id,
       app_url: appUrl,
       current_date: currentDate,
-      validation_link: validationLink, // URL complète sans variables de template
+      validation_link: validationLink,
       reply_to: "ne-pas-repondre@lacitadelle.ci",
       prenom: participantData.first_name,
       nom: participantData.last_name,
     };
     
-    // Ajouter plus de logs pour diagnostiquer le problème d'authentification
-    console.log("EmailJS configuration pour admin notification:", {
-      service_id: EMAILJS_SERVICE_ID,
-      template_id: ADMIN_NOTIFICATION_TEMPLATE_ID,
-      params_count: Object.keys(templateParams).length
+    // Afficher les paramètres envoyés au template admin pour débogage
+    console.log("Paramètres EmailJS pour template_dp1tu2w:", {
+      participant_name: templateParams.participant_name,
+      participant_email: templateParams.participant_email,
+      payment_id: templateParams.payment_id,
+      validation_link: templateParams.validation_link,
+      comments: templateParams.comments,
+      current_date: templateParams.current_date,
+      payment_phone: templateParams.payment_phone,
+      payment_method: templateParams.payment_method
     });
 
     // Envoi de l'email via EmailJS avec le template ADMIN_NOTIFICATION_TEMPLATE_ID
-    // Utilisation de init() pour éviter les problèmes d'authentification
-    emailjs.init(EMAILJS_PUBLIC_KEY);
-    
     const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
       ADMIN_NOTIFICATION_TEMPLATE_ID,
-      templateParams
+      templateParams,
+      EMAILJS_PUBLIC_KEY
     );
 
     console.log("Email de notification admin envoyé avec succès:", response);
@@ -106,66 +104,26 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
   try {
     console.log("===== PRÉPARATION EMAIL INITIAL AU PARTICIPANT =====");
     
-    // Validation approfondie des données
-    if (!participantData) {
-      console.error("Erreur: participantData est null ou undefined");
-      return false;
-    }
-    
-    if (!participantData.email) {
-      console.error("Erreur: Email du participant manquant", participantData);
-      return false;
-    }
-    
-    if (!participantData.id) {
-      console.error("Erreur: ID du participant manquant", participantData);
-      return false;
-    }
-    
-    // Vérification explicite du format de l'email
-    const validation = validateEmailData(participantData.email, participantData);
+    const validation = validateEmailData(participantData?.email, participantData);
     if (!validation.isValid) {
-      console.error("Validation d'email échouée:", validation.error);
+      console.error(validation.error);
       return false;
     }
     
-    // Nettoyage et préparation de l'email
     const email = prepareEmailData(participantData.email);
-    console.log("Email préparé pour envoi:", email);
-    
-    if (!email || email.trim() === '') {
-      console.error("Erreur: Email vide après préparation");
-      return false;
-    }
-    
-    // CRUCIAL: Construire des URLs complètes sans variables de template
     const appUrl = window.location.origin;
-    
-    // Construction explicite de l'URL complète sans variables de template
-    const pendingUrl = `${appUrl}/payment-pending/${participantData.id}`;
+    const pendingUrl = `${appUrl}/payment-pending/${participantData.id}?type=initial`;
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
-    
-    // Log pour débugger les URLs
-    console.log("URLs générées pour l'email initial:", {
-      pendingUrl: pendingUrl,
-      participantId: participantData.id, // Vérifier que l'ID est bien défini
-      mapsUrl: EVENT_LOCATION.mapsUrl,
-      eventLocation: EVENT_LOCATION.name
-    });
     
     // Ajouter des logs pour vérifier les données du participant
     console.log("Données participant pour email initial:", {
       email: email,
-      email_type: typeof email,
-      email_length: email.length,
       nom_complet: `${participantData.first_name} ${participantData.last_name}`,
-      participant_email: participantData.email, // Vérifier que cette valeur existe
-      id: participantData.id // VÉRIFICATION CRUCIALE DE L'ID
+      participant_email: participantData.email // Vérifier que cette valeur existe
     });
     
-    // Création explicite des paramètres du template
     const templateParams: EmailTemplateParams = {
-      to_email: email, // VÉRIFICATION CRUCIALE: l'email doit être une chaîne non vide
+      to_email: email, // UNIQUEMENT l'email du participant
       to_name: `${participantData.first_name} ${participantData.last_name}`,
       from_name: "IFTAR 2025",
       prenom: participantData.first_name,
@@ -178,38 +136,28 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       payment_amount: `${PAYMENT_AMOUNT} XOF`,
       payment_phone: phoneNumber,
       app_url: appUrl,
-      pending_url: pendingUrl, // URL complète sans variables de template
+      pending_url: pendingUrl,
       maps_url: EVENT_LOCATION.mapsUrl,
       event_location: EVENT_LOCATION.name,
       event_address: EVENT_LOCATION.address,
       current_date: new Date().toLocaleString('fr-FR'), // Ajout de la date actuelle formatée
-      reply_to: "ne-pas-repondre@lacitadelle.ci",
-      participant_id: participantData.id // AJOUT EXPLICITE DE L'ID
+      reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    // Vérification finale des paramètres critiques
-    if (!templateParams.to_email || templateParams.to_email.trim() === '') {
-      console.error("ERREUR CRITIQUE: to_email est vide ou undefined avant envoi:", templateParams.to_email);
-      return false;
-    }
-
-    // Ajouter un log pour vérifier les paramètres de configuration
-    console.log("EmailJS configuration pour email initial:", {
-      service_id: EMAILJS_SERVICE_ID,
-      template_id: PARTICIPANT_INITIAL_TEMPLATE_ID,
-      params_count: Object.keys(templateParams).length,
-      pending_url_value: pendingUrl, // Vérifier la valeur de l'URL
-      to_email_value: templateParams.to_email // Vérifier l'email du destinataire
+    // Ajouter un log pour vérifier les paramètres envoyés au template
+    console.log("Paramètres EmailJS pour template_2ncsaxe:", {
+      participant_name: templateParams.participant_name,
+      participant_email: templateParams.participant_email,
+      to_name: templateParams.to_name,
+      current_date: templateParams.current_date // Log de la date pour vérification
     });
 
-    // Initialisation explicite pour éviter les problèmes d'authentification
-    emailjs.init(EMAILJS_PUBLIC_KEY);
-    
     // IMPORTANT: N'utilise que le template PARTICIPANT_INITIAL_TEMPLATE_ID pour le participant
     const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
       PARTICIPANT_INITIAL_TEMPLATE_ID,
-      templateParams
+      templateParams,
+      EMAILJS_PUBLIC_KEY
     );
 
     console.log("Email initial au participant envoyé avec succès:", response);

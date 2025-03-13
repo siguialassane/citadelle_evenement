@@ -5,7 +5,6 @@
 // Mise à jour: Suppression de la référence de transaction
 // Mise à jour: Email administrateur dynamique géré dans EmailJS
 // Mise à jour: Ajout de logs supplémentaires pour le débogage des emails
-// Mise à jour: Amélioration de la gestion des erreurs d'email
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -33,29 +32,6 @@ export function useManualPayment(participant: Participant) {
     });
   };
 
-  // Vérifier si l'email du participant est valide
-  const validateParticipantEmail = () => {
-    if (!participant?.email) {
-      console.error("Email du participant manquant:", participant);
-      return false;
-    }
-    
-    const emailTrimmed = participant.email.trim();
-    if (!emailTrimmed) {
-      console.error("Email du participant vide après nettoyage:", participant.email);
-      return false;
-    }
-    
-    // Validation simplifiée du format d'email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailTrimmed)) {
-      console.error("Format d'email du participant invalide:", emailTrimmed);
-      return false;
-    }
-    
-    return true;
-  };
-
   // Fonction pour gérer la soumission du formulaire
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,18 +46,6 @@ export function useManualPayment(participant: Participant) {
           description: "Veuillez saisir le numéro utilisé pour le paiement",
           variant: "destructive",
         });
-        setIsProcessing(false);
-        return;
-      }
-      
-      // Vérification de l'email du participant avant de continuer
-      if (!validateParticipantEmail()) {
-        toast({
-          title: "Email invalide",
-          description: "L'adresse email du participant est invalide. Veuillez contacter l'administrateur.",
-          variant: "destructive",
-        });
-        setIsProcessing(false);
         return;
       }
 
@@ -96,17 +60,13 @@ export function useManualPayment(participant: Participant) {
       console.log("Paiement manuel enregistré avec ID:", manualPayment.id);
 
       // Envoyer une notification à l'administrateur (email défini dans EmailJS)
-      const adminNotified = await sendAdminNotification(
+      await sendAdminNotification(
         manualPayment.id,
         participant,
         paymentMethod,
         phoneNumber,
         comments
       );
-      
-      if (!adminNotified) {
-        console.warn("La notification à l'administrateur n'a pas pu être envoyée");
-      }
 
       // Tenter d'envoyer l'email initial au participant
       const participantEmailSent = await sendParticipantInitialEmail(

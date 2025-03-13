@@ -3,7 +3,6 @@
 // Mise à jour: Séparation complète des chemins d'envoi d'emails
 // Mise à jour: Services EmailJS dédiés pour chaque type d'email
 // Mise à jour: Nouveau service distinct pour les emails de rejet
-// Correction: Appel à sendConfirmationEmail avec le bon nombre d'arguments
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse } from "./types";
@@ -51,8 +50,7 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
     }
 
     // UNIQUEMENT envoi de l'email de confirmation
-    // Correction: sendConfirmationEmail n'attend qu'un seul argument (participantData)
-    const emailSuccess = await sendConfirmationEmail(participantData);
+    const emailSuccess = await sendConfirmationEmail(participantData, qrCodeId);
     
     if (!emailSuccess) {
       console.error("Erreur lors de l'envoi de l'email de confirmation");

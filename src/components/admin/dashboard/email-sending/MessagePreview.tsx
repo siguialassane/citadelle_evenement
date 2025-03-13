@@ -18,8 +18,10 @@ export function MessagePreview({
   participant,
   onBack 
 }: MessagePreviewProps) {
-  // Remplacer [prénom] par le prénom du participant
-  const formattedMessage = message.replace(/\[prénom\]/g, participant.first_name);
+  // Remplacer [prénom] et [nom] par les valeurs du participant
+  const formattedMessage = message
+    .replace(/\[prénom\]/g, participant.first_name)
+    .replace(/\[nom\]/g, participant.last_name);
 
   return (
     <div className="space-y-4">
@@ -41,7 +43,7 @@ export function MessagePreview({
         </CardHeader>
         <CardContent className="p-6 prose-sm max-w-none">
           <div className="mb-4">
-            <p className="font-medium">Cher(e) {participant.first_name} {participant.last_name},</p>
+            <p className="font-medium">Cher(e) {participant.last_name} {participant.first_name},</p>
           </div>
           
           {messageType === "personal" ? (
