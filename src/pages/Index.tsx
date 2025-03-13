@@ -3,7 +3,8 @@
 // Modifications:
 // - Remplacement des couleurs belges par celles de la Côte d'Ivoire (orange, blanc, vert)
 // - Amélioration du design pour correspondre au thème islamique
-// - Ajout du programme détaillé et des invités officiels
+// - Ajout du programme détaillé et suppression des invités officiels
+// - Configuration pour afficher le programme détaillé déplié par défaut
 
 import React from "react";
 import { RegisterForm } from "@/components/RegisterForm";
@@ -93,9 +94,9 @@ const Index = () => {
           </div>
         </div>
         
-        {/* Programme détaillé avec accordéon */}
+        {/* Programme détaillé avec accordéon - déplié par défaut */}
         <div className="mb-12">
-          <Accordion type="single" collapsible className="w-full bg-white rounded-xl shadow-md">
+          <Accordion type="single" collapsible defaultValue="programme" className="w-full bg-white rounded-xl shadow-md">
             <AccordionItem value="programme">
               <AccordionTrigger className="px-6 py-4 text-xl font-bold text-green-700 hover:text-green-800 hover:no-underline">
                 <div className="flex items-center gap-2">
@@ -295,62 +296,6 @@ const Index = () => {
                       </Card>
                     </div>
                   </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-            
-            {/* Invités officiels et personnalités */}
-            <AccordionItem value="invites">
-              <AccordionTrigger className="px-6 py-4 text-xl font-bold text-green-700 hover:text-green-800 hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <Award className="h-6 w-6" />
-                  Invités officiels et Personnalités
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-6 pb-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <ul className="space-y-3 text-left">
-                    <li className="flex items-start">
-                      <div className="h-2 w-2 rounded-full bg-orange-500 mt-2 mr-2 flex-shrink-0"></div>
-                      <span className="font-medium">EL HADJ KONE DRISSA - CONSEILLER DU PRESIDENT DE LA REPUBLIQUE</span>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="h-2 w-2 rounded-full bg-orange-500 mt-2 mr-2 flex-shrink-0"></div>
-                      <span className="font-medium">M LE MINISTRE SANOGO MOUSSA</span>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="h-2 w-2 rounded-full bg-orange-500 mt-2 mr-2 flex-shrink-0"></div>
-                      <span className="font-medium">BAMBA KARIM- DG CNAM</span>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="h-2 w-2 rounded-full bg-green-600 mt-2 mr-2 flex-shrink-0"></div>
-                      <span className="font-medium">SIDIBE ISSOUFOU- DG OFFICE IVOIRIENNE DES CHARGEURS</span>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="h-2 w-2 rounded-full bg-green-600 mt-2 mr-2 flex-shrink-0"></div>
-                      <span className="font-medium">CHEIKHOUL AIMA OUSMANE DIAKHITE - PRESIDENT COSIM</span>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="h-2 w-2 rounded-full bg-green-600 mt-2 mr-2 flex-shrink-0"></div>
-                      <span className="font-medium">IMAM CISSE DJIGUIBA - DG ALBAYANE RADIO TV- RECTEUR DE LA MOSQUEE DU PLATEAU</span>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="h-2 w-2 rounded-full bg-orange-500 mt-2 mr-2 flex-shrink-0"></div>
-                      <span className="font-medium">HADJA KOMARA DOUSSOUTIE (INVITE PCA)</span>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="h-2 w-2 rounded-full bg-orange-500 mt-2 mr-2 flex-shrink-0"></div>
-                      <span className="font-medium">MAHAMADOU KOUMA- PCA CONVENTION SOCIETE CIVILE DE CI</span>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="h-2 w-2 rounded-full bg-green-600 mt-2 mr-2 flex-shrink-0"></div>
-                      <span className="font-medium">EL HAJJ FAMAN TOURE- PRESIDENT DE LA CCI-CI</span>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="h-2 w-2 rounded-full bg-green-600 mt-2 mr-2 flex-shrink-0"></div>
-                      <span className="font-medium">ALI BERTE - VICE-COMMISSAIRE DU HADJ</span>
-                    </li>
-                  </ul>
                 </div>
               </AccordionContent>
             </AccordionItem>
