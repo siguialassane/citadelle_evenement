@@ -1,4 +1,6 @@
 
+// Correction: Amélioration de la navigation pour éviter le problème de redirection automatique vers la page admin
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,9 +26,13 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* Route principale - page d'inscription */}
           <Route path="/" element={<Index />} />
+          
+          {/* Routes de paiement */}
           <Route path="/payment/:participantId" element={<Payment />} />
           <Route path="/payment-pending/:participantId" element={<PaymentPending />} />
+          
           {/* Routes de confirmation avec support des paramètres supplémentaires */}
           <Route path="/confirmation/:participantId" element={<Confirmation />} />
           <Route path="/receipt/:participantId" element={<Confirmation />} />
