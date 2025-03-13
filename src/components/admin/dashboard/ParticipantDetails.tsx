@@ -1,3 +1,4 @@
+
 // Composant pour afficher les détails d'un participant
 import { 
   Dialog,
@@ -18,9 +19,14 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Download, QrCode, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { type Participant, type Payment } from "../../../types/participant";
 import { type ManualPayment } from "../../../types/payment";
+import html2canvas from 'html2canvas';
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ParticipantDetailsProps {
   open: boolean;
@@ -33,6 +39,8 @@ export const ParticipantDetails = ({
   onOpenChange, 
   participant 
 }: ParticipantDetailsProps) => {
+  const [isRegeneratingQR, setIsRegeneratingQR] = useState(false);
+  const isMobile = useIsMobile();
   
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
@@ -85,11 +93,93 @@ export const ParticipantDetails = ({
     return null;
   };
 
+  const generateQrCodeUrl = (participant: Participant) => {
+    if (!participant) return null;
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/confirmation/${participant.id}`;
+  };
+
+  const regenerateQrCode = async () => {
+    if (!participant) return;
+    
+    try {
+      setIsRegeneratingQR(true);
+      
+      // Générer un nouveau QR code ID unique
+      const newQrCodeId = crypto.randomUUID();
+      
+      // Mettre à jour dans la base de données
+      const { error } = await supabase
+        .from('participants')
+        .update({ qr_code_id: newQrCodeId })
+        .eq('id', participant.id);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "QR Code régénéré",
+        description: "Le QR Code a été régénéré avec succès.",
+      });
+      
+      // Forcer le rafraîchissement des données (ceci dépend de votre implémentation)
+      // Idéalement, il faudrait appeler une fonction du composant parent pour recharger les données
+    } catch (error) {
+      console.error("Erreur lors de la régénération du QR code:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de régénérer le QR code.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRegeneratingQR(false);
+    }
+  };
+
+  const downloadQrCode = async () => {
+    if (!participant) return;
+    
+    const qrCodeElement = document.getElementById('participant-qr-code');
+    if (!qrCodeElement) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de télécharger le QR code.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const canvas = await html2canvas(qrCodeElement);
+      const dataUrl = canvas.toDataURL('image/png');
+      
+      const link = document.createElement('a');
+      link.download = `qrcode-${participant.last_name}-${participant.first_name}.png`;
+      link.href = dataUrl;
+      link.click();
+      
+      toast({
+        title: "Téléchargement réussi",
+        description: "Le QR code a été téléchargé avec succès.",
+      });
+    } catch (error) {
+      console.error("Erreur lors du téléchargement du QR code:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de télécharger le QR code.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const activePayment = participant ? getActivePayment(participant) : null;
+  const qrCodeUrl = participant ? generateQrCodeUrl(participant) : null;
+  const hasPayment = activePayment && (activePayment.payment.status.toUpperCase() === "APPROVED" || 
+                                     activePayment.payment.status.toUpperCase() === "SUCCESS" || 
+                                     activePayment.payment.status.toUpperCase() === "COMPLETED");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">
             Détails du participant
@@ -189,6 +279,66 @@ export const ParticipantDetails = ({
                 )}
               </CardContent>
             </Card>
+
+            {/* Carte pour le QR Code */}
+            {hasPayment && (
+              <Card className={`${isMobile ? "col-span-1" : "col-span-2"}`}>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <QrCode className="h-5 w-5 mr-2" />
+                    QR Code d'accès
+                  </CardTitle>
+                  <CardDescription>
+                    Le QR code permettant l'accès à l'événement
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center">
+                  {qrCodeUrl ? (
+                    <>
+                      <div 
+                        id="participant-qr-code"
+                        className="border-2 border-dashed border-gray-300 p-4 rounded-lg mb-4 bg-white"
+                      >
+                        <div className="text-center mb-2">
+                          <p className="font-bold">{participant.last_name} {participant.first_name}</p>
+                          <p className="text-xs text-gray-500">ID: {participant.id.slice(0, 8)}...</p>
+                        </div>
+                        <img 
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeUrl)}`}
+                          alt="QR Code d'accès"
+                          className="mx-auto h-48 w-48"
+                        />
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={downloadQrCode}
+                          variant="outline"
+                          className="flex items-center"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Télécharger
+                        </Button>
+                        <Button
+                          onClick={regenerateQrCode}
+                          variant="outline"
+                          className="flex items-center"
+                          disabled={isRegeneratingQR}
+                        >
+                          <RefreshCw className={`h-4 w-4 mr-2 ${isRegeneratingQR ? 'animate-spin' : ''}`} />
+                          Régénérer
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center text-gray-500">
+                      <AlertTriangle className="h-10 w-10 mx-auto mb-2" />
+                      <p>QR code non disponible</p>
+                      <p className="text-sm">Le QR code sera disponible après validation du paiement</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
