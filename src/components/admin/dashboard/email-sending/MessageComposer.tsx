@@ -24,8 +24,8 @@ export function MessageComposer({
   // Quelques modèles de messages prédéfinis
   const messageTemplates = {
     personal: [
-      "Cher(e) [prénom], nous tenons à vous remercier personnellement pour votre participation à l'IFTAR 2025. Votre présence a contribué au succès de cet événement.",
-      "Cher(e) [prénom], c'est avec une grande joie que nous avons pu vous accueillir à l'IFTAR 2025. Merci pour votre participation qui a rendu cet événement spécial."
+      "Cher(e) [nom] [prénom], nous tenons à vous remercier personnellement pour votre participation à l'IFTAR 2025. Votre présence a contribué au succès de cet événement.",
+      "Cher(e) [nom] [prénom], c'est avec une grande joie que nous avons pu vous accueillir à l'IFTAR 2025. Merci pour votre participation qui a rendu cet événement spécial."
     ],
     public: [
       "Chers participants, nous tenons à vous remercier chaleureusement pour votre présence à l'IFTAR 2025. Cet événement a été un succès grâce à vous tous.",
