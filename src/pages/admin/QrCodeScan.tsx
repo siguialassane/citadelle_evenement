@@ -1,6 +1,6 @@
 
-// Page de scan de QR code pour les administrateurs
-import { useState, useEffect } from "react";
+// Page de scan de QR code pour les administrateurs - Compatible avec iOS et Android
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -9,12 +9,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Header } from "@/components/admin/dashboard/Header";
 import { ArrowLeft, QrCode, Scan, Link2, ExternalLink, Settings2 } from "lucide-react";
 import { ShortcutButton } from "@/components/admin/qr-scan/ShortcutButton";
+import { Html5Qrcode } from "html5-qrcode";
 
 const QrCodeScan = () => {
   const navigate = useNavigate();
   const [isScanning, setIsScanning] = useState(false);
   const [hasCamera, setHasCamera] = useState(false);
   const [lastScannedId, setLastScannedId] = useState<string | null>(null);
+  const [lastScannedName, setLastScannedName] = useState<string | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerContainerId = "qr-reader";
 
   useEffect(() => {
     const checkAuth = () => {
@@ -42,23 +46,116 @@ const QrCodeScan = () => {
 
     checkAuth();
     checkCamera();
+
+    // Nettoyage à la sortie
+    return () => {
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        scannerRef.current.stop();
+      }
+    };
   }, [navigate]);
 
   const handleStartScan = () => {
+    if (!hasCamera) return;
+    
     setIsScanning(true);
-    // La logique de scan sera implémentée ultérieurement
+    
+    const html5QrCode = new Html5Qrcode(scannerContainerId);
+    scannerRef.current = html5QrCode;
+    
+    const config = { 
+      fps: 10, 
+      qrbox: { width: 250, height: 250 },
+      aspectRatio: 1.0,
+      formatsToSupport: [0], // 0 corresponds to QR_CODE
+    };
+    
+    html5QrCode.start(
+      { facingMode: "environment" }, // Pour utiliser la caméra arrière
+      config,
+      onScanSuccess,
+      onScanFailure
+    ).catch(err => {
+      console.error("Erreur au démarrage du scanner:", err);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'activer la caméra. Vérifiez vos permissions et réessayez.",
+        variant: "destructive",
+      });
+      setIsScanning(false);
+    });
   };
 
   const handleStopScan = () => {
-    setIsScanning(false);
+    if (scannerRef.current && scannerRef.current.isScanning) {
+      scannerRef.current.stop().then(() => {
+        setIsScanning(false);
+      }).catch(err => {
+        console.error("Erreur à l'arrêt du scanner:", err);
+        setIsScanning(false);
+      });
+    }
   };
 
-  const handleCheckIn = async (participantId: string) => {
+  const onScanSuccess = async (decodedText: string) => {
+    console.log("QR Code détecté:", decodedText);
     try {
-      // Mise à jour du statut de check-in dans la base de données
+      // Mise en pause temporaire du scan pour éviter les lectures multiples
+      if (scannerRef.current) {
+        scannerRef.current.pause();
+      }
+      
+      // Extraction de l'ID du participant depuis le QR code
+      let participantId = decodedText;
+      
+      // Si le QR contient un URL, on extrait l'ID
+      if (decodedText.includes('/')) {
+        const parts = decodedText.split('/');
+        participantId = parts[parts.length - 1];
+      }
+      
+      // Vérifier si l'ID est valide (format UUID)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(participantId)) {
+        toast({
+          title: "QR code invalide",
+          description: "Ce code QR ne contient pas d'identifiant valide.",
+          variant: "destructive",
+        });
+        
+        if (scannerRef.current) {
+          scannerRef.current.resume();
+        }
+        return;
+      }
+      
+      // Recherche du participant dans la base de données
+      const { data: participant, error: fetchError } = await supabase
+        .from('participants')
+        .select('*')
+        .eq('id', participantId)
+        .single();
+        
+      if (fetchError || !participant) {
+        toast({
+          title: "Participant non trouvé",
+          description: "Aucun participant trouvé avec cet identifiant.",
+          variant: "destructive",
+        });
+        
+        if (scannerRef.current) {
+          scannerRef.current.resume();
+        }
+        return;
+      }
+      
+      // Mise à jour du statut de check-in
       const { error } = await supabase
         .from('participants')
-        .update({ check_in_status: true })
+        .update({ 
+          check_in_status: true,
+          check_in_timestamp: new Date().toISOString()
+        })
         .eq('id', participantId);
 
       if (error) throw error;
@@ -78,12 +175,21 @@ const QrCodeScan = () => {
       if (checkInError) throw checkInError;
 
       setLastScannedId(participantId);
+      setLastScannedName(`${participant.first_name} ${participant.last_name}`);
       
       toast({
         title: "Présence confirmée",
-        description: "Le participant a été marqué comme présent.",
+        description: `${participant.first_name} ${participant.last_name} a été marqué comme présent.`,
         variant: "default",
       });
+      
+      // Reprendre le scan après un délai
+      setTimeout(() => {
+        if (scannerRef.current) {
+          scannerRef.current.resume();
+        }
+      }, 2000);
+      
     } catch (error) {
       console.error("Erreur lors de l'enregistrement de la présence:", error);
       toast({
@@ -91,7 +197,16 @@ const QrCodeScan = () => {
         description: "Impossible d'enregistrer la présence.",
         variant: "destructive",
       });
+      
+      if (scannerRef.current) {
+        scannerRef.current.resume();
+      }
     }
+  };
+
+  const onScanFailure = (error: string) => {
+    // Nous ne faisons rien pour les erreurs de scan, c'est normal quand aucun QR n'est détecté
+    // console.log("Pas de QR code détecté:", error);
   };
 
   return (
@@ -147,12 +262,15 @@ const QrCodeScan = () => {
             </CardHeader>
             <CardContent className="flex flex-col items-center">
               {isScanning ? (
-                <div className="w-full aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-4 bg-black">
-                  <div className="text-center text-white">
-                    <Scan className="h-8 w-8 mx-auto mb-2 animate-pulse" />
-                    <p>Scannez un QR code...</p>
+                <div className="w-full aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
+                  <div id={scannerContainerId} className="w-full h-full">
+                    {/* La caméra sera insérée ici par la bibliothèque */}
                   </div>
-                  {/* Le composant de scan de QR sera intégré ici */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                    <div className="w-64 h-64 border-2 border-white border-dashed rounded-lg flex items-center justify-center">
+                      <Scan className="h-8 w-8 text-white" />
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="w-full aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-4">
@@ -190,8 +308,9 @@ const QrCodeScan = () => {
             <CardContent>
               {lastScannedId ? (
                 <div className="p-4 border rounded-md">
-                  <p>ID du participant: {lastScannedId}</p>
-                  <p className="text-green-600 font-medium">Présence confirmée</p>
+                  <p className="font-medium text-gray-800">{lastScannedName}</p>
+                  <p className="text-sm text-gray-600">ID: {lastScannedId}</p>
+                  <p className="text-green-600 font-medium mt-2">Présence confirmée</p>
                   <Button 
                     variant="outline" 
                     size="sm" 
