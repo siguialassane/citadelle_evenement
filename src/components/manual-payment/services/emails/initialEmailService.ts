@@ -34,6 +34,7 @@ export const sendAdminNotification = async (
     }
 
     const appUrl = window.location.origin;
+    // Construction explicite de l'URL complète pour éviter les problèmes de remplacement
     const validationLink = `${appUrl}/admin/payment-validation/${manualPaymentId}`;
     
     // Vérification de l'URL de validation
@@ -66,7 +67,7 @@ export const sendAdminNotification = async (
       participant_id: participantData.id,
       app_url: appUrl,
       current_date: currentDate,
-      validation_link: validationLink,
+      validation_link: validationLink, // URL complète déjà construite
       reply_to: "ne-pas-repondre@lacitadelle.ci",
       prenom: participantData.first_name,
       nom: participantData.last_name,
@@ -112,6 +113,8 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     
     const email = prepareEmailData(participantData.email);
     const appUrl = window.location.origin;
+    
+    // Construction explicite de l'URL complète pour éviter les problèmes de template
     const pendingUrl = `${appUrl}/redirect/pending/${participantData.id}`;
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
     
@@ -143,7 +146,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       payment_amount: `${PAYMENT_AMOUNT} XOF`,
       payment_phone: phoneNumber,
       app_url: appUrl,
-      pending_url: pendingUrl,
+      pending_url: pendingUrl, // URL complète déjà construite
       maps_url: EVENT_LOCATION.mapsUrl,
       event_location: EVENT_LOCATION.name,
       event_address: EVENT_LOCATION.address,

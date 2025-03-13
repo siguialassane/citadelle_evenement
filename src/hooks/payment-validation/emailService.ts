@@ -7,6 +7,7 @@
 // Mise à jour: Correction du problème d'authentification Gmail API
 // Mise à jour: Ajout de logs pour vérifier les URLs
 // Mise à jour: Utilisation des URLs de redirection pour éviter les problèmes de template non remplacé
+// Mise à jour: Construction explicite des URLs pour éviter les problèmes de variables non remplacées
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -36,6 +37,8 @@ export const sendConfirmationEmail = async (participantData: any) => {
     
     // Générer les URLs utilisées dans l'email
     const appUrl = window.location.origin;
+    
+    // Construction explicite des URLs pour éviter les problèmes de variables non remplacées
     const confirmationPageUrl = `${appUrl}/confirmation/${participantData.id}`;
     const encodedConfirmationUrl = encodeURIComponent(confirmationPageUrl);
     const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedConfirmationUrl}&qzone=2`;
