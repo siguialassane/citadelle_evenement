@@ -33,13 +33,13 @@ export const sendAdminNotification = async (
       return false;
     }
 
-    // IMPORTANT: Ne pas utiliser {{app_url}} mais construire l'URL complète ici
+    // CRUCIAL: Construire des URLs complètes sans variables de template
     const appUrl = window.location.origin;
-    // Construction explicite de l'URL complète pour éviter les problèmes de remplacement
+    // Construction explicite de l'URL complète
     const validationLink = `${appUrl}/admin/payment-validation/${manualPaymentId}`;
     
     // Vérification de l'URL de validation
-    console.log("URL de validation admin générée:", validationLink);
+    console.log("URL de validation admin COMPLÈTE générée:", validationLink);
 
     // Formater les données pour s'assurer qu'elles ne sont pas vides
     const formattedComments = comments?.trim() || "Aucun commentaire";
@@ -68,7 +68,7 @@ export const sendAdminNotification = async (
       participant_id: participantData.id,
       app_url: appUrl,
       current_date: currentDate,
-      validation_link: validationLink, // URL complète déjà construite
+      validation_link: validationLink, // URL complète sans variables de template
       reply_to: "ne-pas-repondre@lacitadelle.ci",
       prenom: participantData.first_name,
       nom: participantData.last_name,
@@ -114,17 +114,17 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     
     const email = prepareEmailData(participantData.email);
     
-    // IMPORTANT: Ne pas utiliser {{app_url}} mais construire l'URL complète ici
+    // CRUCIAL: Construire des URLs complètes sans variables de template
     const appUrl = window.location.origin;
     
-    // Construction explicite de l'URL complète pour éviter les problèmes de template
-    // On n'utilise plus le format redirect/pending/ mais directement l'URL finale
+    // Construction explicite de l'URL complète sans variables de template
     const pendingUrl = `${appUrl}/payment-pending/${participantData.id}`;
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
     
     // Log pour débugger les URLs
     console.log("URLs générées pour l'email initial:", {
       pendingUrl: pendingUrl,
+      participantId: participantData.id, // Vérifier que l'ID est bien défini
       mapsUrl: EVENT_LOCATION.mapsUrl,
       eventLocation: EVENT_LOCATION.name
     });
@@ -133,7 +133,8 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     console.log("Données participant pour email initial:", {
       email: email,
       nom_complet: `${participantData.first_name} ${participantData.last_name}`,
-      participant_email: participantData.email // Vérifier que cette valeur existe
+      participant_email: participantData.email, // Vérifier que cette valeur existe
+      id: participantData.id // VÉRIFICATION CRUCIALE DE L'ID
     });
     
     const templateParams: EmailTemplateParams = {
@@ -150,19 +151,21 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       payment_amount: `${PAYMENT_AMOUNT} XOF`,
       payment_phone: phoneNumber,
       app_url: appUrl,
-      pending_url: pendingUrl, // URL complète déjà construite
+      pending_url: pendingUrl, // URL complète sans variables de template
       maps_url: EVENT_LOCATION.mapsUrl,
       event_location: EVENT_LOCATION.name,
       event_address: EVENT_LOCATION.address,
       current_date: new Date().toLocaleString('fr-FR'), // Ajout de la date actuelle formatée
-      reply_to: "ne-pas-repondre@lacitadelle.ci"
+      reply_to: "ne-pas-repondre@lacitadelle.ci",
+      participant_id: participantData.id // AJOUT EXPLICITE DE L'ID
     };
 
     // Ajouter un log pour vérifier les paramètres de configuration
     console.log("EmailJS configuration pour email initial:", {
       service_id: EMAILJS_SERVICE_ID,
       template_id: PARTICIPANT_INITIAL_TEMPLATE_ID,
-      params_count: Object.keys(templateParams).length
+      params_count: Object.keys(templateParams).length,
+      pending_url_value: pendingUrl // Vérifier la valeur de l'URL
     });
 
     // Initialisation explicite pour éviter les problèmes d'authentification

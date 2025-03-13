@@ -22,6 +22,20 @@ const PageRedirect = () => {
       pathname: location.pathname
     });
     
+    // Vérifier si l'ID contient des caractères de template non substitués
+    const containsTemplateVariables = id && (id.includes('{{') || id.includes('}}'));
+    
+    if (containsTemplateVariables) {
+      console.error("L'ID contient des variables de template non substituées:", id);
+      toast({
+        title: "Erreur de lien",
+        description: "Ce lien contient des variables non substituées. Veuillez contacter l'administrateur.",
+        variant: "destructive",
+      });
+      navigate("/");
+      return;
+    }
+    
     // En fonction du type, rediriger vers la page appropriée
     if (type === "pending") {
       if (id) {

@@ -40,8 +40,11 @@ export const sendConfirmationEmail = async (participantData: any) => {
     // IMPORTANT: Ne pas utiliser {{app_url}} mais construire l'URL complète ici
     const appUrl = window.location.origin;
     
+    // Vérification cruciale de l'ID du participant
+    console.log("ID du participant pour email de confirmation:", participantData.id);
+    
     // Construction explicite des URLs pour éviter les problèmes de variables non remplacées
-    // IMPORTANT: Ne PAS utiliser de variables {{xx}} dans les URL, les construire totalement ici
+    // IMPORTANTE: Ne PAS utiliser de variables {{xx}} dans les URL, les construire totalement ici
     const confirmationPageUrl = `${appUrl}/confirmation/${participantData.id}`;
     const encodedConfirmationUrl = encodeURIComponent(confirmationPageUrl);
     const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedConfirmationUrl}&qzone=2`;
@@ -53,7 +56,8 @@ export const sendConfirmationEmail = async (participantData: any) => {
       encodedUrl: encodedConfirmationUrl,
       qrCodeUrl: qrCodeImageUrl,
       receiptUrl: receiptUrl,
-      mapsUrl: EVENT_LOCATION.mapsUrl
+      mapsUrl: EVENT_LOCATION.mapsUrl,
+      participantId: participantData.id
     });
     
     // Formatage du statut de membre
@@ -81,11 +85,13 @@ export const sendConfirmationEmail = async (participantData: any) => {
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
     
-    // Ajouter un log pour vérifier les paramètres de configuration
+    // Ajouter un log pour vérifier les paramètres de configuration et les URLs
     console.log("EmailJS configuration pour email de confirmation:", {
       service_id: CONFIRMATION_EMAILJS_SERVICE_ID,
       template_id: CONFIRMATION_TEMPLATE_ID,
-      params_count: Object.keys(templateParams).length
+      params_count: Object.keys(templateParams).length,
+      confirmation_url_value: confirmationPageUrl, // Vérifier la valeur de l'URL
+      receipt_url_value: receiptUrl // Vérifier la valeur de l'URL
     });
     
     // Initialisation explicite pour éviter les problèmes d'authentification

@@ -27,11 +27,14 @@ export const sendPaymentRejectionEmail = async (participantData: any, adminNotes
     // Préparer l'email pour éviter les problèmes de formatage
     const email = prepareEmailData(participantData.email);
     
-    // IMPORTANT: Ne PAS utiliser {{app_url}} mais construire l'URL complète ici
+    // CRUCIAL: Ne PAS utiliser {{app_url}} mais construire l'URL complète ici
     const appUrl = window.location.origin;
     
     // Construction explicite des URLs pour éviter les problèmes de variables non remplacées
     const paymentUrl = `${appUrl}/payment/${participantData.id}`;
+    
+    // Vérification cruciale de l'ID du participant
+    console.log("ID du participant pour email de rejet:", participantData.id);
     
     // Formatage du statut de membre
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
@@ -44,7 +47,8 @@ export const sendPaymentRejectionEmail = async (participantData: any, adminNotes
     // Ajout de logs pour vérifier les URLs
     console.log("URLs générées pour l'email de rejet:", {
       paymentUrl: paymentUrl,
-      mapsUrl: EVENT_LOCATION.mapsUrl
+      mapsUrl: EVENT_LOCATION.mapsUrl,
+      participantId: participantData.id
     });
     
     // Préparation des paramètres pour le template EmailJS
@@ -72,7 +76,8 @@ export const sendPaymentRejectionEmail = async (participantData: any, adminNotes
     console.log("EmailJS configuration pour email de rejet:", {
       service_id: REJECTION_EMAILJS_SERVICE_ID,
       template_id: REJECTION_TEMPLATE_ID,
-      params_count: Object.keys(templateParams).length
+      params_count: Object.keys(templateParams).length,
+      payment_url_value: paymentUrl // Vérifier la valeur de l'URL
     });
     
     // Initialisation explicite pour éviter les problèmes d'authentification
