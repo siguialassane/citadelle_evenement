@@ -5,6 +5,7 @@
 // Mise à jour: NOUVEAU service dédié UNIQUEMENT pour les emails de rejet sans conflit
 // Mise à jour: Email administrateur géré directement dans le template EmailJS
 // Mise à jour: Modification des services et templates pour le service initial
+// Mise à jour: Correction du problème d'authentification Gmail API
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 30000; // Montant fixé à 30000 XOF

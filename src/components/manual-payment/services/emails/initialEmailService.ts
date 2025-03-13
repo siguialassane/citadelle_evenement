@@ -69,24 +69,21 @@ export const sendAdminNotification = async (
       nom: participantData.last_name,
     };
     
-    // Afficher les paramètres envoyés au template admin pour débogage
-    console.log("Paramètres EmailJS pour template_dp1tu2w:", {
-      participant_name: templateParams.participant_name,
-      participant_email: templateParams.participant_email,
-      payment_id: templateParams.payment_id,
-      validation_link: templateParams.validation_link,
-      comments: templateParams.comments,
-      current_date: templateParams.current_date,
-      payment_phone: templateParams.payment_phone,
-      payment_method: templateParams.payment_method
+    // Ajouter plus de logs pour diagnostiquer le problème d'authentification
+    console.log("EmailJS configuration pour admin notification:", {
+      service_id: EMAILJS_SERVICE_ID,
+      template_id: ADMIN_NOTIFICATION_TEMPLATE_ID,
+      params_count: Object.keys(templateParams).length
     });
 
     // Envoi de l'email via EmailJS avec le template ADMIN_NOTIFICATION_TEMPLATE_ID
+    // Utilisation de init() pour éviter les problèmes d'authentification
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    
     const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
       ADMIN_NOTIFICATION_TEMPLATE_ID,
-      templateParams,
-      EMAILJS_PUBLIC_KEY
+      templateParams
     );
 
     console.log("Email de notification admin envoyé avec succès:", response);
@@ -144,20 +141,21 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    // Ajouter un log pour vérifier les paramètres envoyés au template
-    console.log("Paramètres EmailJS pour template_2ncsaxe:", {
-      participant_name: templateParams.participant_name,
-      participant_email: templateParams.participant_email,
-      to_name: templateParams.to_name,
-      current_date: templateParams.current_date // Log de la date pour vérification
+    // Ajouter un log pour vérifier les paramètres de configuration
+    console.log("EmailJS configuration pour email initial:", {
+      service_id: EMAILJS_SERVICE_ID,
+      template_id: PARTICIPANT_INITIAL_TEMPLATE_ID,
+      params_count: Object.keys(templateParams).length
     });
 
+    // Initialisation explicite pour éviter les problèmes d'authentification
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    
     // IMPORTANT: N'utilise que le template PARTICIPANT_INITIAL_TEMPLATE_ID pour le participant
     const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
       PARTICIPANT_INITIAL_TEMPLATE_ID,
-      templateParams,
-      EMAILJS_PUBLIC_KEY
+      templateParams
     );
 
     console.log("Email initial au participant envoyé avec succès:", response);

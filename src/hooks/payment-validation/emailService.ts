@@ -4,6 +4,7 @@
 // Mise à jour: Un seul type d'email par action
 // Mise à jour: Ajout du statut de membre et du numéro de téléphone dans l'email
 // Mise à jour: Correction pour utiliser exclusivement le service de confirmation
+// Mise à jour: Correction du problème d'authentification Gmail API
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -61,11 +62,20 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
+    // Log de la configuration EmailJS
+    console.log("EmailJS configuration pour email de confirmation:", {
+      service_id: CONFIRMATION_EMAILJS_SERVICE_ID,
+      template_id: CONFIRMATION_TEMPLATE_ID,
+      params_count: Object.keys(templateParams).length
+    });
+
+    // Initialisation explicite pour éviter les problèmes d'authentification
+    emailjs.init(CONFIRMATION_EMAILJS_PUBLIC_KEY);
+    
     const response = await emailjs.send(
       CONFIRMATION_EMAILJS_SERVICE_ID,
       CONFIRMATION_TEMPLATE_ID,
-      templateParams,
-      CONFIRMATION_EMAILJS_PUBLIC_KEY
+      templateParams
     );
 
     console.log("Email de confirmation envoyé avec succès:", response);
