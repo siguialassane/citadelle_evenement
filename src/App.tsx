@@ -9,6 +9,7 @@ import PaymentValidation from './pages/admin/PaymentValidation';
 import Confirmation from './pages/Confirmation';
 import PaymentPending from './pages/PaymentPending';
 import Index from './pages/Index';
+import Payment from './pages/Payment';
 
 function App() {
   return (
@@ -16,6 +17,9 @@ function App() {
       <Routes>
         {/* Page principale d'inscription */}
         <Route path="/" element={<Index />} />
+        
+        {/* Route de paiement après inscription */}
+        <Route path="/payment/:participantId" element={<Payment />} />
         
         {/* Routes administrateur */}
         <Route path="/admin/login" element={<Login />} />

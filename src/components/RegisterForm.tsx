@@ -1,9 +1,11 @@
+
 // Ce fichier contient le formulaire d'inscription pour les participants
 // Modifications:
 // - Amélioration de la validation des emails pour accepter tous types de fournisseurs (gmail, yahoo, etc.)
 // - Meilleure gestion des espaces avec trim() lors de la saisie
 // - Messages d'erreur plus explicites
 // - Correction du problème d'emails valides rejetés
+// - Correction de la redirection vers la page de paiement après inscription
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -107,6 +109,9 @@ export function RegisterForm() {
         throw error;
       }
 
+      console.log("Participant créé avec succès:", participant);
+      console.log("ID du participant:", participant.id);
+
       // Afficher notification de succès
       toast({
         title: "Inscription réussie",
@@ -116,8 +121,11 @@ export function RegisterForm() {
       // Réinitialiser le formulaire après la soumission
       form.reset();
       
-      // Redirection vers la page de paiement
-      navigate(`/payment/${participant.id}`);
+      // Redirection vers la page de paiement avec un délai court
+      console.log("Redirection vers /payment/" + participant.id);
+      setTimeout(() => {
+        navigate(`/payment/${participant.id}`);
+      }, 500);
       
     } catch (error: any) {
       console.error("Erreur d'inscription:", error);
