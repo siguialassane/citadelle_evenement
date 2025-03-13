@@ -149,18 +149,50 @@ export const ParticipantDetails = ({
     }
 
     try {
-      const canvas = await html2canvas(qrCodeElement);
+      // Modification ici pour assurer que le QR Code est capturé correctement
+      const canvas = await html2canvas(qrCodeElement, {
+        backgroundColor: "#FFFFFF",
+        scale: 2, // Augmenter la qualité de l'image
+        logging: true,
+        useCORS: true
+      });
+      
       const dataUrl = canvas.toDataURL('image/png');
       
-      const link = document.createElement('a');
-      link.download = `qrcode-${participant.last_name}-${participant.first_name}.png`;
-      link.href = dataUrl;
-      link.click();
+      // Créer un élément d'image temporaire pour vérifier si l'image a bien été capturée
+      const tempImg = new Image();
+      tempImg.onload = () => {
+        // S'assurer que l'image a un contenu valide
+        if (tempImg.width <= 1 || tempImg.height <= 1) {
+          toast({
+            title: "Erreur",
+            description: "Le QR code n'a pas pu être capturé correctement.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Téléchargement de l'image
+        const link = document.createElement('a');
+        link.download = `qrcode-${participant.last_name}-${participant.first_name}.png`;
+        link.href = dataUrl;
+        link.click();
+        
+        toast({
+          title: "Téléchargement réussi",
+          description: "Le QR code a été téléchargé avec succès.",
+        });
+      };
       
-      toast({
-        title: "Téléchargement réussi",
-        description: "Le QR code a été téléchargé avec succès.",
-      });
+      tempImg.onerror = () => {
+        toast({
+          title: "Erreur",
+          description: "Impossible de générer l'image du QR code.",
+          variant: "destructive",
+        });
+      };
+      
+      tempImg.src = dataUrl;
     } catch (error) {
       console.error("Erreur lors du téléchargement du QR code:", error);
       toast({
@@ -298,15 +330,21 @@ export const ParticipantDetails = ({
                       <div 
                         id="participant-qr-code"
                         className="border-2 border-dashed border-gray-300 p-4 rounded-lg mb-4 bg-white"
+                        style={{ width: '300px', height: 'auto' }}
                       >
-                        <div className="text-center mb-2">
-                          <p className="font-bold">{participant.last_name} {participant.first_name}</p>
-                          <p className="text-xs text-gray-500">ID: {participant.id.slice(0, 8)}...</p>
+                        <div className="text-center mb-3">
+                          <p className="font-bold text-lg">{participant.last_name} {participant.first_name}</p>
+                          <p className="text-sm text-gray-500">ID: {participant.id.slice(0, 8)}...</p>
                         </div>
                         <img 
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeUrl)}`}
                           alt="QR Code d'accès"
-                          className="mx-auto h-48 w-48"
+                          className="mx-auto h-48 w-48 border border-gray-200"
+                          onError={(e) => {
+                            console.error("Erreur de chargement du QR code");
+                            e.currentTarget.src = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20200%20200'%3E%3Crect%20width%3D'200'%20height%3D'200'%20fill%3D'%23eee'%2F%3E%3Ctext%20x%3D'50%25'%20y%3D'50%25'%20dominant-baseline%3D'middle'%20text-anchor%3D'middle'%20font-size%3D'12'%3EQR%20Code%20non%20disponible%3C%2Ftext%3E%3C%2Fsvg%3E";
+                          }}
+                          crossOrigin="anonymous"
                         />
                       </div>
                       <div className="flex space-x-2">
