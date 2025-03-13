@@ -8,6 +8,7 @@
 // Mise à jour: Ajout de logs pour vérifier les URLs
 // Mise à jour: Utilisation des URLs de redirection pour éviter les problèmes de template non remplacé
 // Mise à jour: Construction explicite des URLs pour éviter les problèmes de variables non remplacées
+// Mise à jour: Correction des problèmes de variables EmailJS non remplacées
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -35,14 +36,16 @@ export const sendConfirmationEmail = async (participantData: any) => {
     // Préparer l'email pour éviter les problèmes de formatage
     const email = prepareEmailData(participantData.email);
     
-    // Générer les URLs utilisées dans l'email
+    // Récupérer l'URL de base de l'application
+    // IMPORTANT: Ne pas utiliser {{app_url}} mais construire l'URL complète ici
     const appUrl = window.location.origin;
     
     // Construction explicite des URLs pour éviter les problèmes de variables non remplacées
+    // IMPORTANT: Ne PAS utiliser de variables {{xx}} dans les URL, les construire totalement ici
     const confirmationPageUrl = `${appUrl}/confirmation/${participantData.id}`;
     const encodedConfirmationUrl = encodeURIComponent(confirmationPageUrl);
     const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedConfirmationUrl}&qzone=2`;
-    const receiptUrl = `${appUrl}/redirect/receipt/${participantData.id}`;
+    const receiptUrl = `${appUrl}/receipt/${participantData.id}`;
     
     // Ajout de logs pour vérifier les URLs
     console.log("URLs générées pour l'email de confirmation:", {
@@ -69,8 +72,8 @@ export const sendConfirmationEmail = async (participantData: any) => {
       participant_id: participantData.id,
       qr_code_url: qrCodeImageUrl,
       app_url: appUrl,
-      confirmation_url: confirmationPageUrl,
-      receipt_url: receiptUrl,
+      confirmation_url: confirmationPageUrl, // URL complète déjà construite
+      receipt_url: receiptUrl,               // URL complète déjà construite
       maps_url: EVENT_LOCATION.mapsUrl,
       event_location: EVENT_LOCATION.name,
       event_address: EVENT_LOCATION.address,

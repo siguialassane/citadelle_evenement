@@ -33,6 +33,7 @@ export const sendAdminNotification = async (
       return false;
     }
 
+    // IMPORTANT: Ne pas utiliser {{app_url}} mais construire l'URL complète ici
     const appUrl = window.location.origin;
     // Construction explicite de l'URL complète pour éviter les problèmes de remplacement
     const validationLink = `${appUrl}/admin/payment-validation/${manualPaymentId}`;
@@ -112,10 +113,13 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     }
     
     const email = prepareEmailData(participantData.email);
+    
+    // IMPORTANT: Ne pas utiliser {{app_url}} mais construire l'URL complète ici
     const appUrl = window.location.origin;
     
     // Construction explicite de l'URL complète pour éviter les problèmes de template
-    const pendingUrl = `${appUrl}/redirect/pending/${participantData.id}`;
+    // On n'utilise plus le format redirect/pending/ mais directement l'URL finale
+    const pendingUrl = `${appUrl}/payment-pending/${participantData.id}`;
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
     
     // Log pour débugger les URLs
