@@ -43,7 +43,7 @@ export function MessagePreview({
         </CardHeader>
         <CardContent className="p-6 prose-sm max-w-none">
           <div className="mb-4">
-            <p className="font-medium">Cher(e) {participant.last_name} {participant.first_name},</p>
+            <p className="font-medium">Cher(e) {participant.first_name} {participant.last_name},</p>
           </div>
           
           {messageType === "personal" ? (
