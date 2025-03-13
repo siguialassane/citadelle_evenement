@@ -33,8 +33,12 @@ export const sendAdminNotification = async (
       return false;
     }
 
+    // Construire explicitement les URLs complètes
     const appUrl = window.location.origin;
     const validationLink = `${appUrl}/admin/payment-validation/${manualPaymentId}`;
+    
+    console.log("URL de validation construite:", validationLink);
+    console.log("Origine de l'application:", appUrl);
 
     // Formater les données pour s'assurer qu'elles ne sont pas vides
     const formattedComments = comments?.trim() || "Aucun commentaire";
@@ -63,18 +67,18 @@ export const sendAdminNotification = async (
       participant_id: participantData.id,
       app_url: appUrl,
       current_date: currentDate,
-      validation_link: validationLink,
+      validation_link: validationLink, // URL complète, pas de variable non résolue
       reply_to: "ne-pas-repondre@lacitadelle.ci",
       prenom: participantData.first_name,
       nom: participantData.last_name,
     };
     
     // Afficher les paramètres envoyés au template admin pour débogage
-    console.log("Paramètres EmailJS pour template_dp1tu2w:", {
+    console.log("Paramètres EmailJS pour notification admin:", {
       participant_name: templateParams.participant_name,
       participant_email: templateParams.participant_email,
       payment_id: templateParams.payment_id,
-      validation_link: templateParams.validation_link,
+      validation_link: templateParams.validation_link, // Log de l'URL complète
       comments: templateParams.comments,
       current_date: templateParams.current_date,
       payment_phone: templateParams.payment_phone,
@@ -111,15 +115,23 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     }
     
     const email = prepareEmailData(participantData.email);
+    
+    // Construire explicitement l'URL complète pour le pending (pas de variables template)
     const appUrl = window.location.origin;
     const pendingUrl = `${appUrl}/payment-pending/${participantData.id}?type=initial`;
+    
+    console.log("URL de paiement en attente construite:", pendingUrl);
+    console.log("ID du participant:", participantData.id);
+    console.log("Origine de l'application:", appUrl);
+    
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
     
     // Ajouter des logs pour vérifier les données du participant
     console.log("Données participant pour email initial:", {
       email: email,
       nom_complet: `${participantData.first_name} ${participantData.last_name}`,
-      participant_email: participantData.email // Vérifier que cette valeur existe
+      participant_email: participantData.email,
+      participant_id: participantData.id // Vérifier que l'ID existe
     });
     
     const templateParams: EmailTemplateParams = {
@@ -128,28 +140,31 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       from_name: "IFTAR 2025",
       prenom: participantData.first_name,
       nom: participantData.last_name,
-      participant_name: `${participantData.first_name} ${participantData.last_name}`, // Ajouté pour le template
-      participant_email: participantData.email, // Ajouté pour le template
+      participant_name: `${participantData.first_name} ${participantData.last_name}`,
+      participant_email: participantData.email,
       participant_phone: participantData.contact_number || "Non disponible",
+      participant_id: participantData.id, // Ajout explicite de l'ID
       status: memberStatus,
       payment_method: paymentMethod,
       payment_amount: `${PAYMENT_AMOUNT} XOF`,
       payment_phone: phoneNumber,
-      app_url: appUrl,
-      pending_url: pendingUrl,
+      app_url: appUrl, // URL de base complète
+      pending_url: pendingUrl, // URL complète, pas de variable non résolue
       maps_url: EVENT_LOCATION.mapsUrl,
       event_location: EVENT_LOCATION.name,
       event_address: EVENT_LOCATION.address,
-      current_date: new Date().toLocaleString('fr-FR'), // Ajout de la date actuelle formatée
+      current_date: new Date().toLocaleString('fr-FR'),
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
     // Ajouter un log pour vérifier les paramètres envoyés au template
-    console.log("Paramètres EmailJS pour template_2ncsaxe:", {
+    console.log("Paramètres EmailJS pour email initial participant:", {
       participant_name: templateParams.participant_name,
       participant_email: templateParams.participant_email,
+      participant_id: templateParams.participant_id,
       to_name: templateParams.to_name,
-      current_date: templateParams.current_date // Log de la date pour vérification
+      current_date: templateParams.current_date,
+      pending_url: templateParams.pending_url // Log de l'URL complète
     });
 
     // IMPORTANT: N'utilise que le template PARTICIPANT_INITIAL_TEMPLATE_ID pour le participant

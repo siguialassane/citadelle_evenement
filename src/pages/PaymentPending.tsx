@@ -1,8 +1,3 @@
-
-// Ce fichier gère la page d'attente après soumission d'un paiement manuel
-// Le participant est redirigé vers cette page après avoir soumis sa preuve
-// et attend la validation par l'administrateur
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,8 +20,21 @@ const PaymentPending = () => {
       try {
         setLoading(true);
         
+        // Logs supplémentaires pour le débogage
+        console.log("PaymentPending - Chargement avec ID participant:", participantId);
+        console.log("PaymentPending - URL complète:", window.location.href);
+        
         if (!participantId) {
+          console.error("PaymentPending - Erreur: ID participant manquant");
           setError("Identifiant de participant manquant");
+          return;
+        }
+
+        // Vérification du format de l'ID (UUID)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(participantId)) {
+          console.error("PaymentPending - Erreur: Format d'ID invalide:", participantId);
+          setError("Format d'identifiant invalide");
           return;
         }
 
@@ -43,10 +51,12 @@ const PaymentPending = () => {
         }
 
         if (!participantData) {
+          console.error("PaymentPending - Participant non trouvé pour ID:", participantId);
           setError("Participant non trouvé");
           return;
         }
 
+        console.log("PaymentPending - Participant trouvé:", participantData.id);
         setParticipant(participantData);
 
         // Récupérer le dernier paiement manuel du participant
@@ -62,21 +72,29 @@ const PaymentPending = () => {
           console.error("Erreur lors de la récupération du paiement:", paymentError);
           // Ne pas définir d'erreur ici, car le participant peut ne pas avoir encore de paiement
         } else if (paymentData) {
-          console.log("Paiement trouvé:", paymentData);
+          console.log("PaymentPending - Paiement trouvé:", paymentData.id, "Statut:", paymentData.status);
           setPayment(paymentData);
 
           // Si le paiement a été validé, rediriger vers la page de confirmation
           if (paymentData.status === 'completed') {
-            console.log("Paiement validé, redirection vers confirmation");
-            navigate(`/confirmation/${participantId}`);
+            console.log("PaymentPending - Paiement validé, redirection vers confirmation");
+            toast({
+              title: "Paiement validé",
+              description: "Votre paiement a été validé. Vous allez être redirigé vers la page de confirmation.",
+              variant: "default",
+            });
+            
+            // Rediriger vers la page de confirmation
+            setTimeout(() => {
+              navigate(`/confirmation/${participantId}`);
+            }, 2000);
           }
         } else {
-          console.log("Aucun paiement trouvé pour le participant:", participantId);
+          console.log("PaymentPending - Aucun paiement trouvé pour le participant:", participantId);
           // Aucun paiement trouvé, mais ce n'est pas nécessairement une erreur
-          // On pourrait afficher un message spécifique à l'utilisateur
         }
       } catch (err: any) {
-        console.error("Erreur lors de la récupération des données:", err);
+        console.error("PaymentPending - Erreur lors de la récupération des données:", err);
         setError(err.message || "Une erreur est survenue");
       } finally {
         setLoading(false);
@@ -90,13 +108,15 @@ const PaymentPending = () => {
       try {
         if (!participantId) return;
 
+        console.log("PaymentPending - Vérification du statut de paiement pour:", participantId);
+        
         const { data, error } = await supabase
           .from('manual_payments')
           .select('*')
           .eq('participant_id', participantId)
           .order('created_at', { ascending: false })
           .limit(1)
-          .maybeSingle(); // Utiliser maybeSingle au lieu de single
+          .maybeSingle();
 
         if (error) {
           console.error("Erreur lors de la vérification du statut:", error);
@@ -104,13 +124,13 @@ const PaymentPending = () => {
         }
 
         if (data && data.status === 'completed') {
+          console.log("PaymentPending - Paiement validé détecté durant la vérification périodique");
           toast({
             title: "Paiement validé",
             description: "Votre paiement a été validé. Vous allez être redirigé vers la page de confirmation.",
             variant: "default",
           });
           
-          console.log("Paiement validé détecté, redirection vers confirmation");
           // Rediriger vers la page de confirmation
           setTimeout(() => {
             navigate(`/confirmation/${participantId}`);

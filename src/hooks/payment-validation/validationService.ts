@@ -3,6 +3,7 @@
 // Mise à jour: Séparation complète des chemins d'envoi d'emails
 // Mise à jour: Services EmailJS dédiés pour chaque type d'email
 // Mise à jour: Nouveau service distinct pour les emails de rejet
+// Mise à jour: Construction explicite d'URLs complètes
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse } from "./types";
@@ -13,12 +14,13 @@ import {
   fetchPaymentById
 } from "./supabaseService";
 import { sendConfirmationEmail } from "./emailService";
-import { sendPaymentRejectionEmail } from "@/components/manual-payment/services/emailService";
+import { sendPaymentRejectionEmail } from "@/components/manual-payment/services/emails/rejectionEmailService";
 
 export const validatePayment = async (paymentId: string, paymentData: any): Promise<ValidationResponse> => {
   try {
     console.log("==== DÉBUT DU PROCESSUS DE VALIDATION UNIQUEMENT ====");
     console.log("Service EmailJS pour confirmation (UNIQUEMENT):", "service_is5645q");
+    console.log("ID du paiement à valider:", paymentId);
     
     if (!paymentData) {
       throw new Error("Données de paiement manquantes");
@@ -43,6 +45,10 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
     
     // Mise à jour de la base de données AVANT l'envoi d'email
     const { qrCodeId, participantId } = await validatePaymentInDatabase(paymentId);
+    console.log("Paiement validé dans la base de données:", paymentId);
+    console.log("ID QR Code généré:", qrCodeId);
+    console.log("ID du participant:", participantId);
+    
     const participantData = await fetchParticipantData(participantId);
     
     if (!participantData?.email) {
@@ -77,14 +83,15 @@ export const rejectPayment = async (paymentId: string): Promise<ValidationRespon
   try {
     console.log("==== DÉBUT DU PROCESSUS DE REJET UNIQUEMENT ====");
     console.log("NOUVEAU Service EmailJS pour rejet (UNIQUEMENT):", "service_1gvwp2w");
-    console.log("NOUVEAU Template pour rejet:", "template_s3c9tsw");
-    console.log("NOUVELLE Clé API pour rejet:", "wdtFy3bjHd5FNRQLg");
+    console.log("ID du paiement à rejeter:", paymentId);
     
     const paymentData = await fetchPaymentById(paymentId);
     
     if (!paymentData?.participant_id) {
       throw new Error("Données de paiement introuvables");
     }
+    
+    console.log("ID participant associé au paiement:", paymentData.participant_id);
     
     // Vérifications du statut
     if (paymentData.status === 'completed') {
@@ -105,6 +112,8 @@ export const rejectPayment = async (paymentId: string): Promise<ValidationRespon
     
     // Mise à jour de la base de données AVANT l'envoi d'email
     await rejectPaymentInDatabase(paymentId);
+    console.log("Paiement rejeté dans la base de données:", paymentId);
+    
     const participantData = await fetchParticipantData(paymentData.participant_id);
     
     if (!participantData) {

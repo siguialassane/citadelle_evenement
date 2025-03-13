@@ -10,6 +10,7 @@ import Confirmation from './pages/Confirmation';
 import PaymentPending from './pages/PaymentPending';
 import Index from './pages/Index';
 import Payment from './pages/Payment';
+import PageRedirect from './components/redirection/PageRedirect';
 
 function App() {
   return (
@@ -27,10 +28,21 @@ function App() {
         <Route path="/admin/qr-scan" element={<QrCodeScan />} />
         <Route path="/admin/email-dashboard" element={<EmailDashboard />} />
         <Route path="/admin/payment-validation" element={<PaymentValidation />} />
+        <Route path="/admin/payment-validation/:paymentId" element={<PaymentValidation />} />
         
         {/* Routes pour les participants */}
         <Route path="/confirmation/:participantId" element={<Confirmation />} />
         <Route path="/payment-pending/:participantId" element={<PaymentPending />} />
+        
+        {/* Routes de redirection explicites pour les liens d'email */}
+        <Route path="/redirect/payment-pending/:participantId" 
+               element={<PageRedirect targetType="payment-pending" />} />
+        <Route path="/redirect/payment-validation/:participantId" 
+               element={<PageRedirect targetType="payment-validation" />} />
+        <Route path="/redirect/confirmation/:participantId" 
+               element={<PageRedirect targetType="confirmation" />} />
+        <Route path="/redirect/payment/:participantId" 
+               element={<PageRedirect targetType="payment" />} />
         
         {/* Redirection pour toute route inconnue vers la page d'accueil */}
         <Route path="*" element={<Navigate to="/" replace />} />
