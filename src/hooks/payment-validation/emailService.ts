@@ -4,6 +4,7 @@
 // Mise à jour: Un seul type d'email par action
 // Mise à jour: Ajout du statut de membre et du numéro de téléphone dans l'email
 // Mise à jour: Correction pour utiliser exclusivement le service de confirmation
+// Mise à jour: Remplacement des clés API, services et templates EmailJS
 
 import emailjs from '@emailjs/browser';
 import { 

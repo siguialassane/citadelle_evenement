@@ -70,7 +70,7 @@ export const sendAdminNotification = async (
     };
     
     // Afficher les paramètres envoyés au template admin pour débogage
-    console.log("Paramètres EmailJS pour template_dp1tu2w:", {
+    console.log("Paramètres EmailJS pour template_3e5dq5i:", {
       participant_name: templateParams.participant_name,
       participant_email: templateParams.participant_email,
       payment_id: templateParams.payment_id,
@@ -145,7 +145,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     };
 
     // Ajouter un log pour vérifier les paramètres envoyés au template
-    console.log("Paramètres EmailJS pour template_2ncsaxe:", {
+    console.log("Paramètres EmailJS pour template_oz843jo:", {
       participant_name: templateParams.participant_name,
       participant_email: templateParams.participant_email,
       to_name: templateParams.to_name,
