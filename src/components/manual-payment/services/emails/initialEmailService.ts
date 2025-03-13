@@ -112,7 +112,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     
     const email = prepareEmailData(participantData.email);
     const appUrl = window.location.origin;
-    const pendingUrl = `${appUrl}/payment-pending/${participantData.id}?type=initial`;
+    const pendingUrl = `${appUrl}/redirect/pending/${participantData.id}`;
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
     
     // Log pour débugger les URLs

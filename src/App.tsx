@@ -14,6 +14,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import PaymentValidation from "./pages/admin/PaymentValidation";
 import EmailDashboard from "./pages/admin/EmailDashboard";
 import { AdminRoute } from "./components/admin/AdminRoute";
+import PageRedirect from "./pages/PageRedirect";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,10 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/payment/:participantId" element={<Payment />} />
           <Route path="/payment-pending/:participantId" element={<PaymentPending />} />
+          
+          {/* Routes de redirection pour les liens dans les emails */}
+          <Route path="/redirect/:type/:id" element={<PageRedirect />} />
+          
           {/* Routes de confirmation avec support des paramètres supplémentaires */}
           <Route path="/confirmation/:participantId" element={<Confirmation />} />
           <Route path="/receipt/:participantId" element={<Confirmation />} />
