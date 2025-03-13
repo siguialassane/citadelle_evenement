@@ -35,6 +35,9 @@ export const sendAdminNotification = async (
 
     const appUrl = window.location.origin;
     const validationLink = `${appUrl}/admin/payment-validation/${manualPaymentId}`;
+    
+    // Vérification de l'URL de validation
+    console.log("URL de validation admin générée:", validationLink);
 
     // Formater les données pour s'assurer qu'elles ne sont pas vides
     const formattedComments = comments?.trim() || "Aucun commentaire";
@@ -111,6 +114,13 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     const appUrl = window.location.origin;
     const pendingUrl = `${appUrl}/payment-pending/${participantData.id}?type=initial`;
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
+    
+    // Log pour débugger les URLs
+    console.log("URLs générées pour l'email initial:", {
+      pendingUrl: pendingUrl,
+      mapsUrl: EVENT_LOCATION.mapsUrl,
+      eventLocation: EVENT_LOCATION.name
+    });
     
     // Ajouter des logs pour vérifier les données du participant
     console.log("Données participant pour email initial:", {

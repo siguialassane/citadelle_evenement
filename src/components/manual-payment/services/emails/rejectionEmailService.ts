@@ -29,6 +29,10 @@ export const sendPaymentRejectionEmail = async (
     // Préparation de l'email
     const email = prepareEmailData(participantData.email);
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
+    const appUrl = window.location.origin;
+    
+    // Vérification de l'URL de l'application
+    console.log("URL de l'application (app_url):", appUrl);
     
     // Préparation des paramètres du template
     const templateParams: EmailTemplateParams = {
@@ -41,7 +45,7 @@ export const sendPaymentRejectionEmail = async (
       participant_phone: participantData.contact_number || "Non disponible",
       status: memberStatus,
       rejection_reason: rejectionReason || "Raison non spécifiée",
-      app_url: window.location.origin,
+      app_url: appUrl,
       current_date: new Date().toLocaleString('fr-FR'),
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };

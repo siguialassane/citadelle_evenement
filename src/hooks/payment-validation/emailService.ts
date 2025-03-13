@@ -5,6 +5,7 @@
 // Mise à jour: Ajout du statut de membre et du numéro de téléphone dans l'email
 // Mise à jour: Correction pour utiliser exclusivement le service de confirmation
 // Mise à jour: Correction du problème d'authentification Gmail API
+// Mise à jour: Ajout de logs pour vérifier les URLs
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -41,6 +42,15 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     const encodedConfirmationUrl = encodeURIComponent(confirmationPageUrl);
     const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedConfirmationUrl}&qzone=2`;
     const receiptUrl = `${appUrl}/receipt/${participantData.id}`;
+    
+    // Ajout de logs pour vérifier les URLs
+    console.log("URLs générées pour l'email de confirmation:", {
+      confirmationUrl: confirmationPageUrl,
+      encodedUrl: encodedConfirmationUrl,
+      qrCodeUrl: qrCodeImageUrl,
+      receiptUrl: receiptUrl,
+      mapsUrl: EVENT_LOCATION.mapsUrl
+    });
     
     // Formatage du statut de membre
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
