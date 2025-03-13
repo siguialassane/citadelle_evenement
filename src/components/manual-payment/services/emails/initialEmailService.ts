@@ -106,13 +106,37 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
   try {
     console.log("===== PRÉPARATION EMAIL INITIAL AU PARTICIPANT =====");
     
-    const validation = validateEmailData(participantData?.email, participantData);
-    if (!validation.isValid) {
-      console.error(validation.error);
+    // Validation approfondie des données
+    if (!participantData) {
+      console.error("Erreur: participantData est null ou undefined");
       return false;
     }
     
+    if (!participantData.email) {
+      console.error("Erreur: Email du participant manquant", participantData);
+      return false;
+    }
+    
+    if (!participantData.id) {
+      console.error("Erreur: ID du participant manquant", participantData);
+      return false;
+    }
+    
+    // Vérification explicite du format de l'email
+    const validation = validateEmailData(participantData.email, participantData);
+    if (!validation.isValid) {
+      console.error("Validation d'email échouée:", validation.error);
+      return false;
+    }
+    
+    // Nettoyage et préparation de l'email
     const email = prepareEmailData(participantData.email);
+    console.log("Email préparé pour envoi:", email);
+    
+    if (!email || email.trim() === '') {
+      console.error("Erreur: Email vide après préparation");
+      return false;
+    }
     
     // CRUCIAL: Construire des URLs complètes sans variables de template
     const appUrl = window.location.origin;
@@ -132,13 +156,16 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     // Ajouter des logs pour vérifier les données du participant
     console.log("Données participant pour email initial:", {
       email: email,
+      email_type: typeof email,
+      email_length: email.length,
       nom_complet: `${participantData.first_name} ${participantData.last_name}`,
       participant_email: participantData.email, // Vérifier que cette valeur existe
       id: participantData.id // VÉRIFICATION CRUCIALE DE L'ID
     });
     
+    // Création explicite des paramètres du template
     const templateParams: EmailTemplateParams = {
-      to_email: email, // UNIQUEMENT l'email du participant
+      to_email: email, // VÉRIFICATION CRUCIALE: l'email doit être une chaîne non vide
       to_name: `${participantData.first_name} ${participantData.last_name}`,
       from_name: "IFTAR 2025",
       prenom: participantData.first_name,
@@ -160,12 +187,19 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       participant_id: participantData.id // AJOUT EXPLICITE DE L'ID
     };
 
+    // Vérification finale des paramètres critiques
+    if (!templateParams.to_email || templateParams.to_email.trim() === '') {
+      console.error("ERREUR CRITIQUE: to_email est vide ou undefined avant envoi:", templateParams.to_email);
+      return false;
+    }
+
     // Ajouter un log pour vérifier les paramètres de configuration
     console.log("EmailJS configuration pour email initial:", {
       service_id: EMAILJS_SERVICE_ID,
       template_id: PARTICIPANT_INITIAL_TEMPLATE_ID,
       params_count: Object.keys(templateParams).length,
-      pending_url_value: pendingUrl // Vérifier la valeur de l'URL
+      pending_url_value: pendingUrl, // Vérifier la valeur de l'URL
+      to_email_value: templateParams.to_email // Vérifier l'email du destinataire
     });
 
     // Initialisation explicite pour éviter les problèmes d'authentification
