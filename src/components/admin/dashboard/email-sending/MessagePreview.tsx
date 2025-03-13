@@ -18,10 +18,8 @@ export function MessagePreview({
   participant,
   onBack 
 }: MessagePreviewProps) {
-  // Remplacer [prénom] et [nom] par les valeurs du participant
-  const formattedMessage = message
-    .replace(/\[prénom\]/g, participant.first_name)
-    .replace(/\[nom\]/g, participant.last_name);
+  // Remplacer [prénom] par le prénom du participant
+  const formattedMessage = message.replace(/\[prénom\]/g, participant.first_name);
 
   return (
     <div className="space-y-4">

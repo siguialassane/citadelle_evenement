@@ -4,8 +4,6 @@
 // - Remplacement du système CinetPay par un système de paiement manuel
 // - Mise à jour des imports pour utiliser le composant ManualPaymentForm refactorisé
 // - Notification par email à l'administrateur pour la validation
-// - Correction: Amélioration de la compatibilité mobile pour éviter les problèmes d'affichage
-// - Correction: Gestion des erreurs améliorée avec logs supplémentaires
 
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -130,32 +128,32 @@ const Payment = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-6 px-4 sm:py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="fixed top-0 left-0 w-full h-2 flex">
         <div className="bg-orange-500 w-1/3 h-full"></div>
         <div className="bg-white w-1/3 h-full"></div>
         <div className="bg-green-600 w-1/3 h-full"></div>
       </div>
     
-      <div className="max-w-3xl mx-auto space-y-6 sm:space-y-10">
+      <div className="max-w-3xl mx-auto space-y-10">
         <Button 
           variant="outline" 
-          className="mb-4 flex items-center gap-2"
+          className="mb-6 flex items-center gap-2"
           onClick={handleBackToHome}
         >
           <ArrowLeft className="h-4 w-4" />
           Retour à l'accueil
         </Button>
         
-        <div className="text-center space-y-3 sm:space-y-4">
+        <div className="text-center space-y-4">
           <EventLogo size="medium" />
           
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
+          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
             <span className="block text-green-700">Finaliser votre inscription</span>
-            <span className="block text-orange-500 text-xl sm:text-3xl">IFTAR 2025 - 14e Édition</span>
+            <span className="block text-orange-500 text-2xl sm:text-3xl">IFTAR 2025 - 14e Édition</span>
           </h1>
           
-          <p className="mt-2 max-w-md mx-auto text-sm text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+          <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
             Effectuez votre paiement et soumettez votre preuve de transfert pour compléter votre inscription.
           </p>
         </div>
@@ -179,7 +177,7 @@ const Payment = () => {
               </div>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Email</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 break-words">
+                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                   {participant.email}
                 </dd>
               </div>
@@ -201,7 +199,7 @@ const Payment = () => {
 
         <ManualPaymentForm participant={participant} />
         
-        <div className="w-full flex justify-center my-6 sm:my-10">
+        <div className="w-full flex justify-center my-10">
           <div className="h-8 w-64 bg-contain bg-center bg-no-repeat islamic-divider" 
                style={{ backgroundImage: "url('https://i.pinimg.com/originals/3e/0a/d7/3e0ad78af1ba7e3870f73f7694f30fb7.png')" }}>
           </div>

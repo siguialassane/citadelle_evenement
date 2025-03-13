@@ -4,28 +4,27 @@
 // Mise à jour: Correction des services et templates pour éviter les doublons d'envoi
 // Mise à jour: NOUVEAU service dédié UNIQUEMENT pour les emails de rejet sans conflit
 // Mise à jour: Email administrateur géré directement dans le template EmailJS
-// Mise à jour: Remplacement des clés API, services et templates par les nouvelles valeurs
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 30000; // Montant fixé à 30000 XOF
 
 // Service UNIQUEMENT pour les emails initiaux et notifications admin
-export const EMAILJS_SERVICE_ID = "service_wor257y"; // Remplacé
-export const EMAILJS_PUBLIC_KEY = "xzpEEppsuAiB9Ktop"; // Remplacé
+export const EMAILJS_SERVICE_ID = "service_sxgma2j";
+export const EMAILJS_PUBLIC_KEY = "pWG3H0YqA-EKu4hqC";
 
 // Service UNIQUEMENT pour les emails de confirmation (avec QR code)
-export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_wor257y"; // Remplacé
-export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "xzpEEppsuAiB9Ktop"; // Remplacé
+export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_is5645q";
+export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
 
 // Service UNIQUEMENT pour les emails de rejet - NOUVELLES INFORMATIONS
-export const REJECTION_EMAILJS_SERVICE_ID = "service_wor257y"; // Remplacé
-export const REJECTION_EMAILJS_PUBLIC_KEY = "xzpEEppsuAiB9Ktop"; // Remplacé
-export const REJECTION_TEMPLATE_ID = "template_3e5dq5i"; // Remplacé
+export const REJECTION_EMAILJS_SERVICE_ID = "service_1gvwp2w";
+export const REJECTION_EMAILJS_PUBLIC_KEY = "wdtFy3bjHd5FNRQLg";
+export const REJECTION_TEMPLATE_ID = "template_s3c9tsw"; // Nouveau template pour le rejet
 
 // Templates pour les différents types d'emails
-export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_oz843jo"; // Remplacé - Email initial
-export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_3e5dq5i"; // Remplacé - Notification admin
-export const CONFIRMATION_TEMPLATE_ID = "template_oz843jo"; // Remplacé - QR code uniquement
+export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_2ncsaxe"; // Email initial
+export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_dp1tu2w"; // Notification admin
+export const CONFIRMATION_TEMPLATE_ID = "template_xvdr1iq"; // QR code uniquement
 
 // Numéros de paiement
 export const PAYMENT_NUMBERS = {

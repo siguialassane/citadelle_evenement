@@ -3,7 +3,6 @@
 // Mise à jour: Séparation complète des chemins d'envoi d'emails
 // Mise à jour: Services EmailJS dédiés pour chaque type d'email
 // Mise à jour: Nouveau service distinct pour les emails de rejet
-// Mise à jour: Remplacement des clés API, services et templates par les nouvelles valeurs
 
 import { toast } from "@/hooks/use-toast";
 import { ValidationResponse } from "./types";
@@ -19,7 +18,7 @@ import { sendPaymentRejectionEmail } from "@/components/manual-payment/services/
 export const validatePayment = async (paymentId: string, paymentData: any): Promise<ValidationResponse> => {
   try {
     console.log("==== DÉBUT DU PROCESSUS DE VALIDATION UNIQUEMENT ====");
-    console.log("Service EmailJS pour confirmation (UNIQUEMENT):", "service_wor257y");
+    console.log("Service EmailJS pour confirmation (UNIQUEMENT):", "service_is5645q");
     
     if (!paymentData) {
       throw new Error("Données de paiement manquantes");
@@ -77,9 +76,9 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
 export const rejectPayment = async (paymentId: string): Promise<ValidationResponse> => {
   try {
     console.log("==== DÉBUT DU PROCESSUS DE REJET UNIQUEMENT ====");
-    console.log("NOUVEAU Service EmailJS pour rejet (UNIQUEMENT):", "service_wor257y");
-    console.log("NOUVEAU Template pour rejet:", "template_3e5dq5i");
-    console.log("NOUVELLE Clé API pour rejet:", "xzpEEppsuAiB9Ktop");
+    console.log("NOUVEAU Service EmailJS pour rejet (UNIQUEMENT):", "service_1gvwp2w");
+    console.log("NOUVEAU Template pour rejet:", "template_s3c9tsw");
+    console.log("NOUVELLE Clé API pour rejet:", "wdtFy3bjHd5FNRQLg");
     
     const paymentData = await fetchPaymentById(paymentId);
     
