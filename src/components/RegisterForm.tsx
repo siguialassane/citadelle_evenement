@@ -1,11 +1,11 @@
 
 // Ce fichier contient le formulaire d'inscription pour les participants
 // Modifications:
-// - Amélioration de la validation des emails pour accepter tous types de fournisseurs (gmail, yahoo, etc.)
-// - Meilleure gestion des espaces avec trim() lors de la saisie
-// - Messages d'erreur plus explicites
-// - Correction du problème d'emails valides rejetés
-// - Correction de la redirection vers la page de paiement après inscription
+// - Ajout d'une vérification des emails existants avant soumission
+// - Amélioration de la gestion des états de chargement pour éviter les soumissions multiples
+// - Messages d'erreur plus explicites pour les emails déjà utilisés
+// - Désactivation du bouton pendant la vérification
+// - Prévention des doubles clics
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { User, Mail, Phone, Check } from "lucide-react";
+import { User, Mail, Phone, Check, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +60,9 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function RegisterForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailExists, setEmailExists] = useState(false);
+  const [submissionCount, setSubmissionCount] = useState(0);
   const navigate = useNavigate();
 
   // Initialisation du formulaire avec react-hook-form et le resolver zod
@@ -83,9 +86,80 @@ export function RegisterForm() {
     }
   }, [form.formState.errors.email]);
 
+  // Vérifier si l'email existe déjà dans la base de données
+  const checkEmailExists = async (email: string) => {
+    if (!email || form.formState.errors.email) return;
+    
+    setIsCheckingEmail(true);
+    try {
+      console.log("Vérification si l'email existe déjà:", email);
+      
+      const { data, error, count } = await supabase
+        .from('participants')
+        .select('id', { count: 'exact' })
+        .eq('email', email)
+        .limit(1);
+      
+      if (error) {
+        console.error("Erreur lors de la vérification de l'email:", error);
+        throw error;
+      }
+      
+      const exists = (count && count > 0) || (data && data.length > 0);
+      console.log("Email existe déjà:", exists);
+      setEmailExists(exists);
+      
+      if (exists) {
+        form.setError('email', { 
+          type: 'manual', 
+          message: "Cet email est déjà inscrit à l'événement. Utilisez un autre email ou contactez l'organisateur." 
+        });
+      } else {
+        form.clearErrors('email');
+      }
+      
+      return exists;
+    } catch (error) {
+      console.error("Erreur lors de la vérification de l'email:", error);
+      return false;
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
+  // Vérifier l'email lorsqu'il change
+  useEffect(() => {
+    const email = form.getValues('email');
+    if (email && !form.formState.errors.email) {
+      const timeoutId = setTimeout(() => {
+        checkEmailExists(email);
+      }, 500); // Délai pour éviter trop d'appels à l'API
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [form.watch('email')]);
+
   // Fonction pour gérer la soumission du formulaire
   async function onSubmit(data: FormValues) {
+    // Double vérification pour éviter les soumissions multiples
+    if (isSubmitting) return;
+    
+    // Incrémenter le compteur de soumission pour traquer les tentatives multiples
+    setSubmissionCount(prev => prev + 1);
+    console.log(`Tentative de soumission #${submissionCount + 1}`);
+    
     try {
+      // Vérifier une dernière fois si l'email existe
+      const emailAlreadyExists = await checkEmailExists(data.email);
+      if (emailAlreadyExists) {
+        toast({
+          title: "Email déjà inscrit",
+          description: "Cet email est déjà inscrit à l'événement. Veuillez utiliser un autre email.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Nettoyer l'email une dernière fois avant soumission
       const cleanedEmail = data.email.trim();
       console.log("Submitting form with data:", {...data, email: cleanedEmail});
@@ -106,6 +180,17 @@ export function RegisterForm() {
       
       if (error) {
         console.error("Supabase error:", error);
+        
+        // Gestion spécifique des erreurs de contrainte d'unicité
+        if (error.code === '23505') {
+          toast({
+            title: "Inscription impossible",
+            description: "Cet email est déjà inscrit à l'événement. Veuillez utiliser un autre email.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         throw error;
       }
 
@@ -171,6 +256,9 @@ export function RegisterForm() {
     console.log("Email input cleaned:", emailValue);
     form.setValue("email", emailValue);
   };
+
+  // Déterminer l'état du bouton de soumission
+  const isButtonDisabled = isSubmitting || isCheckingEmail || emailExists;
 
   return (
     <Card className="w-full max-w-md mx-auto border-green-100 shadow-md">
@@ -250,17 +338,29 @@ export function RegisterForm() {
                   <FormControl>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600 h-4 w-4" />
-                      <Input 
-                        className="pl-10 border-green-200 focus:border-green-400 focus:ring-green-400" 
-                        placeholder="votre.email@exemple.com" 
-                        {...field} 
-                        onBlur={handleEmailInput}
-                      />
+                      <div className="relative">
+                        <Input 
+                          className={`pl-10 border-green-200 focus:border-green-400 focus:ring-green-400 ${emailExists ? 'border-red-300 focus:border-red-400 focus:ring-red-400' : ''}`}
+                          placeholder="votre.email@exemple.com" 
+                          {...field} 
+                          onBlur={(e) => {
+                            handleEmailInput(e);
+                            field.onBlur();
+                          }}
+                        />
+                        {isCheckingEmail && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <Loader2 className="h-4 w-4 animate-spin text-green-600" />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </FormControl>
                   <FormMessage />
                   <FormDescription className="text-xs text-gray-500">
-                    Exemple: nom@exemple.com, nom@yahoo.fr, etc.
+                    {emailExists 
+                      ? "Cet email est déjà inscrit. Veuillez en utiliser un autre." 
+                      : "Exemple: nom@exemple.com, nom@yahoo.fr, etc."}
                   </FormDescription>
                 </FormItem>
               )}
@@ -291,9 +391,23 @@ export function RegisterForm() {
             <Button 
               type="submit" 
               className="w-full bg-orange-500 hover:bg-orange-600 text-white" 
-              disabled={isSubmitting}
+              disabled={isButtonDisabled}
             >
-              {isSubmitting ? "Inscription en cours..." : "S'inscrire"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Inscription en cours...
+                </>
+              ) : isCheckingEmail ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Vérification de l'email...
+                </>
+              ) : emailExists ? (
+                "Email déjà inscrit"
+              ) : (
+                "S'inscrire"
+              )}
             </Button>
           </form>
         </Form>
