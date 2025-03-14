@@ -60,14 +60,14 @@ export function ConfirmPresenceDialog({
       
       if (error) throw error;
       
-      // Enregistrer le check-in
+      // Enregistrer le check-in sans spécifier checked_by
+      // car c'est défini comme UUID et nous ne voulons pas utiliser de chaîne de texte ici
       const { error: checkInError } = await supabase
         .from('check_ins')
         .insert([
           { 
             participant_id: participantId,
-            check_in_time: new Date().toISOString(), // Utilisation de check_in_time au lieu de checked_in_at
-            checked_by: 'self-check-in',
+            check_in_time: new Date().toISOString(),
             notes: 'Auto-validation via code'
           }
         ]);
