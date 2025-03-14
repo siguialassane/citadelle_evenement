@@ -4,7 +4,7 @@
 // - Remplacement des couleurs belges par celles de la Côte d'Ivoire (orange, blanc, vert)
 // - Amélioration du design pour correspondre au thème islamique
 // - Optimisation pour affichage mobile
-// - Réduction de la taille du programme détaillé
+// - Réduction de la taille du programme détaillé pour une meilleure expérience visuelle
 
 import React from "react";
 import { RegisterForm } from "@/components/RegisterForm";
@@ -94,7 +94,7 @@ const Index = () => {
           </div>
         </div>
         
-        {/* Programme détaillé - version réduite sous forme d'accordéon */}
+        {/* Programme détaillé - version plus compacte */}
         <div className="mb-12">
           <Accordion type="single" collapsible className="w-full bg-white rounded-xl shadow-md overflow-hidden">
             <AccordionItem value="program">
@@ -104,86 +104,84 @@ const Index = () => {
                   <h2 className="text-xl font-bold text-green-700">Programme détaillé</h2>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="p-6">
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Première colonne - temps forts */}
-                    <div className="space-y-4">
-                      <Card className="border-l-4 border-l-orange-500">
-                        <CardContent className="pt-4">
-                          <div className="flex items-start gap-3">
-                            <Clock className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
-                            <div>
-                              <p className="font-bold text-gray-800">15H30 – 16H00</p>
-                              <p className="text-gray-600">Accueil et installation</p>
-                            </div>
+              <AccordionContent className="p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Première colonne - Activités chronologiques */}
+                  <div className="space-y-2">
+                    <Card className="border-l-4 border-l-orange-500 shadow-sm">
+                      <CardContent className="py-2 px-3">
+                        <div className="flex items-start gap-2">
+                          <Clock className="h-4 w-4 text-orange-500 flex-shrink-0 mt-1" />
+                          <div>
+                            <p className="font-bold text-gray-800 text-sm">15H30 – 16H00</p>
+                            <p className="text-gray-600 text-xs">Accueil et installation</p>
                           </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="border-l-4 border-l-orange-500">
-                        <CardContent className="pt-4">
-                          <div className="flex items-start gap-3">
-                            <Star className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
-                            <div>
-                              <p className="font-bold text-gray-800">16H00 – 16H45</p>
-                              <p className="text-gray-600">Prière de Asr, Zikr Collectif</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="border-l-4 border-l-green-600">
-                        <CardContent className="pt-4">
-                          <div className="flex items-start gap-3">
-                            <Mic className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
-                            <div>
-                              <p className="font-bold text-gray-800">16H55 – 18H00</p>
-                              <p className="text-gray-600">Conférence</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                     
-                    {/* Deuxième colonne - temps forts */}
-                    <div className="space-y-4">
-                      <Card className="border-l-4 border-l-green-600">
-                        <CardContent className="pt-4">
-                          <div className="flex items-start gap-3">
-                            <Coffee className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
-                            <div>
-                              <p className="font-bold text-gray-800">18H25 – 18H50</p>
-                              <p className="text-gray-600">IFTAR et Prière de Maghrib</p>
-                            </div>
+                    <Card className="border-l-4 border-l-orange-500 shadow-sm">
+                      <CardContent className="py-2 px-3">
+                        <div className="flex items-start gap-2">
+                          <Star className="h-4 w-4 text-orange-500 flex-shrink-0 mt-1" />
+                          <div>
+                            <p className="font-bold text-gray-800 text-sm">16H00 – 16H45</p>
+                            <p className="text-gray-600 text-xs">Prière de Asr, Zikr Collectif</p>
                           </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="border-l-4 border-l-orange-500">
-                        <CardContent className="pt-4">
-                          <div className="flex items-start gap-3">
-                            <Star className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
-                            <div>
-                              <p className="font-bold text-gray-800">19H25 – 19H45</p>
-                              <p className="text-gray-600">Salat ICHAI et TARAWIH</p>
-                            </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-l-4 border-l-green-600 shadow-sm">
+                      <CardContent className="py-2 px-3">
+                        <div className="flex items-start gap-2">
+                          <Mic className="h-4 w-4 text-green-600 flex-shrink-0 mt-1" />
+                          <div>
+                            <p className="font-bold text-gray-800 text-sm">16H55 – 18H00</p>
+                            <p className="text-gray-600 text-xs">Conférence</p>
                           </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="border-l-4 border-l-orange-500">
-                        <CardContent className="pt-4">
-                          <div className="flex items-start gap-3">
-                            <Coffee className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
-                            <div>
-                              <p className="font-bold text-gray-800">19H45 – 20H30</p>
-                              <p className="text-gray-600">Dîner et conclusion</p>
-                            </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  {/* Deuxième colonne - Activités chronologiques (suite) */}
+                  <div className="space-y-2">
+                    <Card className="border-l-4 border-l-green-600 shadow-sm">
+                      <CardContent className="py-2 px-3">
+                        <div className="flex items-start gap-2">
+                          <Coffee className="h-4 w-4 text-green-600 flex-shrink-0 mt-1" />
+                          <div>
+                            <p className="font-bold text-gray-800 text-sm">18H25 – 18H50</p>
+                            <p className="text-gray-600 text-xs">IFTAR et Prière de Maghrib</p>
                           </div>
-                        </CardContent>
-                      </Card>
-                    </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-l-4 border-l-orange-500 shadow-sm">
+                      <CardContent className="py-2 px-3">
+                        <div className="flex items-start gap-2">
+                          <Star className="h-4 w-4 text-orange-500 flex-shrink-0 mt-1" />
+                          <div>
+                            <p className="font-bold text-gray-800 text-sm">19H25 – 19H45</p>
+                            <p className="text-gray-600 text-xs">Salat ICHAI et TARAWIH</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-l-4 border-l-orange-500 shadow-sm">
+                      <CardContent className="py-2 px-3">
+                        <div className="flex items-start gap-2">
+                          <Coffee className="h-4 w-4 text-orange-500 flex-shrink-0 mt-1" />
+                          <div>
+                            <p className="font-bold text-gray-800 text-sm">19H45 – 20H30</p>
+                            <p className="text-gray-600 text-xs">Dîner et conclusion</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
               </AccordionContent>
