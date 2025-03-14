@@ -11,6 +11,7 @@ import Index from './pages/Index';
 import Payment from './pages/Payment';
 import PageRedirect from './components/redirection/PageRedirect';
 import QrCodeScan from './pages/admin/QrCodeScan';
+import ExcelAnalyzer from './pages/ExcelAnalyzer';
 
 function App() {
   return (
@@ -21,6 +22,9 @@ function App() {
         
         {/* Route de paiement après inscription */}
         <Route path="/payment/:participantId" element={<Payment />} />
+        
+        {/* Nouvelle route pour l'analyseur Excel */}
+        <Route path="/excel-analyzer" element={<ExcelAnalyzer />} />
         
         {/* Routes administrateur */}
         <Route path="/admin/login" element={<Login />} />
