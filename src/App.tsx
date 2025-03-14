@@ -10,6 +10,7 @@ import PaymentPending from './pages/PaymentPending';
 import Index from './pages/Index';
 import Payment from './pages/Payment';
 import PageRedirect from './components/redirection/PageRedirect';
+import QrCodeScan from './pages/admin/QrCodeScan';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="/admin/email-dashboard" element={<EmailDashboard />} />
         <Route path="/admin/payment-validation" element={<PaymentValidation />} />
         <Route path="/admin/payment-validation/:paymentId" element={<PaymentValidation />} />
+        <Route path="/admin/qr-scan" element={<QrCodeScan />} />
         
         {/* Routes pour les participants */}
         <Route path="/confirmation/:participantId" element={<Confirmation />} />

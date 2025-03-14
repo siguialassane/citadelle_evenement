@@ -11,6 +11,8 @@ export type Participant = {
   is_member: boolean;
   check_in_status: boolean;
   created_at: string;
+  qr_code_id?: string; // Ajout du QR code ID
+  check_in_timestamp?: string; // Ajout de l'horodatage du check-in
   payments: Payment[];
   manual_payments?: ManualPayment[]; // Ajout de la propriété manual_payments
 };

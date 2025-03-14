@@ -1,11 +1,9 @@
 
 // Ce fichier contient le formulaire d'inscription pour les participants
 // Modifications:
-// - Ajout d'une vérification des emails existants avant soumission
-// - Amélioration de la gestion des états de chargement pour éviter les soumissions multiples
-// - Messages d'erreur plus explicites pour les emails déjà utilisés
-// - Désactivation du bouton pendant la vérification
-// - Prévention des doubles clics
+// - Mise à jour de la vérification des emails existants pour considérer aussi les noms/prénoms
+// - Nouvelle logique de vérification compatible avec la contrainte d'unicité email+nom+prénom
+// - Meilleurs messages d'erreur pour guider l'utilisateur
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -86,18 +84,26 @@ export function RegisterForm() {
     }
   }, [form.formState.errors.email]);
 
-  // Vérifier si l'email existe déjà dans la base de données
+  // Vérifier si l'email existe déjà avec le même nom et prénom dans la base de données
   const checkEmailExists = async (email: string) => {
     if (!email || form.formState.errors.email) return;
     
+    const firstName = form.getValues('firstName');
+    const lastName = form.getValues('lastName');
+    
+    // Ne pas vérifier si le nom ou prénom est vide
+    if (!firstName || !lastName) return;
+    
     setIsCheckingEmail(true);
     try {
-      console.log("Vérification si l'email existe déjà:", email);
+      console.log("Vérification si l'email existe déjà avec ce nom et prénom:", email, firstName, lastName);
       
       const { data, error, count } = await supabase
         .from('participants')
         .select('id', { count: 'exact' })
         .eq('email', email)
+        .eq('first_name', firstName)
+        .eq('last_name', lastName)
         .limit(1);
       
       if (error) {
@@ -106,13 +112,13 @@ export function RegisterForm() {
       }
       
       const exists = (count && count > 0) || (data && data.length > 0);
-      console.log("Email existe déjà:", exists);
+      console.log("Email avec ce nom et prénom existe déjà:", exists);
       setEmailExists(exists);
       
       if (exists) {
         form.setError('email', { 
           type: 'manual', 
-          message: "Cet email est déjà inscrit à l'événement. Utilisez un autre email ou contactez l'organisateur." 
+          message: "Cette personne est déjà inscrite à l'événement avec cet email." 
         });
       } else {
         form.clearErrors('email');
@@ -127,17 +133,20 @@ export function RegisterForm() {
     }
   };
 
-  // Vérifier l'email lorsqu'il change
+  // Vérifier l'email lorsque l'email, le prénom ou le nom change
   useEffect(() => {
     const email = form.getValues('email');
-    if (email && !form.formState.errors.email) {
+    const firstName = form.getValues('firstName');
+    const lastName = form.getValues('lastName');
+    
+    if (email && firstName && lastName && !form.formState.errors.email) {
       const timeoutId = setTimeout(() => {
         checkEmailExists(email);
       }, 500); // Délai pour éviter trop d'appels à l'API
       
       return () => clearTimeout(timeoutId);
     }
-  }, [form.watch('email')]);
+  }, [form.watch('email'), form.watch('firstName'), form.watch('lastName')]);
 
   // Fonction pour gérer la soumission du formulaire
   async function onSubmit(data: FormValues) {
@@ -149,12 +158,12 @@ export function RegisterForm() {
     console.log(`Tentative de soumission #${submissionCount + 1}`);
     
     try {
-      // Vérifier une dernière fois si l'email existe
+      // Vérifier une dernière fois si l'email existe avec ce nom et prénom
       const emailAlreadyExists = await checkEmailExists(data.email);
       if (emailAlreadyExists) {
         toast({
-          title: "Email déjà inscrit",
-          description: "Cet email est déjà inscrit à l'événement. Veuillez utiliser un autre email.",
+          title: "Inscription impossible",
+          description: "Cette personne est déjà inscrite à l'événement avec cet email.",
           variant: "destructive",
         });
         return;
@@ -185,7 +194,7 @@ export function RegisterForm() {
         if (error.code === '23505') {
           toast({
             title: "Inscription impossible",
-            description: "Cet email est déjà inscrit à l'événement. Veuillez utiliser un autre email.",
+            description: "Cette personne est déjà inscrite à l'événement avec cet email.",
             variant: "destructive",
           });
           return;
@@ -359,8 +368,8 @@ export function RegisterForm() {
                   <FormMessage />
                   <FormDescription className="text-xs text-gray-500">
                     {emailExists 
-                      ? "Cet email est déjà inscrit. Veuillez en utiliser un autre." 
-                      : "Exemple: nom@exemple.com, nom@yahoo.fr, etc."}
+                      ? "Cette personne est déjà inscrite avec cet email et ce nom." 
+                      : "Vous pouvez utiliser le même email pour plusieurs personnes avec des noms différents."}
                   </FormDescription>
                 </FormItem>
               )}
@@ -404,7 +413,7 @@ export function RegisterForm() {
                   Vérification de l'email...
                 </>
               ) : emailExists ? (
-                "Email déjà inscrit"
+                "Email déjà inscrit avec ce nom"
               ) : (
                 "S'inscrire"
               )}
