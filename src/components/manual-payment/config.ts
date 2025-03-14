@@ -13,8 +13,8 @@ export const EMAILJS_SERVICE_ID = "service_wor257y";
 export const EMAILJS_PUBLIC_KEY = "xzpEEppsuAiB9Ktop";
 
 // Service UNIQUEMENT pour les emails de confirmation (avec QR code)
-export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_is5645q";
-export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
+export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_zes2sew";
+export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "8tZOeeBIj_j__B_cM";
 
 // Service UNIQUEMENT pour les emails de rejet - NOUVELLES INFORMATIONS
 export const REJECTION_EMAILJS_SERVICE_ID = "service_1gvwp2w";
@@ -24,7 +24,7 @@ export const REJECTION_TEMPLATE_ID = "template_s3c9tsw"; // Nouveau template pou
 // Templates pour les différents types d'emails
 export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_3e5dq5i"; // Email initial
 export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_oz843jo"; // Notification admin
-export const CONFIRMATION_TEMPLATE_ID = "template_xvdr1iq"; // QR code uniquement
+export const CONFIRMATION_TEMPLATE_ID = "template_dq0ac69"; // QR code uniquement
 
 // Numéros de paiement
 export const PAYMENT_NUMBERS = {
