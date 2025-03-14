@@ -3,19 +3,21 @@
 // - Amélioration du traitement des URL de QR code avec paramètres supplémentaires
 // - Support robuste pour les paramètres type=qr et pid pour identifier la source
 // - Logging étendu pour faciliter le débogage des redirections QR code
+// - Ajout du bouton d'auto-validation de présence avec code de sécurité
 
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, ArrowLeft, CheckCircle, Download } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle, Download, UserCheck } from "lucide-react";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import html2canvas from 'html2canvas';
 import EventLogo from "@/components/EventLogo";
+import { ConfirmPresenceDialog } from "@/components/ui/confirm-presence-dialog";
 
 const Confirmation = () => {
-  // Le paramètre de l'URL peut être soit un participantId, soit un qrCodeId
+  // ... keep existing code (déclaration des paramètres, constantes d'état, etc.)
   const { participantId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -27,7 +29,12 @@ const Confirmation = () => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
 
+  // Ajout d'états pour la gestion du dialogue de confirmation de présence
+  const [confirmPresenceDialogOpen, setConfirmPresenceDialogOpen] = useState(false);
+  const [isPresent, setIsPresent] = useState(false);
+
   useEffect(() => {
+    // ... keep existing code (fetchData function)
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -118,6 +125,9 @@ const Confirmation = () => {
         console.log(`Participant identifié avec succès via la méthode: ${searchMethod}`);
         setParticipant(currentParticipant);
         
+        // Vérifier si le participant est déjà marqué comme présent
+        setIsPresent(currentParticipant.check_in_status || false);
+        
         const actualParticipantId = currentParticipant.id;
         console.log("ID du participant identifié:", actualParticipantId);
 
@@ -192,6 +202,7 @@ const Confirmation = () => {
   };
 
   const handleDownloadReceipt = async () => {
+    // ... keep existing code (gestion du téléchargement du reçu)
     if (!receiptRef.current || isGeneratingPdf) return;
     
     try {
@@ -258,7 +269,18 @@ const Confirmation = () => {
     }
   };
 
+  // Nouvelle fonction pour gérer la confirmation de présence
+  const handleConfirmPresence = () => {
+    setConfirmPresenceDialogOpen(true);
+  };
+
+  // Fonction appelée après une validation réussie
+  const handlePresenceConfirmed = () => {
+    setIsPresent(true);
+  };
+
   const formatPaymentMethod = (method: string) => {
+    // ... keep existing code (formatage des méthodes de paiement)
     const methods: Record<string, string> = {
       wave: "Wave",
       orange_money: "Orange Money",
@@ -272,6 +294,7 @@ const Confirmation = () => {
     return methods[method] || method;
   };
 
+  // ... keep existing code (loading, error states, etc)
   if (loading) {
     return (
       <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
@@ -511,7 +534,7 @@ const Confirmation = () => {
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Statut</dt>
-                <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2">
+                <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2 flex flex-wrap items-center gap-2">
                   {isPending ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                       En attente
@@ -519,6 +542,13 @@ const Confirmation = () => {
                   ) : (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       Confirmé
+                    </span>
+                  )}
+                  
+                  {isPresent && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <CheckCircle className="mr-1 h-3 w-3" />
+                      Présence confirmée
                     </span>
                   )}
                 </dd>
@@ -529,19 +559,32 @@ const Confirmation = () => {
 
         <div className="flex flex-col md:flex-row items-center justify-center gap-4">
           {!isPending && (
-            <Button 
-              variant="outline" 
-              className="flex items-center gap-2 w-full md:w-auto"
-              onClick={handleDownloadReceipt}
-              disabled={isGeneratingPdf}
-            >
-              {isGeneratingPdf ? (
-                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-700"></span>
-              ) : (
-                <Download className="h-4 w-4" />
+            <>
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 w-full md:w-auto"
+                onClick={handleDownloadReceipt}
+                disabled={isGeneratingPdf}
+              >
+                {isGeneratingPdf ? (
+                  <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-700"></span>
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                {isGeneratingPdf ? "Génération en cours..." : "Télécharger le reçu"}
+              </Button>
+              
+              {/* Nouveau bouton pour confirmer sa présence */}
+              {!isPresent && (
+                <Button 
+                  className="flex items-center gap-2 w-full md:w-auto bg-blue-600 hover:bg-blue-700"
+                  onClick={handleConfirmPresence}
+                >
+                  <UserCheck className="h-4 w-4" />
+                  Confirmer ma présence
+                </Button>
               )}
-              {isGeneratingPdf ? "Génération en cours..." : "Télécharger le reçu"}
-            </Button>
+            </>
           )}
         </div>
 
@@ -549,7 +592,7 @@ const Confirmation = () => {
           <Alert className="bg-blue-50 border-blue-200">
             <AlertTitle className="text-blue-800">Instructions importantes</AlertTitle>
             <AlertDescription className="text-blue-700">
-              <p>Un email de confirmation contenant votre QR code d'accès a été envoyé à votre adresse email. Assurez-vous de présenter ce QR code lors de votre arrivée à l'événement.</p>
+              <p>Un email de confirmation contenant votre invitation a été envoyé à votre adresse email. {!isPresent && "N'oubliez pas de confirmer votre présence le jour de l'événement en utilisant le bouton \"Confirmer ma présence\"."}</p>
               <p className="mt-2">Pour toute question, veuillez nous contacter à l'adresse email: support@example.com</p>
             </AlertDescription>
           </Alert>
@@ -571,6 +614,15 @@ const Confirmation = () => {
         <div className="bg-white w-1/3 h-full"></div>
         <div className="bg-green-600 w-1/3 h-full"></div>
       </div>
+      
+      {/* Dialogue de confirmation de présence */}
+      <ConfirmPresenceDialog
+        open={confirmPresenceDialogOpen}
+        onOpenChange={setConfirmPresenceDialogOpen}
+        participantId={participant?.id || ""}
+        participantName={`${participant?.first_name || ""} ${participant?.last_name || ""}`}
+        onSuccess={handlePresenceConfirmed}
+      />
     </div>
   );
 };

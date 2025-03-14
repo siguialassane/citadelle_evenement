@@ -7,7 +7,9 @@ import { toast } from "@/hooks/use-toast";
 import { type Participant } from "../../types/participant";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Mail, CheckCircle, QrCode } from "lucide-react";
+import { Bell, Mail, CheckCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 // Composants refactorisés
 import { Header } from "@/components/admin/dashboard/Header";
@@ -216,10 +218,6 @@ const AdminDashboard = () => {
     navigate("/admin/email-dashboard");
   };
 
-  const goToQrCodeScan = () => {
-    navigate("/admin/qr-scan");
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Header onLogout={handleLogout} />
@@ -240,14 +238,6 @@ const AdminDashboard = () => {
             </Button>
             
             <Button 
-              onClick={goToQrCodeScan} 
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
-            >
-              <QrCode className="h-4 w-4" />
-              Scanner QR Code
-            </Button>
-            
-            <Button 
               onClick={goToPaymentValidation} 
               className="flex items-center gap-2"
               variant="outline"
@@ -262,6 +252,16 @@ const AdminDashboard = () => {
             </Button>
           </div>
         </div>
+        
+        {/* Notification concernant la nouvelle méthode d'enregistrement */}
+        <Alert className="mb-6 border-blue-200 bg-blue-50">
+          <InfoIcon className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-700">Nouvelle méthode d'enregistrement</AlertTitle>
+          <AlertDescription className="text-blue-600">
+            <p>La fonction de scan QR code a été remplacée par un système d'auto-validation. Les participants peuvent désormais confirmer leur présence directement depuis leur reçu de paiement en utilisant le code de sécurité (009).</p>
+            <p className="mt-2">Le statut de présence des participants sera automatiquement mis à jour dans le tableau ci-dessous lorsqu'ils confirmeront leur présence.</p>
+          </AlertDescription>
+        </Alert>
 
         <SearchAndExport 
           searchTerm={searchTerm}
