@@ -66,7 +66,7 @@ export function ConfirmPresenceDialog({
         .insert([
           { 
             participant_id: participantId,
-            checked_in_at: new Date().toISOString(),
+            check_in_time: new Date().toISOString(), // Utilisation de check_in_time au lieu de checked_in_at
             checked_by: 'self-check-in',
             notes: 'Auto-validation via code'
           }
