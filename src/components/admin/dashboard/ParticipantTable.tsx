@@ -1,4 +1,5 @@
 // Composant pour afficher le tableau des participants
+// Mise à jour: Ajout de la fonctionnalité de paiement rapide
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,11 +19,13 @@ import {
   Info,
   RefreshCw,
   Trash,
-  CreditCard
+  CreditCard,
+  Zap
 } from "lucide-react";
 import { type Participant, type Payment } from "../../../types/participant";
 import { ParticipantDeleteDialog } from "./ParticipantDeleteDialog";
 import { useNavigate } from "react-router-dom";
+import { QuickPaymentDialog } from "./QuickPaymentDialog";
 
 interface ParticipantTableProps {
   participants: Participant[];
@@ -32,6 +35,7 @@ interface ParticipantTableProps {
   onViewDetails: (participant: Participant) => void;
   onCheckIn: (participantId: string, currentStatus: boolean | null) => void;
   onDelete?: () => void;
+  onPaymentProcessed?: () => void;
 }
 
 export const ParticipantTable = ({
@@ -41,14 +45,23 @@ export const ParticipantTable = ({
   pdfDownloaded = false,
   onViewDetails,
   onCheckIn,
-  onDelete
+  onDelete,
+  onPaymentProcessed
 }: ParticipantTableProps) => {
   const [participantToDelete, setParticipantToDelete] = useState<Participant | null>(null);
+  const [participantForQuickPayment, setParticipantForQuickPayment] = useState<Participant | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [quickPaymentDialogOpen, setQuickPaymentDialogOpen] = useState(false);
   const navigate = useNavigate();
   
   const handleRedirectToPayment = (participantId: string) => {
     navigate(`/payment/${participantId}`);
+  };
+
+  // Fonction pour ouvrir le dialogue de paiement rapide
+  const handleQuickPayment = (participant: Participant) => {
+    setParticipantForQuickPayment(participant);
+    setQuickPaymentDialogOpen(true);
   };
 
   // Fonction pour dédupliquer la liste des participants
@@ -77,7 +90,7 @@ export const ParticipantTable = ({
     
     return Array.from(uniqueParticipants.values());
   };
-  
+
   const getPaymentStatusBadge = (participant: Participant) => {
     // Vérifier d'abord les paiements standard
     if (participant.payments && participant.payments.length > 0) {
@@ -115,23 +128,42 @@ export const ParticipantTable = ({
       }
     }
     
-    // Aucun paiement trouvé - remplacer le badge par un bouton
+    // Aucun paiement trouvé - afficher le bouton de paiement rapide et le bouton normal
     return (
-      <Button 
-        size="sm" 
-        variant="outline" 
-        className="bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center gap-1"
-        onClick={() => handleRedirectToPayment(participant.id)}
-      >
-        <CreditCard className="h-3 w-3" />
-        <span>Non payé</span>
-      </Button>
+      <div className="flex flex-col space-y-1">
+        <Button 
+          size="sm" 
+          variant="outline" 
+          className="bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center gap-1"
+          onClick={() => handleRedirectToPayment(participant.id)}
+        >
+          <CreditCard className="h-3 w-3" />
+          <span>Non payé</span>
+        </Button>
+        <Button 
+          size="sm" 
+          variant="outline" 
+          className="bg-orange-100 text-orange-800 hover:bg-orange-200 flex items-center gap-1"
+          onClick={() => handleQuickPayment(participant)}
+        >
+          <Zap className="h-3 w-3" />
+          <span>Paiement rapide</span>
+        </Button>
+      </div>
     );
   };
 
   const handleDeleteClick = (participant: Participant) => {
     setParticipantToDelete(participant);
     setDeleteDialogOpen(true);
+  };
+  
+  const handleQuickPaymentSuccess = () => {
+    setQuickPaymentDialogOpen(false);
+    // Appeler le callback pour rafraîchir les données
+    if (onPaymentProcessed) {
+      onPaymentProcessed();
+    }
   };
 
   // Utiliser la liste dédupliquée pour le rendu
@@ -270,6 +302,13 @@ export const ParticipantTable = ({
         onOpenChange={setDeleteDialogOpen}
         participant={participantToDelete}
         onSuccess={onDelete}
+      />
+      
+      <QuickPaymentDialog
+        open={quickPaymentDialogOpen}
+        onOpenChange={setQuickPaymentDialogOpen}
+        participant={participantForQuickPayment}
+        onSuccess={handleQuickPaymentSuccess}
       />
     </>
   );

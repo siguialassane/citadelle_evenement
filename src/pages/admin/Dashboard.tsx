@@ -1,5 +1,7 @@
 
 // Tableau de bord administrateur refactorisé en composants plus petits
+// Mise à jour: Ajout de la fonctionnalité de paiement rapide et gestion du rafraîchissement
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -218,6 +220,12 @@ const AdminDashboard = () => {
     navigate("/admin/email-dashboard");
   };
 
+  // Gestionnaire de paiement rapide réussi
+  const handlePaymentProcessed = () => {
+    // Rafraîchir les données après un paiement rapide
+    handleRefresh();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header onLogout={handleLogout} />
@@ -283,6 +291,7 @@ const AdminDashboard = () => {
           onViewDetails={handleViewDetails}
           onCheckIn={handleCheckIn}
           onDelete={handleRefresh}
+          onPaymentProcessed={handlePaymentProcessed}
         />
       </main>
 
