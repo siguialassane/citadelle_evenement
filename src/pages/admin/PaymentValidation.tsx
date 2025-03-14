@@ -1,6 +1,7 @@
 
 // Ce fichier a été refactorisé pour organiser le code en composants plus petits
 // Mise à jour: Clarification du flux de validation et uniformisation des services EmailJS
+// Mise à jour: Ajout des statistiques financières pour une meilleure vue d'ensemble
 
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { PaymentSearchBar } from "@/components/admin/payment-validation/PaymentS
 import { PaymentList } from "@/components/admin/payment-validation/PaymentList";
 import { PaymentDetailCard } from "@/components/admin/payment-validation/PaymentDetailCard";
 import { DashboardCommunication } from "@/components/admin/dashboard/DashboardCommunication";
+import { PaymentStatistics } from "@/components/admin/payment-validation/PaymentStatistics";
 
 const PaymentValidation = () => {
   const { paymentId } = useParams();
@@ -131,6 +133,9 @@ const PaymentValidation = () => {
         
         <DashboardCommunication />
       </div>
+
+      {/* Nouvelle section de statistiques */}
+      <PaymentStatistics payments={filteredPayments} />
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <PaymentSearchBar 
