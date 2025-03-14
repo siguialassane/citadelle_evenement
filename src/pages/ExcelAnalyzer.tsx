@@ -1,13 +1,13 @@
-
 // Ce fichier contient la page d'analyse de fichiers Excel
 // Fonctionnalités:
 // - Téléchargement de fichiers Excel
 // - Analyse des données du fichier
 // - Affichage et édition des données
 // - Amélioré pour capturer tous les détails des fichiers Excel
+// - Correction de l'exportation de fichier avec XLSX.writeFile au lieu de utils.writeFile
 
 import React, { useState, useEffect } from "react";
-import { read, utils, WorkBook, WorkSheet } from "xlsx";
+import { read, utils, write, writeFile as xlsxWriteFile, WorkBook, WorkSheet } from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -343,9 +343,9 @@ const ExcelAnalyzer = () => {
         wb.Sheets[sheet.name] = ws;
       });
       
-      // Déclencher le téléchargement
+      // Déclencher le téléchargement en utilisant xlsxWriteFile au lieu de utils.writeFile
       const exportFileName = fileName.replace(/\.[^/.]+$/, "") + "_modified.xlsx";
-      utils.writeFile(wb, exportFileName);
+      xlsxWriteFile(wb, exportFileName);
       
       toast.success("Fichier exporté avec succès");
     } catch (err) {
