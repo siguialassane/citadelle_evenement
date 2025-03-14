@@ -11,7 +11,7 @@ import { Check, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { QrScannerSimple } from "@/components/admin/qr-scan/QrScannerSimple";
-import { fetchParticipantById } from "@/hooks/payment-validation/supabaseService";
+import { fetchParticipantData } from "@/hooks/payment-validation/supabaseService";
 import { ShortcutButton } from "@/components/admin/qr-scan/ShortcutButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -28,7 +28,7 @@ export default function QrCodeScan() {
       setLoading(true);
       console.log("Recherche du participant avec ID:", participantId);
       
-      const participant = await fetchParticipantById(participantId);
+      const participant = await fetchParticipantData(participantId);
       
       if (!participant) {
         toast({
@@ -108,12 +108,12 @@ export default function QrCodeScan() {
                   <div className="grid grid-cols-2 gap-3">
                     <ShortcutButton 
                       label="Participant 1" 
-                      disabled={loading}
+                      icon={<Check className="h-4 w-4" />}
                       onClick={() => handleScanSuccess("d290f1ee-6c54-4b01-90e6-d701748f0851")} 
                     />
                     <ShortcutButton 
                       label="Participant 2" 
-                      disabled={loading}
+                      icon={<Check className="h-4 w-4" />}
                       onClick={() => handleScanSuccess("04d0acbb-6c99-47cd-8e63-44850cb3899c")} 
                     />
                   </div>
