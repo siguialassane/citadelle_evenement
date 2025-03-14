@@ -14,10 +14,20 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, CreditCard, Zap } from "lucide-react";
 import { type Participant } from "../../../types/participant";
 import { performQuickPayment } from "@/hooks/payment-validation/quickPaymentService";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { PaymentMethod, PaymentNumbers } from "@/components/manual-payment/types";
+import { PAYMENT_NUMBERS } from "@/components/manual-payment/config";
 
 interface QuickPaymentDialogProps {
   open: boolean;
@@ -34,9 +44,18 @@ export const QuickPaymentDialog = ({
 }: QuickPaymentDialogProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [confirmPayment, setConfirmPayment] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("WAVE");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   if (!participant) {
     return null;
+  }
+
+  // Initialiser le numéro de téléphone du participant lorsque le dialogue s'ouvre
+  if (open && phoneNumber === "" && participant.contact_number) {
+    // Supprimer le préfixe +225 si présent
+    const cleanNumber = participant.contact_number.replace("+225", "");
+    setPhoneNumber(cleanNumber);
   }
 
   const handleProcessPayment = async () => {
@@ -49,12 +68,23 @@ export const QuickPaymentDialog = ({
       return;
     }
 
+    // Validation du numéro de téléphone
+    if (!phoneNumber || phoneNumber.length !== 10) {
+      toast({
+        title: "Numéro de téléphone invalide",
+        description: "Veuillez entrer un numéro de téléphone valide (10 chiffres).",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsProcessing(true);
       const success = await performQuickPayment(
         participant.id,
         participant.email,
-        participant.contact_number
+        phoneNumber,
+        paymentMethod
       );
 
       if (success) {
@@ -64,6 +94,8 @@ export const QuickPaymentDialog = ({
         });
         // Réinitialiser le dialogue
         setConfirmPayment(false);
+        setPaymentMethod("WAVE");
+        setPhoneNumber("");
         onOpenChange(false);
         
         // Notifier le composant parent pour rafraîchir les données
@@ -83,9 +115,6 @@ export const QuickPaymentDialog = ({
     }
   };
 
-  // Extraire le numéro de téléphone sans préfixe international si nécessaire
-  const phoneNumber = participant.contact_number.replace("+225", "");
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -95,7 +124,7 @@ export const QuickPaymentDialog = ({
             Paiement Rapide
           </DialogTitle>
           <DialogDescription>
-            Validation rapide du paiement via WAVE avec envoi automatique du QR code
+            Validation rapide du paiement via mobile money avec envoi automatique du QR code
           </DialogDescription>
         </DialogHeader>
         
@@ -120,17 +149,47 @@ export const QuickPaymentDialog = ({
           </div>
           
           <div className="border-t pt-4">
-            <h3 className="text-sm font-medium mb-2">Détails du paiement</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <h4 className="text-xs text-gray-500">Méthode</h4>
-                <p className="text-sm font-medium">WAVE</p>
-              </div>
-              
-              <div className="space-y-1">
-                <h4 className="text-xs text-gray-500">Téléphone utilisé</h4>
-                <p className="text-sm font-medium">{phoneNumber}</p>
-              </div>
+            <h3 className="text-sm font-medium mb-3">Méthode de paiement</h3>
+            <Select 
+              value={paymentMethod} 
+              onValueChange={(value: PaymentMethod) => setPaymentMethod(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choisir une méthode de paiement" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ORANGE">
+                  Orange Money ({PAYMENT_NUMBERS.ORANGE})
+                </SelectItem>
+                <SelectItem value="MOOV">
+                  Moov Money ({PAYMENT_NUMBERS.MOOV})
+                </SelectItem>
+                <SelectItem value="WAVE">
+                  Wave ({PAYMENT_NUMBERS.WAVE})
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="border-t pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber" className="text-sm font-medium">
+                Numéro utilisé pour le paiement
+              </Label>
+              <Input
+                id="phoneNumber"
+                type="text"
+                value={phoneNumber}
+                onChange={(e) => {
+                  // Permettre uniquement des chiffres et limiter à 10
+                  const value = e.target.value.replace(/\D/g, '').substring(0, 10);
+                  setPhoneNumber(value);
+                }}
+                placeholder="Ex: 0759567966"
+              />
+              <p className="text-xs text-gray-500">
+                Entrez les 10 chiffres sans le préfixe +225
+              </p>
             </div>
           </div>
           
@@ -142,7 +201,7 @@ export const QuickPaymentDialog = ({
                 onCheckedChange={(checked) => setConfirmPayment(checked as boolean)}
               />
               <Label htmlFor="confirmPayment">
-                Je confirme que le paiement de 30.000 FCFA a été effectué via WAVE
+                Je confirme que le paiement de 30.000 FCFA a été effectué via {paymentMethod === "ORANGE" ? "Orange Money" : paymentMethod === "MOOV" ? "Moov Money" : "Wave"}
               </Label>
             </div>
           </div>
@@ -159,7 +218,7 @@ export const QuickPaymentDialog = ({
           
           <Button
             type="submit"
-            disabled={isProcessing || !confirmPayment}
+            disabled={isProcessing || !confirmPayment || !phoneNumber}
             onClick={handleProcessPayment}
             className="bg-orange-500 hover:bg-orange-600 text-white flex items-center gap-2"
           >

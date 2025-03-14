@@ -1,6 +1,7 @@
 
 // Service pour le paiement rapide de participants
 // Mise à jour: Implémentation d'un processus de paiement et validation en une seule étape
+// Mise à jour: Ajout de la sélection de méthode de paiement et personnalisation du numéro
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -8,13 +9,20 @@ import { validatePaymentInDatabase, fetchParticipantData } from "./supabaseServi
 import { sendConfirmationEmail } from "./emailService";
 import { v4 as uuidv4 } from "uuid";
 import { PAYMENT_AMOUNT } from "@/components/manual-payment/config";
+import { PaymentMethod } from "@/components/manual-payment/types";
 
-export const performQuickPayment = async (participantId: string, email: string, phoneNumber: string): Promise<boolean> => {
+export const performQuickPayment = async (
+  participantId: string, 
+  email: string, 
+  phoneNumber: string, 
+  paymentMethod: PaymentMethod = "WAVE"
+): Promise<boolean> => {
   try {
     console.log("==== DÉBUT DU PROCESSUS DE PAIEMENT RAPIDE ====");
     console.log("ID du participant:", participantId);
     console.log("Email:", email);
     console.log("Numéro de téléphone:", phoneNumber);
+    console.log("Méthode de paiement:", paymentMethod);
     
     // 1. Créer un enregistrement de paiement manuel
     const { data: manualPayment, error: paymentError } = await supabase
@@ -22,7 +30,7 @@ export const performQuickPayment = async (participantId: string, email: string, 
       .insert({
         participant_id: participantId,
         amount: PAYMENT_AMOUNT,
-        payment_method: "WAVE",
+        payment_method: paymentMethod,
         phone_number: phoneNumber.replace("+225", ""),
         comments: "Paiement rapide via admin dashboard",
         status: 'pending'
