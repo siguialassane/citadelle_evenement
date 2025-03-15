@@ -4,6 +4,7 @@
 // - Amélioration de la regex de validation pour accepter plus de formats d'email
 // - Meilleure gestion des espaces avant/après l'email
 // - Logs de débogage plus détaillés pour faciliter le diagnostic
+// - Prise en charge du fait qu'un même email peut appartenir à plusieurs participants
 
 import { EmailValidationResult } from './types';
 
@@ -21,6 +22,15 @@ export const validateEmailData = (email: string | undefined, participantData: an
   if (!email) {
     console.error("Validation d'email échouée: email manquant");
     return { isValid: false, error: "Email manquant" };
+  }
+
+  // Vérifier que l'email du participant correspond à l'email fourni
+  if (participantData.email.toLowerCase() !== email.toLowerCase().trim()) {
+    console.error("Validation d'email échouée: l'email ne correspond pas à celui du participant");
+    return { 
+      isValid: false, 
+      error: `L'email fourni (${email}) ne correspond pas à celui du participant (${participantData.email})` 
+    };
   }
 
   // Nettoyage approfondi de l'email pour éliminer tout espace

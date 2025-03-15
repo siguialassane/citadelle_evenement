@@ -4,6 +4,7 @@
 // - Mise à jour de la vérification des emails existants pour considérer aussi les noms/prénoms
 // - Nouvelle logique de vérification compatible avec la contrainte d'unicité email+nom+prénom
 // - Meilleurs messages d'erreur pour guider l'utilisateur
+// - Ajout de la possibilité d'avoir un même email pour plusieurs participants avec noms différents
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -59,7 +60,7 @@ type FormValues = z.infer<typeof formSchema>;
 export function RegisterForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-  const [emailExists, setEmailExists] = useState(false);
+  const [emailPersonExists, setEmailPersonExists] = useState(false);
   const [submissionCount, setSubmissionCount] = useState(0);
   const navigate = useNavigate();
 
@@ -85,7 +86,7 @@ export function RegisterForm() {
   }, [form.formState.errors.email]);
 
   // Vérifier si l'email existe déjà avec le même nom et prénom dans la base de données
-  const checkEmailExists = async (email: string) => {
+  const checkEmailPersonExists = async (email: string) => {
     if (!email || form.formState.errors.email) return;
     
     const firstName = form.getValues('firstName');
@@ -113,7 +114,7 @@ export function RegisterForm() {
       
       const exists = (count && count > 0) || (data && data.length > 0);
       console.log("Email avec ce nom et prénom existe déjà:", exists);
-      setEmailExists(exists);
+      setEmailPersonExists(exists);
       
       if (exists) {
         form.setError('email', { 
@@ -141,7 +142,7 @@ export function RegisterForm() {
     
     if (email && firstName && lastName && !form.formState.errors.email) {
       const timeoutId = setTimeout(() => {
-        checkEmailExists(email);
+        checkEmailPersonExists(email);
       }, 500); // Délai pour éviter trop d'appels à l'API
       
       return () => clearTimeout(timeoutId);
@@ -159,8 +160,8 @@ export function RegisterForm() {
     
     try {
       // Vérifier une dernière fois si l'email existe avec ce nom et prénom
-      const emailAlreadyExists = await checkEmailExists(data.email);
-      if (emailAlreadyExists) {
+      const emailPersonAlreadyExists = await checkEmailPersonExists(data.email);
+      if (emailPersonAlreadyExists) {
         toast({
           title: "Inscription impossible",
           description: "Cette personne est déjà inscrite à l'événement avec cet email.",
@@ -267,7 +268,7 @@ export function RegisterForm() {
   };
 
   // Déterminer l'état du bouton de soumission
-  const isButtonDisabled = isSubmitting || isCheckingEmail || emailExists;
+  const isButtonDisabled = isSubmitting || isCheckingEmail || emailPersonExists;
 
   return (
     <Card className="w-full max-w-md mx-auto border-green-100 shadow-md">
@@ -326,7 +327,30 @@ export function RegisterForm() {
                         className="pl-10 border-green-200 focus:border-green-400 focus:ring-green-400" 
                         placeholder="+225" 
                         {...field} 
-                        onChange={handlePhoneInput}
+                        onChange={(e) => {
+                          let value = e.target.value;
+                          
+                          // S'assurer que le préfixe +225 est toujours présent
+                          if (!value.startsWith("+225")) {
+                            value = "+225";
+                          }
+                          
+                          // Extraire uniquement les chiffres après le +225
+                          const prefix = "+225";
+                          const afterPrefix = value.substring(prefix.length).replace(/\D/g, "");
+                          
+                          // Limiter à exactement 10 chiffres après le préfixe
+                          const cleanDigits = afterPrefix.substring(0, 10);
+                          
+                          // Reconstruire le numéro avec le préfixe
+                          const formattedNumber = `${prefix}${cleanDigits}`;
+                          
+                          // Mettre à jour le formulaire
+                          form.setValue("contactNumber", formattedNumber);
+                          
+                          // Log pour debug
+                          console.log("Numéro formaté:", formattedNumber);
+                        }}
                       />
                     </div>
                   </FormControl>
@@ -349,11 +373,13 @@ export function RegisterForm() {
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600 h-4 w-4" />
                       <div className="relative">
                         <Input 
-                          className={`pl-10 border-green-200 focus:border-green-400 focus:ring-green-400 ${emailExists ? 'border-red-300 focus:border-red-400 focus:ring-red-400' : ''}`}
+                          className={`pl-10 border-green-200 focus:border-green-400 focus:ring-green-400 ${emailPersonExists ? 'border-red-300 focus:border-red-400 focus:ring-red-400' : ''}`}
                           placeholder="votre.email@exemple.com" 
                           {...field} 
                           onBlur={(e) => {
-                            handleEmailInput(e);
+                            const emailValue = e.target.value.trim();
+                            console.log("Email input cleaned:", emailValue);
+                            form.setValue("email", emailValue);
                             field.onBlur();
                           }}
                         />
@@ -367,7 +393,7 @@ export function RegisterForm() {
                   </FormControl>
                   <FormMessage />
                   <FormDescription className="text-xs text-gray-500">
-                    {emailExists 
+                    {emailPersonExists 
                       ? "Cette personne est déjà inscrite avec cet email et ce nom." 
                       : "Vous pouvez utiliser le même email pour plusieurs personnes avec des noms différents."}
                   </FormDescription>
@@ -412,7 +438,7 @@ export function RegisterForm() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Vérification de l'email...
                 </>
-              ) : emailExists ? (
+              ) : emailPersonExists ? (
                 "Email déjà inscrit avec ce nom"
               ) : (
                 "S'inscrire"

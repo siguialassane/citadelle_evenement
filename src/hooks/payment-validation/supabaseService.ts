@@ -1,5 +1,7 @@
+
 // Service pour les opérations Supabase liées à la validation des paiements
 // Mise à jour: Correction définitive de l'association du QR code au participant
+// Mise à jour: Prise en charge de la nouvelle logique d'unicité - un email peut appartenir à plusieurs participants
 // IMPORTANT: Consolidation de la logique des QR codes pour éviter les erreurs
 
 import { supabase } from "@/integrations/supabase/client";
@@ -172,6 +174,34 @@ export const fetchParticipantData = async (participantId: string): Promise<any> 
   }
 };
 
+// Vérifie si un participant avec le même email, prénom et nom existe déjà
+export const checkParticipantExists = async (email: string, firstName: string, lastName: string): Promise<boolean> => {
+  try {
+    console.log("Vérification si le participant existe déjà:", { email, firstName, lastName });
+    
+    const { data, error, count } = await supabase
+      .from('participants')
+      .select('id', { count: 'exact' })
+      .eq('email', email)
+      .eq('first_name', firstName)
+      .eq('last_name', lastName)
+      .limit(1);
+    
+    if (error) {
+      console.error("Erreur lors de la vérification du participant:", error);
+      throw error;
+    }
+    
+    const exists = (count && count > 0) || (data && data.length > 0);
+    console.log("Le participant existe déjà:", exists);
+    
+    return exists;
+  } catch (error) {
+    console.error("Erreur lors de la vérification du participant:", error);
+    return false;
+  }
+};
+
 // Fonctions utilitaires pour formater les données
 
 const formatPaymentsData = (paymentsData: any[]): Payment[] => {
@@ -230,4 +260,3 @@ export const fetchPaymentDetails = async (paymentId: string) => {
     throw error;
   }
 };
-
