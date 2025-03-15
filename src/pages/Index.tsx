@@ -4,7 +4,7 @@
 // - Remplacement des couleurs belges par celles de la Côte d'Ivoire (orange, blanc, vert)
 // - Amélioration du design pour correspondre au thème islamique
 // - Optimisation pour affichage mobile
-// - Ajout des éléments manquants dans le programme détaillé tout en gardant un design compact
+// - Mise à jour du programme détaillé selon le nouveau planning
 // - Correction de la structure JSX pour n'avoir qu'un seul élément racine
 
 import React from "react";
@@ -62,7 +62,7 @@ const Index = () => {
               <Clock className="h-6 w-6 text-orange-500 flex-shrink-0 mt-1" />
               <div>
                 <h3 className="font-semibold text-gray-800">Heure</h3>
-                <p className="text-gray-600">16h00</p>
+                <p className="text-gray-600">15h30</p>
               </div>
             </div>
             
@@ -70,7 +70,7 @@ const Index = () => {
               <MapPin className="h-6 w-6 text-orange-500 flex-shrink-0 mt-1" />
               <div>
                 <h3 className="font-semibold text-gray-800">Lieu</h3>
-                <p className="text-gray-600">NOOM HOTEL, Plateau</p>
+                <p className="text-gray-600">LA CITADELLE</p>
               </div>
             </div>
             
@@ -87,15 +87,16 @@ const Index = () => {
           <div className="mt-6">
             <h3 className="font-semibold text-xl text-green-700 mb-2">Au programme:</h3>
             <ul className="list-disc ml-6 space-y-2 text-gray-700">
-              <li>Conférence sur le thème: <span className="text-green-700 font-medium">Préservation de la paix et de la cohésion sociale: quelle contribution du cadre musulman</span></li>
-              <li>Avec Imam YAO DIARRASSOUBA Mamadou</li>
-              <li>Iftar & dîner en buffet</li>
-              <li>Prière & Zikr</li>
+              <li>Conférence sur le thème: <span className="text-green-700 font-medium">« Préservation de la paix et de la cohésion sociale : quelle contribution du cadre musulman ? »</span></li>
+              <li>Animateur: <span className="font-medium">Imam YAO Mamadou DIARRASSOUBA</span>, Imam Mosquée Al imane de Koumassi Remblais</li>
+              <li>IFTAR et prière de maghrib</li>
+              <li>Projection d'un film Institutionnel sur LA CITADELLE</li>
+              <li>Salat ICHAI, TARAWIH et Bénédictions QUNUT</li>
             </ul>
           </div>
         </div>
           
-        {/* Programme détaillé - version plus compacte */}
+        {/* Programme détaillé - version tableau */}
         <div className="mb-12">
           <Accordion type="single" collapsible className="w-full bg-white rounded-xl shadow-md overflow-hidden">
             <AccordionItem value="program">
@@ -106,195 +107,112 @@ const Index = () => {
                 </div>
               </AccordionTrigger>
               <AccordionContent className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {/* Première colonne - Activités chronologiques */}
-                  <div className="space-y-2">
-                    <Card className="border-l-4 border-l-orange-500 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Clock className="h-4 w-4 text-orange-500 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">15H30 – 16H00</p>
-                            <p className="text-gray-600 text-xs">Accueil et installation</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-l-4 border-l-orange-500 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Star className="h-4 w-4 text-orange-500 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">16H00 – 16H45</p>
-                            <p className="text-gray-600 text-xs">Prière de Asr, Zikr Collectif</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-l-4 border-l-green-600 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Mic className="h-4 w-4 text-green-600 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">16H45 – 17H15</p>
-                            <p className="text-gray-600 text-xs">Introduction et accueil</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-l-4 border-l-green-600 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Book className="h-4 w-4 text-green-600 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">17H15 – 17H30</p>
-                            <p className="text-gray-600 text-xs">Récitation du Saint Coran</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-l-4 border-l-green-600 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Heart className="h-4 w-4 text-green-600 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">17H30 – 18H00</p>
-                            <p className="text-gray-600 text-xs">Témoignages et partages</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  {/* Deuxième colonne - Activités chronologiques (suite) */}
-                  <div className="space-y-2">
-                    <Card className="border-l-4 border-l-green-600 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Coffee className="h-4 w-4 text-green-600 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">18H00 – 18H25</p>
-                            <p className="text-gray-600 text-xs">Conférence - Partie 1</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-l-4 border-l-orange-500 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Coffee className="h-4 w-4 text-orange-500 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">18H25 – 18H50</p>
-                            <p className="text-gray-600 text-xs">IFTAR et Prière de Maghrib</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-l-4 border-l-green-600 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Mic className="h-4 w-4 text-green-600 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">18H50 – 19H15</p>
-                            <p className="text-gray-600 text-xs">Conférence - Partie 2</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-l-4 border-l-green-600 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Music className="h-4 w-4 text-green-600 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">19H15 – 19H25</p>
-                            <p className="text-gray-600 text-xs">Anasheed/Chants islamiques</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-l-4 border-l-orange-500 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Star className="h-4 w-4 text-orange-500 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">19H25 – 19H45</p>
-                            <p className="text-gray-600 text-xs">Salat ICHAI et TARAWIH</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  {/* Troisième colonne - Activités chronologiques (fin) */}
-                  <div className="space-y-2">
-                    <Card className="border-l-4 border-l-orange-500 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Coffee className="h-4 w-4 text-orange-500 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">19H45 – 20H15</p>
-                            <p className="text-gray-600 text-xs">Dîner en buffet</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-l-4 border-l-green-600 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Award className="h-4 w-4 text-green-600 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">20H15 – 20H25</p>
-                            <p className="text-gray-600 text-xs">Remerciements</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-l-4 border-l-green-600 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Gift className="h-4 w-4 text-green-600 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">20H25 – 20H30</p>
-                            <p className="text-gray-600 text-xs">Distribution de cadeaux</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-l-4 border-l-orange-500 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Film className="h-4 w-4 text-orange-500 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">20H30 – 20H45</p>
-                            <p className="text-gray-600 text-xs">Photos de groupe</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-l-4 border-l-orange-500 shadow-sm">
-                      <CardContent className="py-2 px-3">
-                        <div className="flex items-start gap-2">
-                          <Users className="h-4 w-4 text-orange-500 flex-shrink-0 mt-1" />
-                          <div>
-                            <p className="font-bold text-gray-800 text-sm">20H45</p>
-                            <p className="text-gray-600 text-xs">Fin de l'événement</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="border border-gray-300 bg-orange-100 text-orange-700 px-4 py-2 w-1/5">Heure</th>
+                        <th className="border border-gray-300 bg-green-100 text-green-700 px-4 py-2 w-4/5">Agendas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">15h30</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          Accueil et installation des participants dans la salle de prière
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">16h00 – 16h45</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          <ul className="list-disc ml-5">
+                            <li>Prière de Asr</li>
+                            <li>Zikr Collectif demande de pardon (124.000 Astaghfirou laha wa atoubou ilahi)</li>
+                            <li>Lecture de la sourate Yasin (21 Fois)</li>
+                          </ul>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">16h45 – 16h50</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          Mise en place en salle de conférence
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">16h50 – 16h55</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          Douah d'ouverture et Allocution de bienvenue (PCO) – Hadja Sarah Sinan CISSE
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">16h55 – 18h00</td>
+                        <td className="border border-gray-300 px-4 py-2">
+                          <div className="font-bold text-gray-800">Conférence : « Préservation de la paix et de la cohésion sociale : quelle contribution du cadre musulman ? »</div>
+                          <div className="mt-1"><span className="font-semibold">Animateur :</span> Imam Yao Mamadou DIARRASSOUBA, Imam Mosquée Al imane de Koumassi Remblais</div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">18h00 – 18h10</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          Renouvellement Ablutions
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">18h10 – 18h25</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          Séance individuelle et collective de ZIKR, Invocations individuelles sous séquence audio de lecture coranique et d'instant de méditation.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">18h25 – 18h50</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          IFTAR et prière de maghrib
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">18h50 – 19h05</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          Projection d'un film Institutionnel sur LA CITADELLE précédé d'un slam
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">19h05 – 19h10</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          Allocution du Directeur Exécutif de LA CITADELLE
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">19h10 – 19h15</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          Allocution du PCA de LA CITADELLE
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">19h15 – 19h20</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          Communication du Parrain TOURE Faman
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">19h25 – 19h45</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          Salat ICHAI, TARAWIH et Bénédictions QUNUT
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">19h45 – 20h30</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          Dîner <span className="font-italic">ponctué</span> d'une présentation de tuniques homme et dame de YONI Couture
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2 text-orange-600 font-semibold">20h30 – 20h35</td>
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          Douah Final et départ
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </AccordionContent>
             </AccordionItem>
