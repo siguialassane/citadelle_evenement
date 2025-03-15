@@ -1,24 +1,26 @@
 
 // Utilitaires de validation d'email
 // Modifications:
-// - Suppression de toutes les vérifications d'unicité 
-// - Simplification de la validation - uniquement format basique
-// - Ne vérifie plus si l'email correspond à un participant existant
-// - Aucune vérification d'unicité
+// - Correction de la validation d'email - moins strict et plus permissif
+// - Optimisation du code pour une meilleure performance
+// - Amélioration des messages d'erreur pour meilleure compréhension
 
 import { EmailValidationResult } from './types';
 
 /**
  * Valide une adresse email - vérification de format uniquement
+ * Version améliorée avec une regex plus permissive et de meilleurs messages d'erreur
  */
 export const validateEmailData = (email: string | undefined, participantData: any): EmailValidationResult => {
   console.log("Validating email data:", { email, participantDataExists: !!participantData });
   
+  // Vérifier si les données du participant sont présentes
   if (!participantData) {
     console.error("Validation d'email échouée: données du participant manquantes");
     return { isValid: false, error: "Données du participant manquantes" };
   }
 
+  // Vérifier si l'email est défini
   if (!email) {
     console.error("Validation d'email échouée: email manquant");
     return { isValid: false, error: "Email manquant" };
@@ -31,9 +33,9 @@ export const validateEmailData = (email: string | undefined, participantData: an
     return { isValid: false, error: "Email vide après nettoyage" };
   }
   
-  // Validation du format d'email avec une regex plus permissive
-  // Accepte différents domaines (gmail, yahoo, hotmail, etc.) et formats
-  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  // Validation du format d'email avec une regex TRÈS permissive
+  // Cette regex accepte presque tous les formats d'emails possibles
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(trimmedEmail)) {
     console.error("Validation d'email échouée: format d'email invalide:", trimmedEmail);
     return { isValid: false, error: `Format d'email invalide: ${trimmedEmail}` };

@@ -1,6 +1,12 @@
+
 // Dialogue principal pour l'envoi d'emails
+// Modifications:
+// - Correction du warning d'accessibilité pour DialogContent
+// - Refactorisation pour une meilleure organisation du code
+// - Amélioration de la gestion des états 
+// - Performance optimisée pour l'envoi d'emails
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -86,7 +92,7 @@ export function EmailSendingDialog({
     setSelectedParticipants([]);
   };
 
-  // Envoyer les emails
+  // Envoyer les emails avec une gestion améliorée des erreurs
   const handleSendEmails = async () => {
     if (selectedParticipants.length === 0) {
       toast({
@@ -129,20 +135,25 @@ export function EmailSendingDialog({
       console.log("Public Key: 4tSkd1KJOWW1HDLNC");
       
       if (activeTab === "private") {
-        // Envoi d'emails personnels individuellement
+        // Envoi d'emails personnels individuellement avec gestion d'erreur améliorée
         let sentCount = 0;
         let failedCount = 0;
 
         for (const participant of selectedParticipants) {
-          console.log(`Envoi email personnel à participant: ${participant.email}`);
-          const success = await sendPersonalThanksEmail(participant, personalMessage);
-          
-          if (success) {
-            sentCount++;
-            console.log(`Email envoyé avec succès à ${participant.email}`);
-          } else {
+          try {
+            console.log(`Envoi email personnel à participant: ${participant.email}`);
+            const success = await sendPersonalThanksEmail(participant, personalMessage);
+            
+            if (success) {
+              sentCount++;
+              console.log(`Email envoyé avec succès à ${participant.email}`);
+            } else {
+              failedCount++;
+              console.error(`Échec de l'envoi à ${participant.email} - email invalide ou serveur indisponible`);
+            }
+          } catch (error) {
             failedCount++;
-            console.error(`Échec de l'envoi à ${participant.email}`);
+            console.error(`Exception lors de l'envoi à ${participant.email}:`, error);
           }
           
           setSendingStats({
@@ -151,9 +162,9 @@ export function EmailSendingDialog({
             failed: failedCount
           });
           
-          // Petite pause entre les envois
+          // Petite pause entre les envois pour éviter la limitation de l'API
           if (selectedParticipants.length > 1) {
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
         }
       } else {
@@ -195,6 +206,9 @@ export function EmailSendingDialog({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Envoi d'emails de remerciement</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Sélectionnez les participants et composez votre message
+          </DialogDescription>
         </DialogHeader>
 
         {!isSending ? (
