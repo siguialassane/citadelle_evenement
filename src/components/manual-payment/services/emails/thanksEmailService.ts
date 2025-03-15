@@ -1,4 +1,3 @@
-
 // Service pour l'envoi d'emails de remerciement personnalisés ou groupés
 import emailjs from '@emailjs/browser';
 import { validateEmailData } from './emailValidation';
@@ -76,8 +75,10 @@ export const sendPersonalThanksEmail = async (
     const firstName = participantData.first_name || '';
     const lastName = participantData.last_name || '';
     
-    // Remplacement dynamique de [prénom] par le prénom du participant
-    const formattedPersonalMessage = personalMessage.replace(/\[prénom\]/g, firstName);
+    // Remplacement dynamique de [prénom] et [nom] par les valeurs du participant
+    const formattedPersonalMessage = personalMessage
+      .replace(/\[prénom\]/g, firstName)
+      .replace(/\[nom\]/g, lastName);
     
     const templateParams: EmailTemplateParams = {
       to_email: email,
@@ -151,8 +152,10 @@ export const sendPublicThanksEmail = async (
             const firstName = participant.first_name || '';
             const lastName = participant.last_name || '';
             
-            // Remplacement dynamique de [prénom] par le prénom du participant
-            const formattedPublicMessage = publicMessage.replace(/\[prénom\]/g, firstName);
+            // Remplacement dynamique de [prénom] et [nom] par les valeurs du participant
+            const formattedPublicMessage = publicMessage
+              .replace(/\[prénom\]/g, firstName)
+              .replace(/\[nom\]/g, lastName);
             
             const templateParams: EmailTemplateParams = {
               to_email: email,
