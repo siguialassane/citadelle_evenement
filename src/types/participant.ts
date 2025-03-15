@@ -27,7 +27,8 @@ export type Payment = {
   transaction_id?: string;
 };
 
-// Nous définissons un type pour les vérifications d'unicité de participant
+// Type pour les vérifications d'unicité de participant - désormais ignoré
+// Conservé pour référence mais ne sera plus utilisé
 export type ParticipantIdentity = {
   first_name: string;
   last_name: string;
