@@ -9,8 +9,8 @@
 export const PAYMENT_AMOUNT = 30000; // Montant fixé à 30000 XOF
 
 // Service UNIQUEMENT pour les emails initiaux et notifications admin
-export const EMAILJS_SERVICE_ID = "service_wor257y";
-export const EMAILJS_PUBLIC_KEY = "xzpEEppsuAiB9Ktop";
+export const EMAILJS_SERVICE_ID = "service_wrk5x0l";
+export const EMAILJS_PUBLIC_KEY = "uQAHVMcvEXg6coHr9";
 
 // Service UNIQUEMENT pour les emails de confirmation (avec QR code)
 export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_zes2sew";
@@ -22,8 +22,8 @@ export const REJECTION_EMAILJS_PUBLIC_KEY = "wdtFy3bjHd5FNRQLg";
 export const REJECTION_TEMPLATE_ID = "template_s3c9tsw"; // Nouveau template pour le rejet
 
 // Templates pour les différents types d'emails
-export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_3e5dq5i"; // Email initial
-export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_oz843jo"; // Notification admin
+export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_sdofxhv"; // Email initial
+export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_4filizr"; // Notification admin
 export const CONFIRMATION_TEMPLATE_ID = "template_dq0ac69"; // QR code uniquement
 
 // Numéros de paiement
