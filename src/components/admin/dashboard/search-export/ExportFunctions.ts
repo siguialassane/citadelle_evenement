@@ -1,4 +1,3 @@
-
 // Utility functions for exporting data
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -61,6 +60,43 @@ const getPaymentAmount = (participant: Participant): string => {
   return "N/A";
 };
 
+// Fonction utilitaire pour obtenir la méthode de paiement
+const getPaymentMethod = (participant: Participant): string => {
+  if (participant.payments && participant.payments.length > 0) {
+    return participant.payments[0].payment_method || "Standard";
+  }
+  
+  if (participant.manual_payments && participant.manual_payments.length > 0) {
+    return participant.manual_payments[0].payment_method || "Manuel";
+  }
+  
+  return "N/A";
+};
+
+// Fonction utilitaire pour obtenir la date de paiement
+const getPaymentDate = (participant: Participant): string => {
+  if (participant.payments && participant.payments.length > 0) {
+    const date = new Date(participant.payments[0].payment_date);
+    return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR');
+  }
+  
+  if (participant.manual_payments && participant.manual_payments.length > 0) {
+    const date = new Date(participant.manual_payments[0].created_at);
+    return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR');
+  }
+  
+  return "N/A";
+};
+
+// Fonction utilitaire pour échapper les champs CSV
+const escapeCSV = (field: string | number | boolean | null): string => {
+  if (field === null || field === undefined) return '""';
+  const fieldStr = String(field);
+  // Échapper les guillemets en les doublant et entourer de guillemets
+  return `"${fieldStr.replace(/"/g, '""')}"`;
+};
+
+// Fonction améliorée pour exporter au format CSV
 export const exportToCSV = (participants: Participant[]) => {
   const headers = [
     "Nom", 
@@ -71,22 +107,32 @@ export const exportToCSV = (participants: Participant[]) => {
     "Présent", 
     "Date d'inscription", 
     "Statut du paiement", 
-    "Montant"
+    "Montant",
+    "Méthode de paiement",
+    "Date de paiement",
+    "Date d'enregistrement"
   ];
   
   const rows = participants.map(participant => [
-    participant.last_name,
-    participant.first_name,
-    participant.email,
-    participant.contact_number,
-    participant.is_member ? "Oui" : "Non",
-    participant.check_in_status ? "Oui" : "Non",
-    new Date(participant.created_at).toLocaleDateString(),
-    getPaymentStatus(participant),
-    getPaymentAmount(participant)
+    escapeCSV(participant.last_name),
+    escapeCSV(participant.first_name),
+    escapeCSV(participant.email),
+    escapeCSV(participant.contact_number),
+    escapeCSV(participant.is_member ? "Oui" : "Non"),
+    escapeCSV(participant.check_in_status ? "Oui" : "Non"),
+    escapeCSV(new Date(participant.created_at).toLocaleDateString('fr-FR')),
+    escapeCSV(getPaymentStatus(participant)),
+    escapeCSV(getPaymentAmount(participant)),
+    escapeCSV(getPaymentMethod(participant)),
+    escapeCSV(getPaymentDate(participant)),
+    escapeCSV(participant.check_in_timestamp ? 
+      new Date(participant.check_in_timestamp).toLocaleDateString('fr-FR') + ' ' + 
+      new Date(participant.check_in_timestamp).toLocaleTimeString('fr-FR') : "Non enregistré")
   ]);
   
-  const csvContent = [
+  // Ajouter le BOM (Byte Order Mark) pour que Excel reconnaisse l'UTF-8
+  const BOM = "\uFEFF";
+  const csvContent = BOM + [
     headers.join(","),
     ...rows.map(row => row.join(","))
   ].join("\n");
@@ -99,6 +145,11 @@ export const exportToCSV = (participants: Participant[]) => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  
+  toast({
+    title: "Exportation réussie",
+    description: `${participants.length} participants ont été exportés au format CSV.`,
+  });
 };
 
 export const exportToPDF = async (
