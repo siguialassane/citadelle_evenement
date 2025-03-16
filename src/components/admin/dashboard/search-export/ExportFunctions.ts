@@ -97,33 +97,71 @@ const escapeCSV = (field: string | number | boolean | null): string => {
   return `"${fieldStr.replace(/"/g, '""')}"`;
 };
 
-// Fonction pour formater le numéro de téléphone correctement - Simplifiée
+// Fonction pour formater le numéro de téléphone correctement - Améliorée pour texte brut
 const formatPhoneNumber = (phone: string): string => {
   if (!phone) return "";
   
-  // Supprimer tous les caractères non numériques
-  let digits = phone.replace(/\D/g, '');
+  // Si c'est déjà un format attendu (exactement 10 chiffres commençant par 0), le retourner tel quel
+  if (/^0\d{9}$/.test(phone)) {
+    return phone;
+  }
   
-  // Cas spéciaux: notation scientifique (comme 2.25E+12)
+  // Traiter la notation scientifique (2.25E+12)
   if (phone.includes('E+') || phone.includes('e+')) {
-    const num = Number(phone);
-    if (!isNaN(num)) {
-      digits = String(num);
+    try {
+      const num = Number(phone);
+      if (!isNaN(num)) {
+        const fullNumber = String(num);
+        
+        // Si c'est un numéro ivoirien avec préfixe 225
+        if (fullNumber.startsWith('225')) {
+          // Extraire sans le préfixe 225
+          const localNumber = fullNumber.substring(3);
+          // Ajouter le 0 si nécessaire
+          return localNumber.startsWith('0') ? localNumber : `0${localNumber}`;
+        }
+        
+        // Pour les autres cas, formater comme numéro à 10 chiffres
+        const lastDigits = fullNumber.slice(-10);
+        return lastDigits.startsWith('0') ? lastDigits : `0${lastDigits.slice(-9)}`;
+      }
+    } catch (error) {
+      console.error("Erreur dans le formatage du numéro scientifique:", error);
     }
   }
   
-  // Si le numéro commence par 225 (préfixe Côte d'Ivoire), le supprimer
+  // Extraire seulement les chiffres
+  const digits = phone.replace(/\D/g, '');
+  
+  // Cas 1: Préfixe 225 présent (format international ivoirien)
   if (digits.startsWith('225')) {
-    digits = digits.substring(3);
+    const localPart = digits.substring(3);
+    return localPart.startsWith('0') ? localPart : `0${localPart}`;
   }
   
-  // S'assurer que le numéro commence par 0
-  if (!digits.startsWith('0')) {
-    digits = '0' + digits;
+  // Cas 2: Sans préfixe mais sans 0 initial (format africain 9 chiffres)
+  if (digits.length === 9) {
+    return `0${digits}`;
   }
   
-  // Prendre les 10 derniers chiffres pour avoir un numéro valide
-  return digits.slice(-10);
+  // Cas 3: Format avec 0 initial et 10 chiffres (format ivoirien standard)
+  if (digits.length === 10 && digits.startsWith('0')) {
+    return digits;
+  }
+  
+  // Cas 4: Pour tout autre format, prendre les derniers chiffres et ajouter 0 si nécessaire
+  // S'assurer d'avoir exactement 10 chiffres
+  if (digits.length > 9) {
+    // Prendre les 10 derniers ou les 9 derniers + ajouter 0
+    if (digits.slice(-10).startsWith('0')) {
+      return digits.slice(-10);
+    } else {
+      return `0${digits.slice(-9)}`;
+    }
+  }
+  
+  // Si tout échoue, ajouter simplement un 0 devant
+  return `0${digits}`;
 };
 
 // Fonction utilitaire pour formater une date en format français

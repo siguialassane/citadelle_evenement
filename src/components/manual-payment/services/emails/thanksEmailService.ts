@@ -1,3 +1,4 @@
+
 // Service pour l'envoi d'emails de remerciement personnalisés ou groupés
 import emailjs from '@emailjs/browser';
 import { validateEmailData } from './emailValidation';
@@ -8,20 +9,27 @@ const THANKS_EMAILJS_SERVICE_ID = "service_ds3ba4m";
 const THANKS_EMAILJS_PUBLIC_KEY = "4tSkd1KJOWW1HDLNC";
 const THANKS_TEMPLATE_ID = "template_u407lzh";
 
-// Format HTML pour l'email - SIMPLIFIÉ sans conditionnels Handlebars
+// Format HTML pour l'email - Optimisé pour éviter les filtres anti-spam
 const EMAIL_HTML_TEMPLATE = `<!DOCTYPE html>
 <html>
 <head>
     <style>
         body { font-family: Arial, sans-serif; }
         .header { text-align: center; padding: 20px; background: #f5f5f5; color: green; }
-        .content { padding: 20px; }
-        .personal-message, .public-message { 
-            margin-bottom: 15px; 
-            padding: 15px; 
-            border-left: 3px solid #2e7d32; 
-            background-color: #f9f9f9; 
+        .validate-btn {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 12px 20px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
         }
+        .content { padding: 20px; }
         .footer { text-align: center; padding: 20px; color: #666; }
     </style>
 </head>
@@ -33,15 +41,21 @@ const EMAIL_HTML_TEMPLATE = `<!DOCTYPE html>
     <div class="content">
         <p>Cher(e) {{prenom}} {{nom}},</p>
         
-        <!-- Message personnel -->
+        <!-- Message personnel conditionnel -->
         <div class="personal-message">
             {{merci_perso}}
         </div>
         
-        <!-- Message public -->
+        <!-- Message public conditionnel -->
         <div class="public-message">
             {{merci_public}}
         </div>
+        
+        <p>Nous sommes toujours soucieux de nous améliorer et de vous offrir des événements de qualité. C'est pourquoi nous aimerions connaître votre avis sur l'évènement IFTAR 14e Édition. Vos commentaires nous seront précieux pour l'organisation de nos prochains événements.</p>
+        
+        <p>Pour nous faire part de votre expérience, cliquez sur le bouton ci-dessous :</p>
+        
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLScvfzLqsx1site7OWzH2eC0v2p1lFkxcewByOSfpbeTgmhqjA/viewform?usp=sharing" class="validate-btn">Donnez votre avis</a>
     </div>
     
     <div class="footer">
