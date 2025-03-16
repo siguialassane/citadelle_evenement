@@ -5,6 +5,8 @@
 // - Ajouté un meilleur espacement et formatage pour une meilleure lisibilité
 // - Optimisé l'affichage des dates et des valeurs
 // - Ajouté des notifications pour l'utilisateur
+// - Corrigé le format des numéros de téléphone
+// - Corrigé l'affichage des dates de paiement et d'enregistrement
 
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -84,12 +86,14 @@ const getPaymentMethod = (participant: Participant): string => {
 const getPaymentDate = (participant: Participant): string => {
   if (participant.payments && participant.payments.length > 0) {
     const date = new Date(participant.payments[0].payment_date);
-    return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR');
+    if (isNaN(date.getTime())) return "N/A";
+    return date.toLocaleDateString('fr-FR');
   }
   
   if (participant.manual_payments && participant.manual_payments.length > 0) {
     const date = new Date(participant.manual_payments[0].created_at);
-    return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR');
+    if (isNaN(date.getTime())) return "N/A";
+    return date.toLocaleDateString('fr-FR');
   }
   
   return "N/A";
@@ -101,6 +105,35 @@ const escapeCSV = (field: string | number | boolean | null): string => {
   const fieldStr = String(field);
   // Échapper les guillemets en les doublant et entourer de guillemets
   return `"${fieldStr.replace(/"/g, '""')}"`;
+};
+
+// Fonction pour formater le numéro de téléphone correctement
+const formatPhoneNumber = (phone: string): string => {
+  if (!phone) return "";
+  
+  // Nettoyer le numéro de tout caractère non numérique
+  const cleanedNumber = phone.replace(/\D/g, '');
+  
+  // Vérifier si le numéro est au format scientifique (comme 2.25E+12)
+  if (phone.includes('E+') || phone.includes('e+')) {
+    // Convertir de la notation scientifique à un numéro normal
+    const num = Number(phone);
+    if (!isNaN(num)) {
+      return String(num);
+    }
+  }
+  
+  // Si le numéro a 9 chiffres (format d'Afrique de l'Ouest)
+  if (cleanedNumber.length === 9) {
+    return cleanedNumber;
+  }
+  
+  // Si le numéro commence par le code pays (par exemple +225 pour la Côte d'Ivoire)
+  if (cleanedNumber.length > 9) {
+    return cleanedNumber;
+  }
+  
+  return phone; // Retourner le numéro original si aucun format ne correspond
 };
 
 // Fonction utilitaire pour formater une date en format français
@@ -116,7 +149,7 @@ const formatFrenchDateTime = (dateString: string): string => {
   if (!dateString) return "N/A";
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return "Date invalide";
-  return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+  return date.toLocaleDateString('fr-FR');
 };
 
 // Fonction améliorée pour exporter au format CSV
@@ -141,7 +174,7 @@ export const exportToCSV = (participants: Participant[]) => {
     escapeCSV(participant.last_name || ""),
     escapeCSV(participant.first_name || ""),
     escapeCSV(participant.email || ""),
-    escapeCSV(participant.contact_number || ""),
+    escapeCSV(formatPhoneNumber(participant.contact_number || "")),
     escapeCSV(participant.is_member ? "Oui" : "Non"),
     escapeCSV(participant.check_in_status ? "Oui" : "Non"),
     escapeCSV(formatFrenchDate(participant.created_at)),
@@ -150,7 +183,7 @@ export const exportToCSV = (participants: Participant[]) => {
     escapeCSV(getPaymentMethod(participant)),
     escapeCSV(getPaymentDate(participant)),
     escapeCSV(participant.check_in_timestamp ? 
-      formatFrenchDateTime(participant.check_in_timestamp) : "Non enregistré")
+      formatFrenchDate(participant.check_in_timestamp) : "Non enregistré")
   ]);
   
   // Ajouter le BOM (Byte Order Mark) pour que Excel reconnaisse l'UTF-8
