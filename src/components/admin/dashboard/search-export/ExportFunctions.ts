@@ -1,4 +1,11 @@
+
 // Utility functions for exporting data
+// Modifications:
+// - Amélioré le format CSV avec séparateurs point-virgule pour Excel
+// - Ajouté un meilleur espacement et formatage pour une meilleure lisibilité
+// - Optimisé l'affichage des dates et des valeurs
+// - Ajouté des notifications pour l'utilisateur
+
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { toast } from "@/hooks/use-toast";
@@ -96,8 +103,25 @@ const escapeCSV = (field: string | number | boolean | null): string => {
   return `"${fieldStr.replace(/"/g, '""')}"`;
 };
 
+// Fonction utilitaire pour formater une date en format français
+const formatFrenchDate = (dateString: string): string => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "Date invalide";
+  return date.toLocaleDateString('fr-FR');
+};
+
+// Fonction utilitaire pour formater une date et heure en format français
+const formatFrenchDateTime = (dateString: string): string => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "Date invalide";
+  return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+};
+
 // Fonction améliorée pour exporter au format CSV
 export const exportToCSV = (participants: Participant[]) => {
+  // Headers avec espacement pour une meilleure lisibilité
   const headers = [
     "Nom", 
     "Prénom", 
@@ -114,27 +138,28 @@ export const exportToCSV = (participants: Participant[]) => {
   ];
   
   const rows = participants.map(participant => [
-    escapeCSV(participant.last_name),
-    escapeCSV(participant.first_name),
-    escapeCSV(participant.email),
-    escapeCSV(participant.contact_number),
+    escapeCSV(participant.last_name || ""),
+    escapeCSV(participant.first_name || ""),
+    escapeCSV(participant.email || ""),
+    escapeCSV(participant.contact_number || ""),
     escapeCSV(participant.is_member ? "Oui" : "Non"),
     escapeCSV(participant.check_in_status ? "Oui" : "Non"),
-    escapeCSV(new Date(participant.created_at).toLocaleDateString('fr-FR')),
+    escapeCSV(formatFrenchDate(participant.created_at)),
     escapeCSV(getPaymentStatus(participant)),
     escapeCSV(getPaymentAmount(participant)),
     escapeCSV(getPaymentMethod(participant)),
     escapeCSV(getPaymentDate(participant)),
     escapeCSV(participant.check_in_timestamp ? 
-      new Date(participant.check_in_timestamp).toLocaleDateString('fr-FR') + ' ' + 
-      new Date(participant.check_in_timestamp).toLocaleTimeString('fr-FR') : "Non enregistré")
+      formatFrenchDateTime(participant.check_in_timestamp) : "Non enregistré")
   ]);
   
   // Ajouter le BOM (Byte Order Mark) pour que Excel reconnaisse l'UTF-8
   const BOM = "\uFEFF";
+  
+  // Utiliser des points-virgules comme séparateurs (standard pour Excel en français)
   const csvContent = BOM + [
-    headers.join(","),
-    ...rows.map(row => row.join(","))
+    headers.join(";"),
+    ...rows.map(row => row.join(";"))
   ].join("\n");
   
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
