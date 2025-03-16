@@ -1,13 +1,3 @@
-
-// Utility functions for exporting data
-// Modifications:
-// - Amélioré le format CSV avec séparateurs point-virgule pour Excel
-// - Ajouté un meilleur espacement et formatage pour une meilleure lisibilité
-// - Optimisé l'affichage des dates et des valeurs
-// - Ajouté des notifications pour l'utilisateur
-// - Corrigé le format des numéros de téléphone
-// - Corrigé l'affichage des dates de paiement et d'enregistrement
-
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { toast } from "@/hooks/use-toast";
@@ -111,29 +101,34 @@ const escapeCSV = (field: string | number | boolean | null): string => {
 const formatPhoneNumber = (phone: string): string => {
   if (!phone) return "";
   
-  // Nettoyer le numéro de tout caractère non numérique
-  const cleanedNumber = phone.replace(/\D/g, '');
-  
   // Vérifier si le numéro est au format scientifique (comme 2.25E+12)
   if (phone.includes('E+') || phone.includes('e+')) {
     // Convertir de la notation scientifique à un numéro normal
     const num = Number(phone);
     if (!isNaN(num)) {
-      return String(num);
+      // Convertir en chaîne pour obtenir tous les chiffres
+      const fullNumber = String(num);
+      // Retourner les 10 derniers chiffres (sans le préfixe +225)
+      return fullNumber.slice(-10);
     }
   }
   
-  // Si le numéro a 9 chiffres (format d'Afrique de l'Ouest)
-  if (cleanedNumber.length === 9) {
+  // Nettoyer le numéro de tout caractère non numérique
+  const cleanedNumber = phone.replace(/\D/g, '');
+  
+  // Si le numéro a exactement 10 chiffres, c'est déjà au format souhaité
+  if (cleanedNumber.length === 10) {
     return cleanedNumber;
   }
   
-  // Si le numéro commence par le code pays (par exemple +225 pour la Côte d'Ivoire)
-  if (cleanedNumber.length > 9) {
-    return cleanedNumber;
+  // Si le numéro est plus long (avec préfixe pays), prendre les 10 derniers chiffres
+  if (cleanedNumber.length > 10) {
+    return cleanedNumber.slice(-10);
   }
   
-  return phone; // Retourner le numéro original si aucun format ne correspond
+  // Si le numéro est plus court que 10 chiffres (comme 9 chiffres en Afrique de l'Ouest)
+  // Le retourner tel quel
+  return cleanedNumber;
 };
 
 // Fonction utilitaire pour formater une date en format français
