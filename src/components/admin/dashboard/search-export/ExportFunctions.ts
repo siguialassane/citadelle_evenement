@@ -108,27 +108,49 @@ const formatPhoneNumber = (phone: string): string => {
     if (!isNaN(num)) {
       // Convertir en chaîne pour obtenir tous les chiffres
       const fullNumber = String(num);
-      // Retourner les 10 derniers chiffres (sans le préfixe +225)
-      return fullNumber.slice(-10);
+      
+      // Si le numéro complet commence par 225, extraire les chiffres après le 225
+      if (fullNumber.startsWith('225')) {
+        const localNumber = fullNumber.substring(3);
+        // Ajouter le 0 initial si nécessaire
+        return localNumber.startsWith('0') ? localNumber : `0${localNumber}`;
+      }
+      
+      // Pour les autres cas, prendre les 10 derniers chiffres
+      const lastTenDigits = fullNumber.slice(-10);
+      // Ajouter le 0 initial si le premier chiffre n'est pas 0
+      return lastTenDigits.startsWith('0') ? lastTenDigits : `0${lastTenDigits}`;
     }
   }
   
   // Nettoyer le numéro de tout caractère non numérique
   const cleanedNumber = phone.replace(/\D/g, '');
   
-  // Si le numéro a exactement 10 chiffres, c'est déjà au format souhaité
-  if (cleanedNumber.length === 10) {
+  // Si le numéro contient le préfixe 225 (Côte d'Ivoire)
+  if (cleanedNumber.startsWith('225') && cleanedNumber.length >= 12) {
+    const localNumber = cleanedNumber.substring(3);
+    // Ajouter le 0 initial si nécessaire
+    return localNumber.startsWith('0') ? localNumber : `0${localNumber}`;
+  }
+  
+  // Si le numéro a exactement 10 chiffres avec un 0 initial, c'est parfait
+  if (cleanedNumber.length === 10 && cleanedNumber.startsWith('0')) {
     return cleanedNumber;
   }
   
-  // Si le numéro est plus long (avec préfixe pays), prendre les 10 derniers chiffres
-  if (cleanedNumber.length > 10) {
-    return cleanedNumber.slice(-10);
+  // Si le numéro a 9 chiffres (format courant en Afrique de l'Ouest sans le 0 initial)
+  if (cleanedNumber.length === 9) {
+    return `0${cleanedNumber}`;
   }
   
-  // Si le numéro est plus court que 10 chiffres (comme 9 chiffres en Afrique de l'Ouest)
-  // Le retourner tel quel
-  return cleanedNumber;
+  // Si le numéro est plus long mais ne commence pas par 225
+  if (cleanedNumber.length > 10) {
+    const lastNineDigits = cleanedNumber.slice(-9);
+    return `0${lastNineDigits}`;
+  }
+  
+  // Pour tous les autres cas, si le numéro ne commence pas par 0, ajouter un 0
+  return cleanedNumber.startsWith('0') ? cleanedNumber : `0${cleanedNumber}`;
 };
 
 // Fonction utilitaire pour formater une date en format français
