@@ -97,60 +97,33 @@ const escapeCSV = (field: string | number | boolean | null): string => {
   return `"${fieldStr.replace(/"/g, '""')}"`;
 };
 
-// Fonction pour formater le numéro de téléphone correctement
+// Fonction pour formater le numéro de téléphone correctement - Simplifiée
 const formatPhoneNumber = (phone: string): string => {
   if (!phone) return "";
   
-  // Vérifier si le numéro est au format scientifique (comme 2.25E+12)
+  // Supprimer tous les caractères non numériques
+  let digits = phone.replace(/\D/g, '');
+  
+  // Cas spéciaux: notation scientifique (comme 2.25E+12)
   if (phone.includes('E+') || phone.includes('e+')) {
-    // Convertir de la notation scientifique à un numéro normal
     const num = Number(phone);
     if (!isNaN(num)) {
-      // Convertir en chaîne pour obtenir tous les chiffres
-      const fullNumber = String(num);
-      
-      // Si le numéro complet commence par 225, extraire les chiffres après le 225
-      if (fullNumber.startsWith('225')) {
-        const localNumber = fullNumber.substring(3);
-        // Ajouter le 0 initial si nécessaire
-        return localNumber.startsWith('0') ? localNumber : `0${localNumber}`;
-      }
-      
-      // Pour les autres cas, prendre les 10 derniers chiffres
-      const lastTenDigits = fullNumber.slice(-10);
-      // Ajouter le 0 initial si le premier chiffre n'est pas 0
-      return lastTenDigits.startsWith('0') ? lastTenDigits : `0${lastTenDigits}`;
+      digits = String(num);
     }
   }
   
-  // Nettoyer le numéro de tout caractère non numérique
-  const cleanedNumber = phone.replace(/\D/g, '');
-  
-  // Si le numéro contient le préfixe 225 (Côte d'Ivoire)
-  if (cleanedNumber.startsWith('225') && cleanedNumber.length >= 12) {
-    const localNumber = cleanedNumber.substring(3);
-    // Ajouter le 0 initial si nécessaire
-    return localNumber.startsWith('0') ? localNumber : `0${localNumber}`;
+  // Si le numéro commence par 225 (préfixe Côte d'Ivoire), le supprimer
+  if (digits.startsWith('225')) {
+    digits = digits.substring(3);
   }
   
-  // Si le numéro a exactement 10 chiffres avec un 0 initial, c'est parfait
-  if (cleanedNumber.length === 10 && cleanedNumber.startsWith('0')) {
-    return cleanedNumber;
+  // S'assurer que le numéro commence par 0
+  if (!digits.startsWith('0')) {
+    digits = '0' + digits;
   }
   
-  // Si le numéro a 9 chiffres (format courant en Afrique de l'Ouest sans le 0 initial)
-  if (cleanedNumber.length === 9) {
-    return `0${cleanedNumber}`;
-  }
-  
-  // Si le numéro est plus long mais ne commence pas par 225
-  if (cleanedNumber.length > 10) {
-    const lastNineDigits = cleanedNumber.slice(-9);
-    return `0${lastNineDigits}`;
-  }
-  
-  // Pour tous les autres cas, si le numéro ne commence pas par 0, ajouter un 0
-  return cleanedNumber.startsWith('0') ? cleanedNumber : `0${cleanedNumber}`;
+  // Prendre les 10 derniers chiffres pour avoir un numéro valide
+  return digits.slice(-10);
 };
 
 // Fonction utilitaire pour formater une date en format français
