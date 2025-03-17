@@ -3,18 +3,20 @@
 // Modifications:
 // - Création du composant logo réutilisable
 // - Options de taille (small, medium, large)
-// - Suppression du message "s'unir pour servir"
+// - Ajout du message "s'unir pour servir"
 
 import React from "react";
 
 interface EventLogoProps {
   size?: "small" | "medium" | "large";
   className?: string;
+  showSlogan?: boolean;
 }
 
 export const EventLogo: React.FC<EventLogoProps> = ({ 
   size = "medium", 
-  className = "" 
+  className = "",
+  showSlogan = true
 }) => {
   // Définir les tailles en fonction de l'option
   const sizeClasses = {
@@ -29,9 +31,14 @@ export const EventLogo: React.FC<EventLogoProps> = ({
         <h2 className={`font-bold text-orange-500 ${size === "small" ? "text-xl md:text-2xl" : "text-2xl md:text-3xl"}`}>
           La Citadelle
         </h2>
+        {showSlogan && (
+          <p className={`text-green-700 italic ${size === "small" ? "text-xs" : "text-sm"}`}>
+            s'unir pour servir
+          </p>
+        )}
       </div>
       <img 
-        src="/lovable-uploads/958417a8-6efc-40bd-865c-03214b65b4a2.png" 
+        src="/lovable-uploads/58148cb0-57ab-4c97-98d4-a41ed2de3e7b.png" 
         alt="La Citadelle Logo" 
         className={`${sizeClasses[size]} my-2 object-contain`}
       />

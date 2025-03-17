@@ -68,3 +68,6 @@ export const sendPaymentRejectionEmail = async (participantData: any, rejectionR
     return false;
   }
 };
+
+// Réexportation explicite pour la compatibilité
+export { sendPaymentRejectionEmail as sendRejectionEmail };

@@ -76,7 +76,7 @@ export const ADHESION_INVITATION_TEMPLATE = `<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
-        <img src="{{app_url}}/lovable-uploads/5f74e8dc-7b9f-405d-8380-4e3ad7eb61a8.png" alt="LA CITADELLE" class="logo">
+        <img src="{{app_url}}/lovable-uploads/58148cb0-57ab-4c97-98d4-a41ed2de3e7b.png" alt="LA CITADELLE" class="logo">
         <h1>Rejoignez notre Communauté</h1>
         
         <p class="greeting">Assalamou Aleykoum {{prenom}} {{nom}},</p>
@@ -189,7 +189,7 @@ export const ADMIN_ADHESION_NOTIFICATION_TEMPLATE = `<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
-        <img src="{{app_url}}/lovable-uploads/5f74e8dc-7b9f-405d-8380-4e3ad7eb61a8.png" alt="LA CITADELLE" class="logo">
+        <img src="{{app_url}}/lovable-uploads/58148cb0-57ab-4c97-98d4-a41ed2de3e7b.png" alt="LA CITADELLE" class="logo">
         <h1>Nouvelle demande d'adhésion <span class="badge">Action requise</span></h1>
         
         <p>Assalamou Aleykoum {{admin_name}},</p>
