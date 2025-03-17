@@ -1,4 +1,11 @@
 
+// Dashboard d'adhésion - Tableau de bord spécialisé pour la gestion des adhésions
+// Mise à jour:
+// - Ajout de l'exportation PDF et CSV
+// - Ajout de la suppression d'adhésions
+// - Amélioration de l'affichage et notifications
+// - Correction des liens entre adhésions et participants
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -106,46 +113,72 @@ const MembershipDashboard = () => {
     }
   };
 
-  // Ajout de la fonction handleApprove manquante
   const handleApprove = async (membershipId: string) => {
     try {
-      // Récupérer les informations du membership avant de l'approuver
-      const { data: membershipData, error: fetchError } = await supabase
-        .from('memberships')
-        .select('*')
-        .eq('id', membershipId)
-        .single();
-        
-      if (fetchError) throw fetchError;
-      
       // Mettre à jour le statut de l'adhésion
-      const { error: updateError } = await supabase
+      const { data: updatedMembership, error: updateError } = await supabase
         .from('memberships')
         .update({
           status: 'approved',
           approved_at: new Date().toISOString(),
           approved_by: localStorage.getItem("adminEmail") || "admin"
         })
-        .eq('id', membershipId);
+        .eq('id', membershipId)
+        .select()
+        .single();
 
       if (updateError) throw updateError;
       
-      // Envoyer l'email de confirmation au participant
-      if (membershipData) {
-        const emailSent = await sendMembershipConfirmationEmail(membershipData);
-        
-        if (emailSent) {
-          toast({
-            title: "Adhésion approuvée",
-            description: "L'adhésion a été approuvée et un email de confirmation a été envoyé au nouveau membre.",
-          });
-        } else {
-          toast({
-            title: "Adhésion approuvée",
-            description: "L'adhésion a été approuvée mais l'email de confirmation n'a pas pu être envoyé.",
-            variant: "destructive",
-          });
+      // Mettre à jour le statut de membre du participant associé s'il existe
+      if (updatedMembership.participant_id) {
+        const { error: participantError } = await supabase
+          .from('participants')
+          .update({
+            is_member: true
+          })
+          .eq('id', updatedMembership.participant_id);
+
+        if (participantError) throw participantError;
+      }
+      
+      // Récupérer les informations complètes du participant
+      let participantData = {
+        id: updatedMembership.participant_id,
+        first_name: updatedMembership.first_name,
+        last_name: updatedMembership.last_name,
+        email: updatedMembership.email,
+        membership_status: 'approved'
+      };
+      
+      if (updatedMembership.participant_id) {
+        const { data: participant } = await supabase
+          .from('participants')
+          .select('*')
+          .eq('id', updatedMembership.participant_id)
+          .maybeSingle();
+          
+        if (participant) {
+          participantData = {
+            ...participant,
+            membership_status: 'approved'
+          };
         }
+      }
+      
+      // Envoyer l'email de confirmation
+      const emailSent = await sendMembershipConfirmationEmail(participantData);
+      
+      if (emailSent) {
+        toast({
+          title: "Adhésion approuvée",
+          description: "L'adhésion a été approuvée et l'email de confirmation a été envoyé.",
+        });
+      } else {
+        toast({
+          title: "Adhésion approuvée",
+          description: "L'adhésion a été approuvée mais l'email de confirmation n'a pas pu être envoyé.",
+          variant: "destructive",
+        });
       }
       
       // Rafraîchir les données
@@ -162,55 +195,22 @@ const MembershipDashboard = () => {
 
   const handleReject = async (membershipId: string) => {
     try {
-      const rejectionReason = prompt("Veuillez indiquer la raison du rejet (sera envoyée par email au participant):");
-      
-      if (rejectionReason === null) {
-        // L'utilisateur a annulé l'opération
-        return;
-      }
-      
-      // Récupérer les informations du membership avant de le rejeter
-      const { data: membershipData, error: fetchError } = await supabase
-        .from('memberships')
-        .select('*')
-        .eq('id', membershipId)
-        .single();
-        
-      if (fetchError) throw fetchError;
-      
       // Mettre à jour le statut de l'adhésion
       const { error: updateError } = await supabase
         .from('memberships')
         .update({
           status: 'rejected',
           rejected_at: new Date().toISOString(),
-          rejected_by: localStorage.getItem("adminEmail") || "admin",
-          rejection_reason: rejectionReason
+          rejected_by: localStorage.getItem("adminEmail") || "admin"
         })
         .eq('id', membershipId);
 
       if (updateError) throw updateError;
       
-      // Envoyer l'email de rejet au participant
-      if (membershipData) {
-        // Import dynamique pour éviter les dépendances circulaires
-        const { sendMembershipRejectionEmail } = await import('@/components/manual-payment/services/emails/rejectionEmailService');
-        
-        const emailSent = await sendMembershipRejectionEmail(membershipData, rejectionReason);
-        
-        if (emailSent) {
-          toast({
-            title: "Adhésion rejetée",
-            description: "La demande d'adhésion a été rejetée et l'email de notification a été envoyé.",
-          });
-        } else {
-          toast({
-            title: "Adhésion rejetée",
-            description: "La demande d'adhésion a été rejetée mais l'email de notification n'a pas pu être envoyé.",
-            variant: "destructive",
-          });
-        }
-      }
+      toast({
+        title: "Adhésion rejetée",
+        description: "La demande d'adhésion a été rejetée.",
+      });
       
       // Rafraîchir les données
       fetchMembershipData();
