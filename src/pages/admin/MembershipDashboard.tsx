@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -105,69 +106,123 @@ const MembershipDashboard = () => {
     }
   };
 
-const handleReject = async (membershipId: string) => {
-  try {
-    const rejectionReason = prompt("Veuillez indiquer la raison du rejet (sera envoyée par email au participant):");
-    
-    if (rejectionReason === null) {
-      // L'utilisateur a annulé l'opération
-      return;
-    }
-    
-    // Récupérer les informations du membership avant de le rejeter
-    const { data: membershipData, error: fetchError } = await supabase
-      .from('memberships')
-      .select('*')
-      .eq('id', membershipId)
-      .single();
+  // Ajout de la fonction handleApprove manquante
+  const handleApprove = async (membershipId: string) => {
+    try {
+      // Récupérer les informations du membership avant de l'approuver
+      const { data: membershipData, error: fetchError } = await supabase
+        .from('memberships')
+        .select('*')
+        .eq('id', membershipId)
+        .single();
+        
+      if (fetchError) throw fetchError;
       
-    if (fetchError) throw fetchError;
-    
-    // Mettre à jour le statut de l'adhésion
-    const { error: updateError } = await supabase
-      .from('memberships')
-      .update({
-        status: 'rejected',
-        rejected_at: new Date().toISOString(),
-        rejected_by: localStorage.getItem("adminEmail") || "admin",
-        rejection_reason: rejectionReason
-      })
-      .eq('id', membershipId);
+      // Mettre à jour le statut de l'adhésion
+      const { error: updateError } = await supabase
+        .from('memberships')
+        .update({
+          status: 'approved',
+          approved_at: new Date().toISOString(),
+          approved_by: localStorage.getItem("adminEmail") || "admin"
+        })
+        .eq('id', membershipId);
 
-    if (updateError) throw updateError;
-    
-    // Envoyer l'email de rejet au participant
-    if (membershipData) {
-      // Import dynamique pour éviter les dépendances circulaires
-      const { sendMembershipRejectionEmail } = await import('@/components/manual-payment/services/emails/rejectionEmailService');
+      if (updateError) throw updateError;
       
-      const emailSent = await sendMembershipRejectionEmail(membershipData, rejectionReason);
-      
-      if (emailSent) {
-        toast({
-          title: "Adhésion rejetée",
-          description: "La demande d'adhésion a été rejetée et l'email de notification a été envoyé.",
-        });
-      } else {
-        toast({
-          title: "Adhésion rejetée",
-          description: "La demande d'adhésion a été rejetée mais l'email de notification n'a pas pu être envoyé.",
-          variant: "destructive",
-        });
+      // Envoyer l'email de confirmation au participant
+      if (membershipData) {
+        const emailSent = await sendMembershipConfirmationEmail(membershipData);
+        
+        if (emailSent) {
+          toast({
+            title: "Adhésion approuvée",
+            description: "L'adhésion a été approuvée et un email de confirmation a été envoyé au nouveau membre.",
+          });
+        } else {
+          toast({
+            title: "Adhésion approuvée",
+            description: "L'adhésion a été approuvée mais l'email de confirmation n'a pas pu être envoyé.",
+            variant: "destructive",
+          });
+        }
       }
+      
+      // Rafraîchir les données
+      fetchMembershipData();
+    } catch (error) {
+      console.error("Erreur lors de l'approbation de l'adhésion:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'approuver l'adhésion.",
+        variant: "destructive",
+      });
     }
-    
-    // Rafraîchir les données
-    fetchMembershipData();
-  } catch (error) {
-    console.error("Erreur lors du rejet de l'adhésion:", error);
-    toast({
-      title: "Erreur",
-      description: "Impossible de rejeter l'adhésion.",
-      variant: "destructive",
-    });
-  }
-};
+  };
+
+  const handleReject = async (membershipId: string) => {
+    try {
+      const rejectionReason = prompt("Veuillez indiquer la raison du rejet (sera envoyée par email au participant):");
+      
+      if (rejectionReason === null) {
+        // L'utilisateur a annulé l'opération
+        return;
+      }
+      
+      // Récupérer les informations du membership avant de le rejeter
+      const { data: membershipData, error: fetchError } = await supabase
+        .from('memberships')
+        .select('*')
+        .eq('id', membershipId)
+        .single();
+        
+      if (fetchError) throw fetchError;
+      
+      // Mettre à jour le statut de l'adhésion
+      const { error: updateError } = await supabase
+        .from('memberships')
+        .update({
+          status: 'rejected',
+          rejected_at: new Date().toISOString(),
+          rejected_by: localStorage.getItem("adminEmail") || "admin",
+          rejection_reason: rejectionReason
+        })
+        .eq('id', membershipId);
+
+      if (updateError) throw updateError;
+      
+      // Envoyer l'email de rejet au participant
+      if (membershipData) {
+        // Import dynamique pour éviter les dépendances circulaires
+        const { sendMembershipRejectionEmail } = await import('@/components/manual-payment/services/emails/rejectionEmailService');
+        
+        const emailSent = await sendMembershipRejectionEmail(membershipData, rejectionReason);
+        
+        if (emailSent) {
+          toast({
+            title: "Adhésion rejetée",
+            description: "La demande d'adhésion a été rejetée et l'email de notification a été envoyé.",
+          });
+        } else {
+          toast({
+            title: "Adhésion rejetée",
+            description: "La demande d'adhésion a été rejetée mais l'email de notification n'a pas pu être envoyé.",
+            variant: "destructive",
+          });
+        }
+      }
+      
+      // Rafraîchir les données
+      fetchMembershipData();
+    } catch (error) {
+      console.error("Erreur lors du rejet de l'adhésion:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de rejeter l'adhésion.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleDelete = async (membershipId: string) => {
     try {
