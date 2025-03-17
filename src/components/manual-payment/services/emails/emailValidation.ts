@@ -4,8 +4,15 @@
 // - Correction de la validation d'email - moins strict et plus permissif
 // - Optimisation du code pour une meilleure performance
 // - Amélioration des messages d'erreur pour meilleure compréhension
+// - Ajout de la fonction sendCustomEmail pour centraliser l'envoi d'emails
 
-import { EmailValidationResult } from './types';
+import emailjs from '@emailjs/browser';
+import { EmailTemplateParams, EmailValidationResult, ParticipantEmailData, AdminNotificationEmailData } from './types';
+import { 
+  EMAILJS_SERVICE_ID,
+  EMAILJS_PUBLIC_KEY,
+  PARTICIPANT_INITIAL_TEMPLATE_ID
+} from "../../config";
 
 /**
  * Valide une adresse email - vérification de format uniquement
@@ -54,4 +61,97 @@ export const prepareEmailData = (email: string): string => {
   const cleaned = email.trim();
   console.log("Email nettoyé pour envoi:", cleaned);
   return cleaned;
+};
+
+/**
+ * Fonction centralisée pour l'envoi d'emails personnalisés
+ */
+export const sendCustomEmail = async (
+  emailData: ParticipantEmailData | AdminNotificationEmailData, 
+  templateId: string
+): Promise<boolean | { success: number; failed: number }> => {
+  try {
+    console.log(`Envoi d'email avec le template ${templateId}...`);
+    
+    if ('participantEmail' in emailData) {
+      // C'est un email pour un participant unique
+      const { participantEmail, subject, templateParams } = emailData;
+      
+      // Vérification de l'email
+      if (!participantEmail || !participantEmail.trim()) {
+        console.error("Email du participant invalide ou vide");
+        return false;
+      }
+      
+      const completeTemplateParams: EmailTemplateParams = {
+        to_email: participantEmail.trim(),
+        from_name: "IFTAR 2025",
+        subject: subject,
+        prenom: templateParams.participant_name.split(' ')[0] || "",
+        nom: templateParams.participant_name.split(' ').slice(1).join(' ') || "",
+        reply_to: "ne-pas-repondre@lacitadelle.ci",
+        app_url: templateParams.website_link,
+        ...templateParams
+      };
+      
+      const response = await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        templateId,
+        completeTemplateParams,
+        EMAILJS_PUBLIC_KEY
+      );
+      
+      console.log("Email envoyé avec succès:", response);
+      return true;
+    } else {
+      // C'est un email pour plusieurs administrateurs
+      const { adminEmails, subject, templateParams } = emailData;
+      
+      if (!adminEmails || adminEmails.length === 0) {
+        console.error("Aucune adresse email d'administrateur fournie");
+        return { success: 0, failed: 0 };
+      }
+      
+      let successCount = 0;
+      let failedCount = 0;
+      
+      for (const adminEmail of adminEmails) {
+        try {
+          if (!adminEmail || !adminEmail.trim()) {
+            console.warn("Email d'administrateur invalide ou vide, ignoré");
+            failedCount++;
+            continue;
+          }
+          
+          const completeTemplateParams: EmailTemplateParams = {
+            to_email: adminEmail.trim(),
+            from_name: "Système d'Inscription IFTAR 2025",
+            subject: subject,
+            prenom: "Admin",
+            nom: "IFTAR",
+            reply_to: "ne-pas-repondre@lacitadelle.ci",
+            app_url: templateParams.admin_action_link.split('/admin')[0],
+            ...templateParams
+          };
+          
+          await emailjs.send(
+            EMAILJS_SERVICE_ID,
+            templateId,
+            completeTemplateParams,
+            EMAILJS_PUBLIC_KEY
+          );
+          
+          successCount++;
+        } catch (error) {
+          console.error(`Erreur lors de l'envoi à ${adminEmail}:`, error);
+          failedCount++;
+        }
+      }
+      
+      return { success: successCount, failed: failedCount };
+    }
+  } catch (error) {
+    console.error("Erreur lors de l'envoi d'email personnalisé:", error);
+    return false;
+  }
 };

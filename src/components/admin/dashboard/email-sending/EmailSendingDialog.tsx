@@ -172,6 +172,7 @@ export function EmailSendingDialog({
         console.log(`Envoi email public à ${selectedParticipants.length} participants`);
         const result = await sendPublicThanksEmail(selectedParticipants, publicMessage);
         
+        // Correction ici: result est maintenant un objet avec success et failed
         setSendingStats({
           total: selectedParticipants.length,
           sent: result.success,

@@ -24,3 +24,37 @@ export interface EmailValidationResult {
   error?: string;
 }
 
+// Types pour les emails de remerciement
+export interface ParticipantEmailData {
+  participantEmail: string;
+  subject: string;
+  templateParams: {
+    participant_name: string;
+    payment_amount?: string;
+    payment_date?: string;
+    message: string;
+    website_link: string;
+    [key: string]: any;
+  };
+}
+
+export interface AdminNotificationEmailData {
+  adminEmails: string[];
+  subject: string;
+  templateParams: {
+    participant_name: string;
+    participant_email: string;
+    participant_id: string;
+    payment_amount?: string;
+    payment_date?: string;
+    message: string;
+    admin_action_link: string;
+    [key: string]: any;
+  };
+}
+
+// Type de retour pour les envois d'emails groupés
+export interface EmailSendResult {
+  success: number;
+  failed: number;
+}

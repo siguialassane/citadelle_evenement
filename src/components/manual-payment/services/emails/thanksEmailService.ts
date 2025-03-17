@@ -1,27 +1,29 @@
+
 // Service d'envoi d'emails pour les remerciements et notifications d'adhésion
 // Ajout: Support pour les notifications d'adhésion basé sur la nouvelle table memberships
 
 import { supabase } from "@/integrations/supabase/client";
 import { sendCustomEmail } from "./emailValidation";
-import { AdminNotificationEmailData, ParticipantEmailData } from "./types";
+import { AdminNotificationEmailData, ParticipantEmailData, EmailSendResult } from "./types";
 
 // Envoi d'email de remerciement personnalisé
-export const sendPersonalThanksEmail = async (participant: any, amount: number): Promise<boolean> => {
+export const sendPersonalThanksEmail = async (participant: any, personalMessage: string): Promise<boolean> => {
   try {
+    console.log(`Envoi d'email personnel à ${participant.email} avec message: ${personalMessage.substring(0, 20)}...`);
     const emailData: ParticipantEmailData = {
       participantEmail: participant.email,
       subject: "Merci pour votre paiement",
       templateParams: {
         participant_name: `${participant.first_name} ${participant.last_name}`,
-        payment_amount: amount.toLocaleString(),
+        payment_amount: participant.amount ? participant.amount.toLocaleString() : "N/A",
         payment_date: new Date().toLocaleDateString('fr-FR'),
-        message: "Nous avons bien reçu votre paiement et nous vous en remercions.",
+        message: personalMessage || "Nous avons bien reçu votre paiement et nous vous en remercions.",
         website_link: window.location.origin
       }
     };
     
     const sent = await sendCustomEmail(emailData, "participant_thanks");
-    return sent;
+    return Boolean(sent);
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email de remerciement personnalisé:", error);
     return false;
@@ -29,25 +31,42 @@ export const sendPersonalThanksEmail = async (participant: any, amount: number):
 };
 
 // Envoi d'email de remerciement public
-export const sendPublicThanksEmail = async (participant: any, amount: number): Promise<boolean> => {
+export const sendPublicThanksEmail = async (participants: any[], publicMessage: string): Promise<EmailSendResult> => {
   try {
-    const emailData: ParticipantEmailData = {
-      participantEmail: participant.email,
-      subject: "Merci pour votre contribution",
-      templateParams: {
-        participant_name: `${participant.first_name} ${participant.last_name}`,
-        payment_amount: amount.toLocaleString(),
-        payment_date: new Date().toLocaleDateString('fr-FR'),
-        message: "Nous vous remercions pour votre généreuse contribution. Votre soutien est essentiel pour notre association.",
-        website_link: window.location.origin
-      }
-    };
+    console.log(`Envoi d'email public à ${participants.length} participants`);
+    let successCount = 0;
+    let failedCount = 0;
     
-    const sent = await sendCustomEmail(emailData, "participant_public_thanks");
-    return sent;
+    for (const participant of participants) {
+      try {
+        const emailData: ParticipantEmailData = {
+          participantEmail: participant.email,
+          subject: "Merci pour votre contribution",
+          templateParams: {
+            participant_name: `${participant.first_name} ${participant.last_name}`,
+            payment_amount: participant.amount ? participant.amount.toLocaleString() : "N/A",
+            payment_date: new Date().toLocaleDateString('fr-FR'),
+            message: publicMessage || "Nous vous remercions pour votre généreuse contribution. Votre soutien est essentiel pour notre association.",
+            website_link: window.location.origin
+          }
+        };
+        
+        const sent = await sendCustomEmail(emailData, "participant_public_thanks");
+        if (sent) {
+          successCount++;
+        } else {
+          failedCount++;
+        }
+      } catch (error) {
+        console.error(`Erreur lors de l'envoi à ${participant.email}:`, error);
+        failedCount++;
+      }
+    }
+    
+    return { success: successCount, failed: failedCount };
   } catch (error) {
-    console.error("Erreur lors de l'envoi de l'email de remerciement public:", error);
-    return false;
+    console.error("Erreur lors de l'envoi des emails de remerciement public:", error);
+    return { success: 0, failed: participants.length };
   }
 };
 
@@ -75,15 +94,15 @@ export const sendMembershipRequestAdminEmail = async (participant: any): Promise
         participant_name: `${participant.first_name} ${participant.last_name}`,
         participant_email: participant.email,
         participant_id: participant.id,
-        payment_amount: participant.subscription_amount || "N/A",
+        payment_amount: participant.subscription_amount?.toString() || "N/A",
         payment_date: new Date().toLocaleDateString('fr-FR'),
         message: "Un nouveau candidat souhaite rejoindre LA CITADELLE",
         admin_action_link: `${window.location.origin}/admin/membership`
       }
     };
     
-    const sent = await sendCustomEmail(emailData, "admin_membership_request");
-    return sent;
+    const result = await sendCustomEmail(emailData, "admin_membership_request");
+    return Boolean(result);
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email administrateur pour l'adhésion:", error);
     return false;
@@ -104,8 +123,8 @@ export const sendMembershipRequestParticipantEmail = async (participant: any): P
       }
     };
     
-    const sent = await sendCustomEmail(emailData, "participant_membership_request");
-    return sent;
+    const result = await sendCustomEmail(emailData, "participant_membership_request");
+    return Boolean(result);
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email au participant pour l'adhésion:", error);
     return false;
@@ -147,8 +166,8 @@ export const sendMembershipConfirmationEmail = async (participant: any): Promise
       }
     };
     
-    const sent = await sendCustomEmail(emailData, "participant_membership_approved");
-    return sent;
+    const result = await sendCustomEmail(emailData, "participant_membership_approved");
+    return Boolean(result);
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email de confirmation d'adhésion:", error);
     return false;
