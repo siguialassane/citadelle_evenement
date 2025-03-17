@@ -12,6 +12,8 @@ import Payment from './pages/Payment';
 import PageRedirect from './components/redirection/PageRedirect';
 import QrCodeScan from './pages/admin/QrCodeScan';
 import ExcelAnalyzer from './pages/ExcelAnalyzer';
+import MembershipDashboard from './pages/admin/MembershipDashboard';
+import MembershipForm from './pages/Membership';
 
 function App() {
   return (
@@ -33,10 +35,12 @@ function App() {
         <Route path="/admin/payment-validation" element={<PaymentValidation />} />
         <Route path="/admin/payment-validation/:paymentId" element={<PaymentValidation />} />
         <Route path="/admin/qr-scan" element={<QrCodeScan />} />
+        <Route path="/admin/membership" element={<MembershipDashboard />} />
         
         {/* Routes pour les participants */}
         <Route path="/confirmation/:participantId" element={<Confirmation />} />
         <Route path="/payment-pending/:participantId" element={<PaymentPending />} />
+        <Route path="/membership" element={<MembershipForm />} />
         
         {/* Routes de redirection explicites pour les liens d'email */}
         <Route path="/redirect/payment-pending/:participantId" 

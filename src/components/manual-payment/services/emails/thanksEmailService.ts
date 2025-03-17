@@ -4,10 +4,21 @@ import emailjs from '@emailjs/browser';
 import { validateEmailData } from './emailValidation';
 import { EmailTemplateParams } from './types';
 
-// Nouvelles valeurs pour le service d'envoi d'emails de remerciement
-const THANKS_EMAILJS_SERVICE_ID = "service_ds3ba4m";
-const THANKS_EMAILJS_PUBLIC_KEY = "4tSkd1KJOWW1HDLNC";
-const THANKS_TEMPLATE_ID = "template_u407lzh";
+// Nouvelles valeurs pour le service d'envoi d'emails de remerciement (mise à jour)
+const THANKS_EMAILJS_SERVICE_ID = "service_is5645q";
+const THANKS_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
+const THANKS_TEMPLATE_ID = "template_xvdr1iq";
+
+// Valeurs pour l'envoi d'emails d'adhésion à l'admin et au participant
+const MEMBERSHIP_REQUEST_SERVICE_ID = "service_1gvwp2w";
+const MEMBERSHIP_REQUEST_PUBLIC_KEY = "wdtFy3bjHd5FNRQLg";
+const MEMBERSHIP_REQUEST_PARTICIPANT_TEMPLATE_ID = "template_s3c9tsw";
+const MEMBERSHIP_REQUEST_ADMIN_TEMPLATE_ID = "template_mzzgjud";
+
+// Valeurs pour l'envoi d'emails de confirmation d'adhésion
+const MEMBERSHIP_CONFIRMATION_SERVICE_ID = "service_wrk5x0l";
+const MEMBERSHIP_CONFIRMATION_PUBLIC_KEY = "uQAHVMcvEXg6coHr9";
+const MEMBERSHIP_CONFIRMATION_TEMPLATE_ID = "template_sdofxhv";
 
 // Format HTML pour l'email - Optimisé pour éviter les filtres anti-spam
 const EMAIL_HTML_TEMPLATE = `<!DOCTYPE html>
@@ -39,8 +50,6 @@ const EMAIL_HTML_TEMPLATE = `<!DOCTYPE html>
     </div>
     
     <div class="content">
-        <p>Cher(e) {{prenom}} {{nom}},</p>
-        
         <!-- Message personnel conditionnel -->
         <div class="personal-message">
             {{merci_perso}}
@@ -220,5 +229,149 @@ export const sendPublicThanksEmail = async (
   } catch (error) {
     console.error("Erreur générale lors de l'envoi des emails de remerciement:", error);
     return { success: 0, failed: participantsData.length };
+  }
+};
+
+/**
+ * Envoie un email à l'administrateur pour l'informer d'une nouvelle demande d'adhésion
+ */
+export const sendMembershipRequestAdminEmail = async (
+  participantData: any
+): Promise<boolean> => {
+  try {
+    console.log("===== PRÉPARATION EMAIL DE DEMANDE D'ADHÉSION (ADMIN) =====");
+    console.log("Service ID:", MEMBERSHIP_REQUEST_SERVICE_ID);
+    console.log("Template ID:", MEMBERSHIP_REQUEST_ADMIN_TEMPLATE_ID);
+    console.log("Public Key:", MEMBERSHIP_REQUEST_PUBLIC_KEY);
+    
+    // Configuration de l'email à l'administrateur
+    const adminEmail = "admin@lacitadelle.ci"; // Remplacer par l'email de l'administrateur
+    const firstName = participantData.first_name || '';
+    const lastName = participantData.last_name || '';
+    
+    const templateParams: EmailTemplateParams = {
+      to_email: adminEmail,
+      from_name: "Système d'Adhésion LA CITADELLE",
+      prenom: firstName,
+      nom: lastName,
+      participant_phone: participantData.contact_number || '',
+      participant_email: participantData.email || '',
+      app_url: window.location.origin,
+      admin_dashboard_url: `${window.location.origin}/admin/dashboard`,
+      reply_to: participantData.email || "ne-pas-repondre@lacitadelle.ci"
+    };
+    
+    console.log("Envoi email à l'administrateur:", adminEmail);
+    
+    const response = await emailjs.send(
+      MEMBERSHIP_REQUEST_SERVICE_ID,
+      MEMBERSHIP_REQUEST_ADMIN_TEMPLATE_ID,
+      templateParams,
+      MEMBERSHIP_REQUEST_PUBLIC_KEY
+    );
+    
+    console.log("Email de demande d'adhésion (admin) envoyé avec succès:", response);
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email de demande d'adhésion (admin):", error);
+    return false;
+  }
+};
+
+/**
+ * Envoie un email au participant pour l'informer que sa demande d'adhésion est en cours d'étude
+ */
+export const sendMembershipRequestParticipantEmail = async (
+  participantData: any
+): Promise<boolean> => {
+  try {
+    console.log("===== PRÉPARATION EMAIL DE DEMANDE D'ADHÉSION (PARTICIPANT) =====");
+    console.log("Service ID:", MEMBERSHIP_REQUEST_SERVICE_ID);
+    console.log("Template ID:", MEMBERSHIP_REQUEST_PARTICIPANT_TEMPLATE_ID);
+    console.log("Public Key:", MEMBERSHIP_REQUEST_PUBLIC_KEY);
+    
+    const validation = validateEmailData(participantData?.email, participantData);
+    if (!validation.isValid) {
+      console.error(validation.error);
+      return false;
+    }
+    
+    const email = participantData.email.trim();
+    const firstName = participantData.first_name || '';
+    const lastName = participantData.last_name || '';
+    
+    const templateParams: EmailTemplateParams = {
+      to_email: email,
+      to_name: `${firstName} ${lastName}`,
+      from_name: "LA CITADELLE",
+      prenom: firstName,
+      nom: lastName,
+      app_url: window.location.origin,
+      reply_to: "ne-pas-repondre@lacitadelle.ci"
+    };
+    
+    console.log("Envoi email au participant:", email);
+    
+    const response = await emailjs.send(
+      MEMBERSHIP_REQUEST_SERVICE_ID,
+      MEMBERSHIP_REQUEST_PARTICIPANT_TEMPLATE_ID,
+      templateParams,
+      MEMBERSHIP_REQUEST_PUBLIC_KEY
+    );
+    
+    console.log("Email de demande d'adhésion (participant) envoyé avec succès:", response);
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email de demande d'adhésion (participant):", error);
+    return false;
+  }
+};
+
+/**
+ * Envoie un email de confirmation d'adhésion au participant
+ */
+export const sendMembershipConfirmationEmail = async (
+  participantData: any
+): Promise<boolean> => {
+  try {
+    console.log("===== PRÉPARATION EMAIL DE CONFIRMATION D'ADHÉSION =====");
+    console.log("Service ID:", MEMBERSHIP_CONFIRMATION_SERVICE_ID);
+    console.log("Template ID:", MEMBERSHIP_CONFIRMATION_TEMPLATE_ID);
+    console.log("Public Key:", MEMBERSHIP_CONFIRMATION_PUBLIC_KEY);
+    
+    const validation = validateEmailData(participantData?.email, participantData);
+    if (!validation.isValid) {
+      console.error(validation.error);
+      return false;
+    }
+    
+    const email = participantData.email.trim();
+    const firstName = participantData.first_name || '';
+    const lastName = participantData.last_name || '';
+    
+    const templateParams: EmailTemplateParams = {
+      to_email: email,
+      to_name: `${firstName} ${lastName}`,
+      from_name: "LA CITADELLE",
+      prenom: firstName,
+      nom: lastName,
+      app_url: window.location.origin,
+      reply_to: "ne-pas-repondre@lacitadelle.ci"
+    };
+    
+    console.log("Envoi email de confirmation d'adhésion à:", email);
+    
+    const response = await emailjs.send(
+      MEMBERSHIP_CONFIRMATION_SERVICE_ID,
+      MEMBERSHIP_CONFIRMATION_TEMPLATE_ID,
+      templateParams,
+      MEMBERSHIP_CONFIRMATION_PUBLIC_KEY
+    );
+    
+    console.log("Email de confirmation d'adhésion envoyé avec succès:", response);
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email de confirmation d'adhésion:", error);
+    return false;
   }
 };

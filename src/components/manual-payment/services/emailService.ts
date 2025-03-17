@@ -4,4 +4,10 @@
 
 export { sendAdminNotification, sendParticipantInitialEmail } from './emails/initialEmailService';
 export { sendPaymentRejectionEmail } from './emails/rejectionEmailService';
-export { sendPersonalThanksEmail, sendPublicThanksEmail } from './emails/thanksEmailService';
+export { 
+  sendPersonalThanksEmail, 
+  sendPublicThanksEmail,
+  sendMembershipRequestAdminEmail,
+  sendMembershipRequestParticipantEmail,
+  sendMembershipConfirmationEmail
+} from './emails/thanksEmailService';
