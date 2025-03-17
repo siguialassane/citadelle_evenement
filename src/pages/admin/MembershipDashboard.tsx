@@ -1,12 +1,3 @@
-
-// Dashboard d'adhésion - Tableau de bord spécialisé pour la gestion des adhésions
-// Mise à jour:
-// - Ajout de l'exportation PDF et CSV
-// - Ajout de la suppression d'adhésions
-// - Amélioration de l'affichage et notifications
-// - Correction des liens entre adhésions et participants
-// - Ajout du dialogue de rejet avec raison et envoi d'email
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +20,7 @@ import {
 import MembershipDetails from "@/components/admin/membership/MembershipDetails";
 import RejectionDialog from "@/components/admin/membership/RejectionDialog";
 import { exportToCSV } from "@/utils/exportUtils";
+import { REJECTION_EMAILJS_SERVICE_ID, REJECTION_EMAILJS_PUBLIC_KEY, REJECTION_TEMPLATE_ID } from "@/components/manual-payment/config";
 
 // Interface pour les adhésions
 interface Membership {
@@ -228,7 +220,13 @@ const MembershipDashboard = () => {
 
       if (updateError) throw updateError;
       
-      // Envoyer l'email de rejet
+      // Envoyer l'email de rejet avec les nouvelles clés API
+      console.log("Utilisation des nouvelles clés API pour le rejet:", {
+        serviceID: REJECTION_EMAILJS_SERVICE_ID,
+        templateID: REJECTION_TEMPLATE_ID,
+        publicKey: REJECTION_EMAILJS_PUBLIC_KEY
+      });
+      
       const emailSent = await sendMembershipRejectionEmail(membershipData, rejectionReason);
       
       if (emailSent) {

@@ -4,6 +4,7 @@
 // Mise à jour: Correction des services et templates pour éviter les doublons d'envoi
 // Mise à jour: NOUVEAU service dédié UNIQUEMENT pour les emails de rejet sans conflit
 // Mise à jour: Email administrateur géré directement dans le template EmailJS
+// Mise à jour: Nouvelles clés API pour le rejet d'adhésion
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 30000; // Montant fixé à 30000 XOF
@@ -17,9 +18,9 @@ export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_zes2sew";
 export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "8tZOeeBIj_j__B_cM";
 
 // Service UNIQUEMENT pour les emails de rejet - NOUVELLES INFORMATIONS
-export const REJECTION_EMAILJS_SERVICE_ID = "service_1gvwp2w";
-export const REJECTION_EMAILJS_PUBLIC_KEY = "wdtFy3bjHd5FNRQLg";
-export const REJECTION_TEMPLATE_ID = "template_s3c9tsw"; // Nouveau template pour le rejet
+export const REJECTION_EMAILJS_SERVICE_ID = "service_zes2sew"; // Nouveau service ID
+export const REJECTION_EMAILJS_PUBLIC_KEY = "8tZOeeBIj_j__B_cM"; // Nouvelle clé API
+export const REJECTION_TEMPLATE_ID = "template_dq0ac69"; // Nouveau template ID
 
 // Templates pour les différents types d'emails
 export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_sdofxhv"; // Email initial
