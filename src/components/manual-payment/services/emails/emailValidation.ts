@@ -5,6 +5,7 @@
 // - Optimisation du code pour une meilleure performance
 // - Amélioration des messages d'erreur pour meilleure compréhension
 // - Ajout de la fonction sendCustomEmail pour centraliser l'envoi d'emails
+// - Mise à jour de la fonction sendCustomEmail pour accepter des identifiants de service personnalisés
 
 import emailjs from '@emailjs/browser';
 import { EmailTemplateParams, EmailValidationResult, ParticipantEmailData, AdminNotificationEmailData } from './types';
@@ -65,13 +66,22 @@ export const prepareEmailData = (email: string): string => {
 
 /**
  * Fonction centralisée pour l'envoi d'emails personnalisés
+ * Supporte désormais des identifiants de service personnalisés
  */
 export const sendCustomEmail = async (
   emailData: ParticipantEmailData | AdminNotificationEmailData, 
-  templateId: string
+  templateId: string,
+  serviceId?: string,
+  customTemplateId?: string,
+  publicKey?: string
 ): Promise<boolean | { success: number; failed: number }> => {
   try {
-    console.log(`Envoi d'email avec le template ${templateId}...`);
+    // Utiliser les identifiants personnalisés s'ils sont fournis, sinon utiliser les valeurs par défaut
+    const effectiveServiceId = serviceId || EMAILJS_SERVICE_ID;
+    const effectiveTemplateId = customTemplateId || templateId || PARTICIPANT_INITIAL_TEMPLATE_ID;
+    const effectivePublicKey = publicKey || EMAILJS_PUBLIC_KEY;
+    
+    console.log(`Envoi d'email avec le service ${effectiveServiceId} et le template ${effectiveTemplateId}...`);
     
     if ('participantEmail' in emailData) {
       // C'est un email pour un participant unique
@@ -85,20 +95,20 @@ export const sendCustomEmail = async (
       
       const completeTemplateParams: EmailTemplateParams = {
         to_email: participantEmail.trim(),
-        from_name: "IFTAR 2025",
+        from_name: "LA CITADELLE",
         subject: subject,
         prenom: templateParams.participant_name.split(' ')[0] || "",
         nom: templateParams.participant_name.split(' ').slice(1).join(' ') || "",
-        reply_to: "ne-pas-repondre@lacitadelle.ci",
+        reply_to: "club.lacitadelle@gmail.com",
         app_url: templateParams.website_link,
         ...templateParams
       };
       
       const response = await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        templateId,
+        effectiveServiceId,
+        effectiveTemplateId,
         completeTemplateParams,
-        EMAILJS_PUBLIC_KEY
+        effectivePublicKey
       );
       
       console.log("Email envoyé avec succès:", response);
@@ -125,20 +135,20 @@ export const sendCustomEmail = async (
           
           const completeTemplateParams: EmailTemplateParams = {
             to_email: adminEmail.trim(),
-            from_name: "Système d'Inscription IFTAR 2025",
+            from_name: "Système d'Inscription LA CITADELLE",
             subject: subject,
             prenom: "Admin",
-            nom: "IFTAR",
-            reply_to: "ne-pas-repondre@lacitadelle.ci",
+            nom: "CITADELLE",
+            reply_to: "club.lacitadelle@gmail.com",
             app_url: templateParams.admin_action_link.split('/admin')[0],
             ...templateParams
           };
           
           await emailjs.send(
-            EMAILJS_SERVICE_ID,
-            templateId,
+            effectiveServiceId,
+            effectiveTemplateId,
             completeTemplateParams,
-            EMAILJS_PUBLIC_KEY
+            effectivePublicKey
           );
           
           successCount++;

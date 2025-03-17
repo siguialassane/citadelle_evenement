@@ -1,10 +1,26 @@
 
 // Service d'envoi d'emails pour les remerciements et notifications d'adhésion
-// Ajout: Support pour les notifications d'adhésion basé sur la nouvelle table memberships
+// Mise à jour: Identifiants EmailJS et processus d'envoi d'email
 
 import { supabase } from "@/integrations/supabase/client";
 import { sendCustomEmail } from "./emailValidation";
 import { AdminNotificationEmailData, ParticipantEmailData, EmailSendResult } from "./types";
+
+// Constantes pour les services EmailJS
+const MEMBERSHIP_SERVICE_ID = "service_is5645q";
+const MEMBERSHIP_TEMPLATE_ID = "template_xvdr1iq";
+const MEMBERSHIP_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
+
+// Nouveau service pour les notifications d'adhésion
+const MEMBERSHIP_REQUEST_SERVICE_ID = "service_1gvwp2w";
+const MEMBERSHIP_REQUEST_TEMPLATE_ID_ADMIN = "template_s3c9tsw";
+const MEMBERSHIP_REQUEST_TEMPLATE_ID_PARTICIPANT = "template_mzzgjud";
+const MEMBERSHIP_REQUEST_PUBLIC_KEY = "wdtFy3bjHd5FNRQLg";
+
+// Service pour la confirmation d'adhésion
+const MEMBERSHIP_CONFIRMATION_SERVICE_ID = "service_wrk5x0l";
+const MEMBERSHIP_CONFIRMATION_TEMPLATE_ID = "template_sdofxhv";
+const MEMBERSHIP_CONFIRMATION_PUBLIC_KEY = "uQAHVMcvEXg6coHr9";
 
 // Envoi d'email de remerciement personnalisé
 export const sendPersonalThanksEmail = async (participant: any, personalMessage: string): Promise<boolean> => {
@@ -22,7 +38,7 @@ export const sendPersonalThanksEmail = async (participant: any, personalMessage:
       }
     };
     
-    const sent = await sendCustomEmail(emailData, "participant_thanks");
+    const sent = await sendCustomEmail(emailData, "participant_thanks", MEMBERSHIP_SERVICE_ID, MEMBERSHIP_TEMPLATE_ID, MEMBERSHIP_PUBLIC_KEY);
     return Boolean(sent);
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email de remerciement personnalisé:", error);
@@ -51,7 +67,7 @@ export const sendPublicThanksEmail = async (participants: any[], publicMessage: 
           }
         };
         
-        const sent = await sendCustomEmail(emailData, "participant_public_thanks");
+        const sent = await sendCustomEmail(emailData, "participant_public_thanks", MEMBERSHIP_SERVICE_ID, MEMBERSHIP_TEMPLATE_ID, MEMBERSHIP_PUBLIC_KEY);
         if (sent) {
           successCount++;
         } else {
@@ -70,7 +86,7 @@ export const sendPublicThanksEmail = async (participants: any[], publicMessage: 
   }
 };
 
-// Ajout des nouvelles fonctions pour l'adhésion
+// Notification d'adhésion pour l'administrateur
 export const sendMembershipRequestAdminEmail = async (participant: any): Promise<boolean> => {
   try {
     // Récupérer les administrateurs
@@ -101,7 +117,14 @@ export const sendMembershipRequestAdminEmail = async (participant: any): Promise
       }
     };
     
-    const result = await sendCustomEmail(emailData, "admin_membership_request");
+    // Utiliser le service EmailJS spécifique pour les notifications d'adhésion
+    const result = await sendCustomEmail(
+      emailData, 
+      "admin_membership_request", 
+      MEMBERSHIP_REQUEST_SERVICE_ID, 
+      MEMBERSHIP_REQUEST_TEMPLATE_ID_ADMIN, 
+      MEMBERSHIP_REQUEST_PUBLIC_KEY
+    );
     return Boolean(result);
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email administrateur pour l'adhésion:", error);
@@ -109,6 +132,7 @@ export const sendMembershipRequestAdminEmail = async (participant: any): Promise
   }
 };
 
+// Notification au participant de sa demande d'adhésion
 export const sendMembershipRequestParticipantEmail = async (participant: any): Promise<boolean> => {
   try {
     const emailData: ParticipantEmailData = {
@@ -123,7 +147,14 @@ export const sendMembershipRequestParticipantEmail = async (participant: any): P
       }
     };
     
-    const result = await sendCustomEmail(emailData, "participant_membership_request");
+    // Utiliser le service EmailJS spécifique pour les notifications d'adhésion
+    const result = await sendCustomEmail(
+      emailData, 
+      "participant_membership_request", 
+      MEMBERSHIP_REQUEST_SERVICE_ID, 
+      MEMBERSHIP_REQUEST_TEMPLATE_ID_PARTICIPANT, 
+      MEMBERSHIP_REQUEST_PUBLIC_KEY
+    );
     return Boolean(result);
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email au participant pour l'adhésion:", error);
@@ -131,6 +162,7 @@ export const sendMembershipRequestParticipantEmail = async (participant: any): P
   }
 };
 
+// Email de confirmation d'adhésion
 export const sendMembershipConfirmationEmail = async (participant: any): Promise<boolean> => {
   try {
     let membershipDetails;
@@ -166,7 +198,14 @@ export const sendMembershipConfirmationEmail = async (participant: any): Promise
       }
     };
     
-    const result = await sendCustomEmail(emailData, "participant_membership_approved");
+    // Utiliser le service EmailJS spécifique pour la confirmation d'adhésion
+    const result = await sendCustomEmail(
+      emailData, 
+      "participant_membership_approved", 
+      MEMBERSHIP_CONFIRMATION_SERVICE_ID, 
+      MEMBERSHIP_CONFIRMATION_TEMPLATE_ID, 
+      MEMBERSHIP_CONFIRMATION_PUBLIC_KEY
+    );
     return Boolean(result);
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email de confirmation d'adhésion:", error);

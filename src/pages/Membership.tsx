@@ -1,6 +1,6 @@
 
 // Formulaire d'adhésion pour les participants
-// Mis à jour pour utiliser la nouvelle table memberships
+// Mis à jour pour refléter l'apparence du formulaire papier
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -17,10 +17,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UserPlus, ArrowLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { CLUB_EXPECTATIONS, ClubExpectationType } from '@/components/manual-payment/services/emails/types';
 
-// Schéma de validation mis à jour pour le formulaire d'adhésion
+// Schéma de validation pour le formulaire d'adhésion
 const membershipFormSchema = z.object({
   // Informations personnelles
   first_name: z.string().min(2, { message: 'Le prénom doit contenir au moins 2 caractères' }),
@@ -49,7 +49,13 @@ const membershipFormSchema = z.object({
   
   // Domaines de compétence et attentes
   competence_domains: z.string().optional(),
-  club_expectations: z.string().optional(),
+  
+  // Case à cocher pour les attentes
+  formation: z.boolean().default(false),
+  loisirs: z.boolean().default(false),
+  echanges: z.boolean().default(false),
+  reseau: z.boolean().default(false),
+  
   other_expectations: z.string().optional(),
   
   // Accord des conditions
@@ -79,7 +85,10 @@ const MembershipForm = () => {
       payment_method: 'especes',
       payment_frequency: 'mensuelle',
       competence_domains: '',
-      club_expectations: '',
+      formation: false,
+      loisirs: false,
+      echanges: false,
+      reseau: false,
       other_expectations: '',
       agree_terms: false
     }
@@ -121,9 +130,12 @@ const MembershipForm = () => {
         }
       }
 
-      // Formatter les attentes comme un tableau pour la base de données
-      const clubExpectationsArray = values.club_expectations ? 
-        [values.club_expectations] : [];
+      // Collecter les attentes comme un tableau pour la base de données
+      const clubExpectationsArray: string[] = [];
+      if (values.formation) clubExpectationsArray.push("Formation");
+      if (values.loisirs) clubExpectationsArray.push("Loisirs");
+      if (values.echanges) clubExpectationsArray.push("Échanges et débats");
+      if (values.reseau) clubExpectationsArray.push("Appartenir à un réseau");
 
       // Créer un nouvel enregistrement d'adhésion
       const { data: newMembership, error: insertError } = await supabase
@@ -223,16 +235,20 @@ const MembershipForm = () => {
     navigate('/');
   };
 
+  // Style commun pour les sections
+  const sectionStyle = "border border-gray-300 rounded-md p-4 mb-6";
+  const sectionTitleStyle = "text-lg font-medium -mt-7 bg-white px-2 inline-block";
+
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-[#f8f8f8] flex flex-col items-center justify-center p-4">
         <Card className="w-full max-w-lg">
-          <CardHeader>
+          <CardHeader className="text-center">
             <CardTitle className="text-center text-2xl text-green-600">Demande envoyée avec succès</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
             <div className="flex justify-center my-6">
-              <UserPlus className="h-20 w-20 text-green-500" />
+              <UserPlus className="h-20 w-20 text-green-600" />
             </div>
             <p className="mb-4">
               Votre demande d'adhésion à LA CITADELLE a été envoyée avec succès.
@@ -242,7 +258,7 @@ const MembershipForm = () => {
             </p>
           </CardContent>
           <CardFooter className="flex justify-center">
-            <Button onClick={handleBackToHome}>
+            <Button onClick={handleBackToHome} className="bg-green-600 hover:bg-green-700">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour à l'accueil
             </Button>
@@ -253,7 +269,7 @@ const MembershipForm = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center p-4">
+    <div className="min-h-screen bg-[#f8f8f8] flex flex-col items-center p-4">
       <div className="w-full max-w-4xl">
         <Button 
           variant="outline" 
@@ -265,34 +281,44 @@ const MembershipForm = () => {
         </Button>
         
         <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">Demande d'adhésion à LA CITADELLE</CardTitle>
-            <CardDescription className="text-center">
-              Rejoignez notre association et participez à nos activités et événements
-            </CardDescription>
+          <CardHeader className="text-center border-b pb-4 bg-green-600 text-white rounded-t-lg">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm">
+                <p>LA CITADELLE (Ex CDA)</p>
+                <p>07 08 10 50 05 - 07 07 08 06 10</p>
+                <p>mail: club.lacitadelle@gmail.com</p>
+              </div>
+              <CardTitle className="text-xl">Fiche de demande d'adhésion Individuelle</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
+          
+          <CardContent className="pt-6">
+            {/* Information sur les objectifs */}
+            <div className={`${sectionStyle} mb-8`}>
+              <h3 className={`${sectionTitleStyle} font-bold`}>Objectifs et Conditions</h3>
+              <p className="text-sm mb-2">
+                <span className="font-bold">LA CITADELLE</span> a pour <span className="font-bold">objectif principal</span> de réunir dans un creuset, les cadres musulmans de l'administration et du secteur privé pour une participation plus active aux activités de la communauté en particulier et en général à l'essor de la NATION d'où son slogan "SUNIR POUR SERVIR". Assister les couches vulnérables et promouvoir l'entraide.
+              </p>
+              <p className="text-sm mb-2">
+                <span className="font-bold">L'adhésion au Club Service LA CITADELLE est ouverte:</span>
+              </p>
+              <ul className="list-disc pl-6 text-sm mb-2 space-y-1">
+                <li>aux cadres musulmans de l'administration publique et para-publique</li>
+                <li>aux cadres musulmans du secteur privé ou Chefs d'entreprises</li>
+                <li>aux sœurs et frères de la diaspora ou les artisans, capables de cotiser régulièrement au moins 100 000 FCFA par an.</li>
+              </ul>
+              <p className="text-sm">
+                Les adhérents au Club Service s'engagent à respecter les principes de la charte du club et à verser au moins la somme de 100 000 FCFA au titre des cotisations annuelles.
+              </p>
+            </div>
+            
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                 {/* Section Identité */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Identité</h3>
+                <div className={sectionStyle}>
+                  <h3 className={sectionTitleStyle}>Identité</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="first_name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Prénom</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Votre prénom" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
                     <FormField
                       control={form.control}
                       name="last_name"
@@ -306,31 +332,15 @@ const MembershipForm = () => {
                         </FormItem>
                       )}
                     />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="votre.email@exemple.com" type="email" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                     
                     <FormField
                       control={form.control}
-                      name="contact_number"
+                      name="first_name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Téléphone</FormLabel>
+                          <FormLabel>Prénom</FormLabel>
                           <FormControl>
-                            <Input placeholder="0X XX XX XX XX" {...field} />
+                            <Input placeholder="Votre prénom" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -338,7 +348,7 @@ const MembershipForm = () => {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <FormField
                       control={form.control}
                       name="profession"
@@ -355,12 +365,42 @@ const MembershipForm = () => {
                     
                     <FormField
                       control={form.control}
+                      name="contact_number"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Contact</FormLabel>
+                          <FormControl>
+                            <Input placeholder="0X XX XX XX XX" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <FormField
+                      control={form.control}
                       name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Adresse (optionnel)</FormLabel>
+                          <FormLabel>Adresse Géographique</FormLabel>
                           <FormControl>
                             <Input placeholder="Votre adresse" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input placeholder="votre.email@exemple.com" type="email" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -370,8 +410,8 @@ const MembershipForm = () => {
                 </div>
                 
                 {/* Section Souscription */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Souscription</h3>
+                <div className={sectionStyle}>
+                  <h3 className={sectionTitleStyle}>Souscription</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
@@ -379,7 +419,7 @@ const MembershipForm = () => {
                       name="subscription_amount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Montant de la souscription (FCFA)</FormLabel>
+                          <FormLabel>Montant de la Souscription annuelle</FormLabel>
                           <FormControl>
                             <Input 
                               type="number" 
@@ -398,7 +438,7 @@ const MembershipForm = () => {
                       name="subscription_start_month"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Mois de début (optionnel)</FormLabel>
+                          <FormLabel>À compter du mois de</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
@@ -428,90 +468,147 @@ const MembershipForm = () => {
                       )}
                     />
                   </div>
-                </div>
-                
-                {/* Section Mode de règlement */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Mode de règlement</h3>
                   
-                  <FormField
-                    control={form.control}
-                    name="payment_method"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel>Choisissez un mode de règlement</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex flex-col space-y-1"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="especes" id="especes" />
-                              <Label htmlFor="especes">Espèces</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="cheque" id="cheque" />
-                              <Label htmlFor="cheque">Chèque</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="virement" id="virement" />
-                              <Label htmlFor="virement">Virement</Label>
-                            </div>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                {/* Section Périodicité */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Périodicité</h3>
+                  <div className="mt-4">
+                    <div className="mb-2">
+                      <FormLabel>Mode de Règlement</FormLabel>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="payment_method"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <input
+                                type="radio"
+                                id="especes"
+                                value="especes"
+                                checked={field.value === "especes"}
+                                onChange={() => field.onChange("especes")}
+                                className="form-radio h-4 w-4 text-green-600"
+                              />
+                            </FormControl>
+                            <FormLabel htmlFor="especes" className="cursor-pointer">Espèces</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="payment_method"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <input
+                                type="radio"
+                                id="cheque"
+                                value="cheque"
+                                checked={field.value === "cheque"}
+                                onChange={() => field.onChange("cheque")}
+                                className="form-radio h-4 w-4 text-green-600"
+                              />
+                            </FormControl>
+                            <FormLabel htmlFor="cheque" className="cursor-pointer">Chèque</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="payment_method"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <input
+                                type="radio"
+                                id="virement"
+                                value="virement"
+                                checked={field.value === "virement"}
+                                onChange={() => field.onChange("virement")}
+                                className="form-radio h-4 w-4 text-green-600"
+                              />
+                            </FormControl>
+                            <FormLabel htmlFor="virement" className="cursor-pointer">Virement bancaire</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
                   
-                  <FormField
-                    control={form.control}
-                    name="payment_frequency"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel>Choisissez une périodicité</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex flex-col space-y-1"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="mensuelle" id="mensuelle" />
-                              <Label htmlFor="mensuelle">Mensuelle</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="trimestrielle" id="trimestrielle" />
-                              <Label htmlFor="trimestrielle">Trimestrielle</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="annuelle" id="annuelle" />
-                              <Label htmlFor="annuelle">Annuelle</Label>
-                            </div>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="mt-4">
+                    <div className="mb-2">
+                      <FormLabel>Périodicité</FormLabel>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="payment_frequency"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <input
+                                type="radio"
+                                id="mensuelle"
+                                value="mensuelle"
+                                checked={field.value === "mensuelle"}
+                                onChange={() => field.onChange("mensuelle")}
+                                className="form-radio h-4 w-4 text-green-600"
+                              />
+                            </FormControl>
+                            <FormLabel htmlFor="mensuelle" className="cursor-pointer">Mensuelle</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="payment_frequency"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <input
+                                type="radio"
+                                id="trimestrielle"
+                                value="trimestrielle"
+                                checked={field.value === "trimestrielle"}
+                                onChange={() => field.onChange("trimestrielle")}
+                                className="form-radio h-4 w-4 text-green-600"
+                              />
+                            </FormControl>
+                            <FormLabel htmlFor="trimestrielle" className="cursor-pointer">Trimestrielle</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="payment_frequency"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <input
+                                type="radio"
+                                id="annuelle"
+                                value="annuelle"
+                                checked={field.value === "annuelle"}
+                                onChange={() => field.onChange("annuelle")}
+                                className="form-radio h-4 w-4 text-green-600"
+                              />
+                            </FormControl>
+                            <FormLabel htmlFor="annuelle" className="cursor-pointer">Annuelle</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
                 </div>
                 
                 {/* Section Domaines de compétence */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Domaines de compétence</h3>
+                <div className={sectionStyle}>
+                  <h3 className={sectionTitleStyle}>Vos Domaines de Compétence</h3>
                   
                   <FormField
                     control={form.control}
                     name="competence_domains"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Vos domaines de compétence (optionnel)</FormLabel>
                         <FormControl>
                           <Textarea 
                             placeholder="Décrivez vos domaines de compétence" 
@@ -526,44 +623,52 @@ const MembershipForm = () => {
                 </div>
                 
                 {/* Section Attentes */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Attentes vis-à-vis du Club</h3>
+                <div className={sectionStyle}>
+                  <h3 className={sectionTitleStyle}>Vos attentes vis-à-vis du Club</h3>
                   
-                  <FormField
-                    control={form.control}
-                    name="club_expectations"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Vos attentes (optionnel)</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Quelles sont vos attentes vis-à-vis du Club?" 
-                            className="min-h-[100px]"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {CLUB_EXPECTATIONS.map((expectation) => (
+                      <FormField
+                        key={expectation.id}
+                        control={form.control}
+                        name={expectation.id}
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <Checkbox 
+                                id={expectation.id}
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormLabel htmlFor={expectation.id} className="cursor-pointer">
+                              {expectation.label}
+                            </FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
                   
-                  <FormField
-                    control={form.control}
-                    name="other_expectations"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Autres attentes (optionnel)</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Avez-vous d'autres attentes ou commentaires?" 
-                            className="min-h-[100px]"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="mt-4">
+                    <FormField
+                      control={form.control}
+                      name="other_expectations"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Autres attentes</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Précisez vos autres attentes vis-à-vis du Club" 
+                              className="min-h-[80px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
                 
                 {/* Section Conditions */}
@@ -571,7 +676,7 @@ const MembershipForm = () => {
                   control={form.control}
                   name="agree_terms"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 border p-4 rounded-md">
                       <FormControl>
                         <Checkbox 
                           checked={field.value} 
@@ -590,7 +695,7 @@ const MembershipForm = () => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full"
+                  className="w-full bg-green-600 hover:bg-green-700"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? "Envoi en cours..." : "Envoyer ma demande d'adhésion"}

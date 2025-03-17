@@ -1,5 +1,7 @@
 
 // Types partagés pour les services d'email
+// Mise à jour: Ajout de types pour les formulaires d'adhésion
+
 export interface EmailTemplateParams {
   to_email: string;
   to_name?: string;
@@ -58,3 +60,36 @@ export interface EmailSendResult {
   success: number;
   failed: number;
 }
+
+// Type pour les formulaires d'adhésion
+export interface MembershipFormData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  contact_number: string;
+  profession: string;
+  address?: string;
+  subscription_amount: number;
+  subscription_start_month?: string;
+  payment_method: 'especes' | 'cheque' | 'virement';
+  payment_frequency: 'mensuelle' | 'trimestrielle' | 'annuelle';
+  competence_domains?: string;
+  club_expectations?: string[];
+  other_expectations?: string;
+  agree_terms: boolean;
+}
+
+// Types des attentes vis-à-vis du club
+export type ClubExpectationType = 'formation' | 'loisirs' | 'echanges' | 'reseau';
+
+export interface ClubExpectationOption {
+  id: ClubExpectationType;
+  label: string;
+}
+
+export const CLUB_EXPECTATIONS: ClubExpectationOption[] = [
+  { id: 'formation', label: 'Formation' },
+  { id: 'loisirs', label: 'Loisirs' },
+  { id: 'echanges', label: 'Échanges et débats' },
+  { id: 'reseau', label: 'Appartenir à un réseau' }
+];
