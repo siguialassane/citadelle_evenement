@@ -1,6 +1,7 @@
 
 // Composant de détails d'adhésion
 // Créé pour afficher les détails d'une adhésion et permettre l'exportation en PDF
+// Mise à jour: Ajout de la gestion du rejet avec raison
 
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';

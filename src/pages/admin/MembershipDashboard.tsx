@@ -5,6 +5,7 @@
 // - Ajout de la suppression d'adhésions
 // - Amélioration de l'affichage et notifications
 // - Correction des liens entre adhésions et participants
+// - Ajout du dialogue de rejet avec raison et envoi d'email
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -16,6 +17,7 @@ import { Header } from "@/components/admin/dashboard/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { sendMembershipConfirmationEmail } from "@/components/manual-payment/services/emailService";
+import { sendMembershipRejectionEmail } from "@/components/manual-payment/services/emails/membershipRejectionService";
 import { 
   Table,
   TableBody,
@@ -25,6 +27,7 @@ import {
   TableRow
 } from "@/components/ui/table";
 import MembershipDetails from "@/components/admin/membership/MembershipDetails";
+import RejectionDialog from "@/components/admin/membership/RejectionDialog";
 import { exportToCSV } from "@/utils/exportUtils";
 
 // Interface pour les adhésions
@@ -60,6 +63,8 @@ const MembershipDashboard = () => {
   const [activeTab, setActiveTab] = useState<"pending" | "approved">("pending");
   const [selectedMembership, setSelectedMembership] = useState<Membership | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
+  const [membershipToReject, setMembershipToReject] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -193,8 +198,24 @@ const MembershipDashboard = () => {
     }
   };
 
-  const handleReject = async (membershipId: string) => {
+  const handleOpenRejectDialog = (membershipId: string) => {
+    setMembershipToReject(membershipId);
+    setRejectionDialogOpen(true);
+  };
+
+  const handleRejectConfirm = async (rejectionReason: string) => {
+    if (!membershipToReject) return;
+    
     try {
+      // Récupérer les données de l'adhésion
+      const { data: membershipData, error: fetchError } = await supabase
+        .from('memberships')
+        .select('*')
+        .eq('id', membershipToReject)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
       // Mettre à jour le statut de l'adhésion
       const { error: updateError } = await supabase
         .from('memberships')
@@ -203,14 +224,29 @@ const MembershipDashboard = () => {
           rejected_at: new Date().toISOString(),
           rejected_by: localStorage.getItem("adminEmail") || "admin"
         })
-        .eq('id', membershipId);
+        .eq('id', membershipToReject);
 
       if (updateError) throw updateError;
       
-      toast({
-        title: "Adhésion rejetée",
-        description: "La demande d'adhésion a été rejetée.",
-      });
+      // Envoyer l'email de rejet
+      const emailSent = await sendMembershipRejectionEmail(membershipData, rejectionReason);
+      
+      if (emailSent) {
+        toast({
+          title: "Adhésion rejetée",
+          description: "La demande d'adhésion a été rejetée et l'email a été envoyé au demandeur.",
+        });
+      } else {
+        toast({
+          title: "Adhésion rejetée",
+          description: "La demande d'adhésion a été rejetée mais l'email n'a pas pu être envoyé.",
+          variant: "destructive",
+        });
+      }
+      
+      // Fermer le dialogue et réinitialiser
+      setRejectionDialogOpen(false);
+      setMembershipToReject(null);
       
       // Rafraîchir les données
       fetchMembershipData();
@@ -221,7 +257,14 @@ const MembershipDashboard = () => {
         description: "Impossible de rejeter l'adhésion.",
         variant: "destructive",
       });
+      setRejectionDialogOpen(false);
+      setMembershipToReject(null);
     }
+  };
+
+  const handleRejectCancel = () => {
+    setRejectionDialogOpen(false);
+    setMembershipToReject(null);
   };
 
   const handleDelete = async (membershipId: string) => {
@@ -442,7 +485,7 @@ const MembershipDashboard = () => {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => handleReject(request.id)}
+                                onClick={() => handleOpenRejectDialog(request.id)}
                                 title="Rejeter"
                               >
                                 <XCircle className="h-4 w-4 mr-1" />
@@ -533,8 +576,16 @@ const MembershipDashboard = () => {
         isOpen={detailsOpen}
         onClose={() => setDetailsOpen(false)}
         onApprove={handleApprove}
-        onReject={handleReject}
+        onReject={handleOpenRejectDialog}
         onDelete={handleDelete}
+      />
+
+      {/* Dialogue de rejet avec motif */}
+      <RejectionDialog
+        isOpen={rejectionDialogOpen}
+        onClose={handleRejectCancel}
+        onConfirm={handleRejectConfirm}
+        membershipId={membershipToReject}
       />
     </div>
   );

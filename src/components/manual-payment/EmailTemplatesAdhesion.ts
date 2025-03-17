@@ -114,7 +114,7 @@ export const ADHESION_INVITATION_TEMPLATE = `<!DOCTYPE html>
 
 /**
  * Template de notification pour l'administrateur lors d'une nouvelle demande d'adhésion
- * Variables: {{admin_name}}, {{participant_name}}, {{admin_url}}, etc.
+ * Variables: {{admin_name}}, {{first_name}}, {{last_name}}, {{email}}, etc.
  */
 export const ADMIN_ADHESION_NOTIFICATION_TEMPLATE = `<!DOCTYPE html>
 <html lang="fr">
@@ -199,16 +199,16 @@ export const ADMIN_ADHESION_NOTIFICATION_TEMPLATE = `<!DOCTYPE html>
         <div class="member-details">
             <h3 style="margin-top: 0;">Informations du demandeur:</h3>
             <ul style="list-style: none; padding-left: 0;">
-                <li><strong>Nom complet:</strong> {{participant_name}}</li>
-                <li><strong>Email:</strong> {{participant_email}}</li>
-                <li><strong>Téléphone:</strong> {{participant_phone}}</li>
-                <li><strong>Profession:</strong> {{participant_profession}}</li>
-                <li><strong>Date de demande:</strong> {{submission_date}}</li>
+                <li><strong>Nom complet:</strong> {{first_name}} {{last_name}}</li>
+                <li><strong>Email:</strong> {{email}}</li>
+                <li><strong>Téléphone:</strong> {{contact_number}}</li>
+                <li><strong>Profession:</strong> {{profession}}</li>
+                <li><strong>Date de demande:</strong> {{requested_at}}</li>
             </ul>
             
             <h3>Détails de l'adhésion:</h3>
             <ul style="list-style: none; padding-left: 0;">
-                <li><strong>Montant:</strong> {{payment_amount}}</li>
+                <li><strong>Montant:</strong> {{subscription_amount}} FCFA</li>
                 <li><strong>Périodicité:</strong> {{payment_frequency}}</li>
                 <li><strong>Méthode de paiement:</strong> {{payment_method}}</li>
             </ul>
@@ -218,7 +218,7 @@ export const ADMIN_ADHESION_NOTIFICATION_TEMPLATE = `<!DOCTYPE html>
         
         <p>Merci de valider ou refuser cette demande via le dashboard administrateur.</p>
         
-        <a href="{{app_url}}/admin/membership" class="action-btn">Gérer cette demande</a>
+        <a href="{{admin_url}}" class="action-btn">Gérer cette demande</a>
         
         <div class="footer">
             <p>Cette notification a été envoyée automatiquement par le système d'adhésion de LA CITADELLE.</p>
@@ -337,7 +337,7 @@ export const ADHESION_CONFIRMATION_TEMPLATE = `<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
-        <img src="{{app_url}}/lovable-uploads/5f74e8dc-7b9f-405d-8380-4e3ad7eb61a8.png" alt="LA CITADELLE" class="logo">
+        <img src="{{app_url}}/lovable-uploads/58148cb0-57ab-4c97-98d4-a41ed2de3e7b.png" alt="LA CITADELLE" class="logo">
         <h1>Félicitations et Bienvenue! 🎉</h1>
         
         <div class="celebrate">🌙 ✨ 🌙</div>
@@ -375,6 +375,104 @@ export const ADHESION_CONFIRMATION_TEMPLATE = `<!DOCTYPE html>
         <p>Si vous avez des questions, n'hésitez pas à contacter notre équipe à <a href="mailto:{{contact_email}}">{{contact_email}}</a>.</p>
         
         <p>Qu'Allah guide nos pas et bénisse notre association.</p>
+        
+        <div class="footer">
+            <p>Association LA CITADELLE</p>
+            <p>📱 {{contact_phone}} | 📧 {{contact_email}}</p>
+            <p>{{current_year}} © Tous droits réservés</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+/**
+ * Template de notification de rejet d'une demande d'adhésion
+ * Variables: {{prenom}}, {{nom}}, {{rejection_reason}}, etc.
+ */
+export const ADHESION_REJECTION_TEMPLATE = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Réponse à votre demande d'adhésion</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f6f8fa;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #07553B;
+            text-align: center;
+            border-bottom: 2px solid #07553B;
+            padding-bottom: 10px;
+        }
+        .action-btn {
+            display: block;
+            width: 220px;
+            margin: 30px auto;
+            padding: 14px 20px;
+            background-color: #07553B;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .action-btn:hover {
+            background-color: #053D2A;
+        }
+        .rejection-reason {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-left: 4px solid #666;
+            margin: 20px 0;
+        }
+        .logo {
+            display: block;
+            width: 120px;
+            margin: 0 auto 20px auto;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="{{app_url}}/lovable-uploads/58148cb0-57ab-4c97-98d4-a41ed2de3e7b.png" alt="LA CITADELLE" class="logo">
+        <h1>Réponse à votre demande d'adhésion</h1>
+        
+        <p>Assalamou Aleykoum {{prenom}} {{nom}},</p>
+        
+        <p>Nous vous remercions sincèrement pour l'intérêt que vous portez à notre association LA CITADELLE et pour votre demande d'adhésion.</p>
+        
+        <p>Après étude attentive de votre dossier, nous regrettons de vous informer que nous ne sommes pas en mesure d'accepter votre demande d'adhésion pour le moment.</p>
+        
+        <div class="rejection-reason">
+            <p><strong>Motif :</strong> {{rejection_reason}}</p>
+        </div>
+        
+        <p>Nous vous encourageons néanmoins à participer à nos événements ouverts au public et à rester en contact avec notre association.</p>
+        
+        <p>Si vous souhaitez soumettre une nouvelle demande ultérieurement ou si vous avez des questions, n'hésitez pas à nous contacter.</p>
+        
+        <a href="{{try_again_url}}" class="action-btn">Soumettre une nouvelle demande</a>
+        
+        <p>Qu'Allah vous accorde Sa bénédiction et Sa guidance.</p>
         
         <div class="footer">
             <p>Association LA CITADELLE</p>
