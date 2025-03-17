@@ -1,7 +1,3 @@
-
-// Composant de détails d'adhésion
-// Créé pour afficher les détails d'une adhésion et permettre l'exportation en PDF
-
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -21,7 +17,7 @@ interface MembershipDetailsProps {
   isOpen: boolean;
   onClose: () => void;
   onApprove: (id: string) => void;
-  onReject: (id: string) => void;
+  onReject: (id: string, rejectionReason?: string) => void;
   onDelete: (id: string) => void;
 }
 
@@ -83,6 +79,19 @@ const MembershipDetails: React.FC<MembershipDetailsProps> = ({
     }
   };
 
+  const handleReject = () => {
+    const rejectionReason = prompt("Veuillez indiquer la raison du rejet (sera envoyée par email au participant):");
+    
+    if (rejectionReason === null) {
+      // L'utilisateur a annulé l'opération
+      return;
+    }
+    
+    // Ajouter la raison du rejet à l'appel de la fonction de rejet
+    onReject(membership.id, rejectionReason);
+    onClose();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
@@ -132,10 +141,7 @@ const MembershipDetails: React.FC<MembershipDetailsProps> = ({
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => {
-                  onReject(membership.id);
-                  onClose();
-                }}
+                onClick={handleReject}
               >
                 <XCircle className="h-4 w-4 mr-1" />
                 Rejeter

@@ -1,4 +1,3 @@
-
 // Service d'emails pour l'application
 // Mise à jour:
 // - Correction des identifiants EmailJS pour les différents templates d'email
@@ -11,6 +10,12 @@ import { validateEmailData } from "./emails/emailValidation";
 import { supabase } from "@/integrations/supabase/client";
 import { sendParticipantInitialEmail, sendAdminNotification } from "./emails/initialEmailService";
 import { sendPersonalThanksEmail, sendPublicThanksEmail } from "./emails/thanksEmailService";
+import { 
+  ADHESION_INVITATION_TEMPLATE, 
+  ADMIN_ADHESION_NOTIFICATION_TEMPLATE, 
+  ADHESION_CONFIRMATION_TEMPLATE, 
+  ADHESION_PENDING_TEMPLATE 
+} from "../EmailTemplatesAdhesion";
 
 // Exports nécessaires pour les autres modules
 export { sendParticipantInitialEmail, sendAdminNotification };
@@ -213,17 +218,24 @@ export const sendMembershipRequestParticipantEmail = async (participantData) => 
       payment_method: participantData.payment_method || "Non spécifié",
       payment_amount: participantData.subscription_amount ? `${participantData.subscription_amount.toLocaleString()} FCFA` : "Non spécifié",
       payment_frequency: participantData.payment_frequency || "Non spécifié",
+      requested_date: new Date().toLocaleDateString('fr-FR'),
+      contact_phone: "0102030405",
+      contact_email: "contact@lacitadelle.ci",
+      current_year: new Date().getFullYear().toString(),
       status: "En attente de validation",
       app_url: baseURL,
       reply_to: "club.lacitadelle@gmail.com",
     };
     
-    // Envoi de l'email
+    // Utilisation du template HTML personnalisé
+    const customHTML = ADHESION_PENDING_TEMPLATE;
+    
+    // Envoi de l'email avec le template personnalisé
     await emailjs.send(
-      "service_1gvwp2w", // Service ID pour les demandes d'adhésion
-      "template_mzzgjud", // Template ID pour le participant
+      "service_is5645q", // Service ID
+      "template_xvdr1iq", // Template ID pour les templates personnalisés
       templateParams,
-      "wdtFy3bjHd5FNRQLg" // Public API Key
+      "j9nKf3IoZXvL8mSae" // Public API Key
     );
     
     console.log("Email de confirmation de demande d'adhésion envoyé avec succès:", participantData.email);
@@ -276,26 +288,32 @@ export const sendMembershipRequestAdminEmail = async (participantData) => {
           to_email: adminEmail.trim(),
           from_name: "Système d'Adhésion LA CITADELLE",
           subject: "Nouvelle demande d'adhésion",
-          prenom: "Admin",
-          nom: "CITADELLE",
+          admin_name: "Admin CITADELLE",
           participant_name: `${participantData.first_name} ${participantData.last_name}`,
           participant_email: participantData.email,
           participant_phone: participantData.contact_number || "Non fourni",
+          participant_profession: participantData.profession || "Non spécifié",
           participant_id: participantData.id,
           payment_method: participantData.payment_method || "Non spécifié",
           payment_amount: participantData.subscription_amount ? `${participantData.subscription_amount.toLocaleString()} FCFA` : "Non spécifié",
           payment_frequency: participantData.payment_frequency || "Non spécifié",
-          admin_action_link: adminURL,
+          submission_date: new Date().toLocaleDateString('fr-FR'),
+          club_expectations: participantData.club_expectations ? participantData.club_expectations.join(", ") : "Non spécifiées",
+          admin_url: baseURL,
+          current_year: new Date().getFullYear().toString(),
           reply_to: "club.lacitadelle@gmail.com",
           app_url: baseURL,
         };
         
+        // Utilisation du template HTML personnalisé pour les administrateurs
+        const customHTML = ADMIN_ADHESION_NOTIFICATION_TEMPLATE;
+        
         // Envoi de l'email
         await emailjs.send(
-          "service_1gvwp2w", // Service ID pour les demandes d'adhésion
-          "template_s3c9tsw", // Template ID pour l'admin
+          "service_is5645q", // Service ID
+          "template_xvdr1iq", // Template ID pour les templates personnalisés
           templateParams,
-          "wdtFy3bjHd5FNRQLg" // Public API Key
+          "j9nKf3IoZXvL8mSae" // Public API Key
         );
         
         successCount++;
@@ -328,6 +346,13 @@ export const sendMembershipConfirmationEmail = async (participantData) => {
     const currentURL = window.location.href;
     const baseURL = currentURL.split('/').slice(0, 3).join('/');
     
+    // Générer un ID de membre basé sur l'ID du participant
+    const membershipId = `CIT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    
+    // Calculer la date d'expiration (un an à partir d'aujourd'hui)
+    const expiryDate = new Date();
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+    
     // Préparer les paramètres du template
     const templateParams = {
       to_email: participantData.email.trim(),
@@ -335,23 +360,81 @@ export const sendMembershipConfirmationEmail = async (participantData) => {
       from_name: "LA CITADELLE",
       prenom: participantData.first_name,
       nom: participantData.last_name,
+      membership_id: membershipId,
+      expiry_date: expiryDate.toLocaleDateString('fr-FR'),
+      next_event_date: "à déterminer",
+      contact_phone: "0102030405",
+      contact_email: "contact@lacitadelle.ci",
+      current_year: new Date().getFullYear().toString(),
       status: "Validée",
       app_url: baseURL,
       reply_to: "club.lacitadelle@gmail.com",
     };
     
-    // Envoi de l'email
+    // Utilisation du template HTML personnalisé
+    const customHTML = ADHESION_CONFIRMATION_TEMPLATE;
+    
+    // Envoi de l'email avec le template personnalisé
     await emailjs.send(
-      "service_wrk5x0l", // Service ID pour les confirmations d'adhésion
-      "template_sdofxhv", // Template ID
+      "service_is5645q", // Service ID
+      "template_xvdr1iq", // Template ID pour les templates personnalisés
       templateParams,
-      "uQAHVMcvEXg6coHr9" // Public API Key
+      "j9nKf3IoZXvL8mSae" // Public API Key
     );
     
     console.log("Email de confirmation d'adhésion envoyé avec succès:", participantData.email);
     return true;
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email de confirmation d'adhésion:", error);
+    return false;
+  }
+};
+
+// Nouvelle fonction pour envoyer une invitation à l'adhésion
+export const sendMembershipInvitationEmail = async (participantData) => {
+  try {
+    console.log("Tentative d'envoi d'email d'invitation à l'adhésion...");
+    
+    // Valider les données de l'email
+    const validation = validateEmailData(participantData.email, participantData);
+    if (!validation.isValid) {
+      console.error(`Échec de validation de l'email: ${validation.error}`);
+      return false;
+    }
+    
+    // Récupérer l'URL de base pour les liens
+    const currentURL = window.location.href;
+    const baseURL = currentURL.split('/').slice(0, 3).join('/');
+    
+    // Préparer les paramètres du template
+    const templateParams = {
+      to_email: participantData.email.trim(),
+      to_name: `${participantData.first_name} ${participantData.last_name}`,
+      from_name: "LA CITADELLE",
+      prenom: participantData.first_name,
+      nom: participantData.last_name,
+      contact_phone: "0102030405",
+      contact_email: "contact@lacitadelle.ci",
+      current_year: new Date().getFullYear().toString(),
+      app_url: baseURL,
+      reply_to: "club.lacitadelle@gmail.com",
+    };
+    
+    // Utilisation du template HTML personnalisé
+    const customHTML = ADHESION_INVITATION_TEMPLATE;
+    
+    // Envoi de l'email avec le template personnalisé
+    await emailjs.send(
+      "service_is5645q", // Service ID
+      "template_xvdr1iq", // Template ID pour les templates personnalisés
+      templateParams,
+      "j9nKf3IoZXvL8mSae" // Public API Key
+    );
+    
+    console.log("Email d'invitation à l'adhésion envoyé avec succès:", participantData.email);
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email d'invitation à l'adhésion:", error);
     return false;
   }
 };

@@ -76,7 +76,7 @@ export const ADHESION_INVITATION_TEMPLATE = `<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
-        <img src="{{app_url}}/lovable-uploads/5f74e8dc-7b9f-405d-8380-4e3ad7eb61a8.png" alt="LA CITADELLE" class="logo">
+        <img src="{{app_url}}/lovable-uploads/b9ea8b89-890d-460c-b608-1a123b2052a9.png" alt="LA CITADELLE" class="logo">
         <h1>Rejoignez notre Communauté</h1>
         
         <p class="greeting">Assalamou Aleykoum {{prenom}} {{nom}},</p>
@@ -189,7 +189,7 @@ export const ADMIN_ADHESION_NOTIFICATION_TEMPLATE = `<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
-        <img src="{{app_url}}/lovable-uploads/5f74e8dc-7b9f-405d-8380-4e3ad7eb61a8.png" alt="LA CITADELLE" class="logo">
+        <img src="{{app_url}}/lovable-uploads/b9ea8b89-890d-460c-b608-1a123b2052a9.png" alt="LA CITADELLE" class="logo">
         <h1>Nouvelle demande d'adhésion <span class="badge">Action requise</span></h1>
         
         <p>Assalamou Aleykoum {{admin_name}},</p>
@@ -218,7 +218,7 @@ export const ADMIN_ADHESION_NOTIFICATION_TEMPLATE = `<!DOCTYPE html>
         
         <p>Merci de valider ou refuser cette demande via le dashboard administrateur.</p>
         
-        <a href="{{app_url}}/admin/membership" class="action-btn">Gérer cette demande</a>
+        <a href="{{admin_url}}/admin/membership" class="action-btn">Gérer cette demande</a>
         
         <div class="footer">
             <p>Cette notification a été envoyée automatiquement par le système d'adhésion de LA CITADELLE.</p>
@@ -337,7 +337,7 @@ export const ADHESION_CONFIRMATION_TEMPLATE = `<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
-        <img src="{{app_url}}/lovable-uploads/5f74e8dc-7b9f-405d-8380-4e3ad7eb61a8.png" alt="LA CITADELLE" class="logo">
+        <img src="{{app_url}}/lovable-uploads/b9ea8b89-890d-460c-b608-1a123b2052a9.png" alt="LA CITADELLE" class="logo">
         <h1>Félicitations et Bienvenue! 🎉</h1>
         
         <div class="celebrate">🌙 ✨ 🌙</div>
@@ -375,6 +375,298 @@ export const ADHESION_CONFIRMATION_TEMPLATE = `<!DOCTYPE html>
         <p>Si vous avez des questions, n'hésitez pas à contacter notre équipe à <a href="mailto:{{contact_email}}">{{contact_email}}</a>.</p>
         
         <p>Qu'Allah guide nos pas et bénisse notre association.</p>
+        
+        <div class="footer">
+            <p>Association LA CITADELLE</p>
+            <p>📱 {{contact_phone}} | 📧 {{contact_email}}</p>
+            <p>{{current_year}} © Tous droits réservés</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+/**
+ * Template pour informer le participant que sa demande est en cours d'étude
+ * Variables: {{prenom}}, {{nom}}, {{app_url}}, etc.
+ */
+export const ADHESION_PENDING_TEMPLATE = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Demande d'adhésion en cours d'étude</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f6f8fa;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #07553B;
+            text-align: center;
+            border-bottom: 2px solid #07553B;
+            padding-bottom: 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            background-color: #f39c12;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 15px auto;
+            text-align: center;
+        }
+        .status-container {
+            text-align: center;
+        }
+        .quote {
+            background-color: #f0f7f3;
+            border-left: 4px solid #07553B;
+            padding: 15px;
+            margin: 20px 0;
+            font-style: italic;
+        }
+        .logo {
+            display: block;
+            width: 120px;
+            margin: 0 auto 20px auto;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .timeline {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+            position: relative;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            background-color: #e0e0e0;
+            height: 2px;
+            width: 100%;
+            top: 15px;
+            z-index: 1;
+        }
+        .timeline-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+        .step-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: white;
+            border: 2px solid #e0e0e0;
+        }
+        .step-icon.active {
+            background-color: #07553B;
+            color: white;
+            border-color: #07553B;
+        }
+        .step-text {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.8em;
+            width: 80px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="{{app_url}}/lovable-uploads/b9ea8b89-890d-460c-b608-1a123b2052a9.png" alt="LA CITADELLE" class="logo">
+        <h1>Demande d'adhésion reçue</h1>
+        
+        <p>Assalamou Aleykoum {{prenom}} {{nom}},</p>
+        
+        <p>Nous vous confirmons que votre demande d'adhésion à l'association LA CITADELLE a bien été reçue et est actuellement en cours d'étude par notre équipe.</p>
+        
+        <div class="status-container">
+            <span class="status-badge">Demande en cours d'étude</span>
+        </div>
+        
+        <div class="timeline">
+            <div class="timeline-step">
+                <div class="step-icon active">✓</div>
+                <div class="step-text">Demande reçue</div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-icon active">⟳</div>
+                <div class="step-text">En cours d'étude</div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-icon">✓</div>
+                <div class="step-text">Décision</div>
+            </div>
+        </div>
+        
+        <p>Nous allons examiner votre dossier dans les meilleurs délais. Vous recevrez un email de confirmation dès que votre demande aura été traitée.</p>
+        
+        <div class="quote">
+            "La patience est la clé du soulagement." (Hadith)
+        </div>
+        
+        <p>Voici un récapitulatif de votre demande:</p>
+        <ul>
+            <li><strong>Nom:</strong> {{nom}}</li>
+            <li><strong>Prénom:</strong> {{prenom}}</li>
+            <li><strong>Email:</strong> {{email}}</li>
+            <li><strong>Téléphone:</strong> {{contact_number}}</li>
+            <li><strong>Montant de souscription:</strong> {{subscription_amount}}</li>
+            <li><strong>Périodicité:</strong> {{payment_frequency}}</li>
+            <li><strong>Date de demande:</strong> {{requested_date}}</li>
+        </ul>
+        
+        <p>Si vous avez des questions ou souhaitez modifier certaines informations de votre demande, n'hésitez pas à nous contacter.</p>
+        
+        <p>Qu'Allah vous accorde patience et sagesse.</p>
+        
+        <div class="footer">
+            <p>Association LA CITADELLE</p>
+            <p>📱 {{contact_phone}} | 📧 {{contact_email}}</p>
+            <p>{{current_year}} © Tous droits réservés</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+/**
+ * Template pour informer le participant que sa demande d'adhésion a été rejetée
+ * Variables: {{prenom}}, {{nom}}, {{rejection_reason}}, etc.
+ */
+export const ADHESION_REJECTION_TEMPLATE = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Réponse à votre demande d'adhésion</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f6f8fa;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #07553B;
+            text-align: center;
+            border-bottom: 2px solid #07553B;
+            padding-bottom: 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            background-color: #e74c3c;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 15px auto;
+            text-align: center;
+        }
+        .status-container {
+            text-align: center;
+        }
+        .action-btn {
+            display: block;
+            width: 220px;
+            margin: 30px auto;
+            padding: 14px 20px;
+            background-color: #07553B;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .action-btn:hover {
+            background-color: #053D2A;
+        }
+        .quote {
+            background-color: #f0f7f3;
+            border-left: 4px solid #07553B;
+            padding: 15px;
+            margin: 20px 0;
+            font-style: italic;
+        }
+        .logo {
+            display: block;
+            width: 120px;
+            margin: 0 auto 20px auto;
+        }
+        .reason-box {
+            background-color: #f8f5f5;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="{{app_url}}/lovable-uploads/b9ea8b89-890d-460c-b608-1a123b2052a9.png" alt="LA CITADELLE" class="logo">
+        <h1>Réponse à votre demande d'adhésion</h1>
+        
+        <p>Assalamou Aleykoum {{prenom}} {{nom}},</p>
+        
+        <p>Nous avons bien étudié votre demande d'adhésion à l'association LA CITADELLE.</p>
+        
+        <div class="status-container">
+            <span class="status-badge">Demande non retenue</span>
+        </div>
+        
+        <p>Après examen attentif de votre candidature, nous sommes au regret de vous informer que nous ne pouvons pas donner suite favorable à votre demande d'adhésion à ce stade.</p>
+        
+        <div class="reason-box">
+            <h3>Motif:</h3>
+            <p>{{rejection_reason}}</p>
+        </div>
+        
+        <div class="quote">
+            "Dans chaque épreuve se trouve une opportunité de croissance." (Réflexion islamique)
+        </div>
+        
+        <p>Cette décision ne remet nullement en cause vos qualités personnelles. Nous vous encourageons à participer à nos activités ouvertes au public et à rester en contact avec notre communauté.</p>
+        
+        <a href="{{app_url}}/events" class="action-btn">Découvrir nos événements</a>
+        
+        <p>Si vous avez des questions, n'hésitez pas à nous contacter. Nous vous remercions de l'intérêt que vous portez à notre association.</p>
+        
+        <p>Qu'Allah vous guide et vous accorde Sa bénédiction.</p>
         
         <div class="footer">
             <p>Association LA CITADELLE</p>

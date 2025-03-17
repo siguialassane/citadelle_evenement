@@ -1,70 +1,68 @@
 
+// Service d'envoi d'emails de rejet pour les adhésions
+// Gère l'envoi des notifications lorsqu'une demande d'adhésion est rejetée
+
 import emailjs from '@emailjs/browser';
-import { validateEmailData, prepareEmailData } from './emailValidation';
-import { EmailTemplateParams } from './types';
-import { 
-  REJECTION_EMAILJS_SERVICE_ID,
-  REJECTION_EMAILJS_PUBLIC_KEY,
-  REJECTION_TEMPLATE_ID,
-} from "../../config";
+import { validateEmailData } from './emailValidation';
+import { toast } from "@/hooks/use-toast";
+import { ADHESION_REJECTION_TEMPLATE } from '../../EmailTemplatesAdhesion';
 
 /**
- * Envoie un email de rejet au participant
+ * Envoie un email de rejet d'adhésion au participant
+ * @param participantData Données du participant
+ * @param rejectionReason Raison du rejet (optionnel)
+ * @returns Succès ou échec de l'envoi
  */
-export const sendPaymentRejectionEmail = async (participantData: any, rejectionReason: string = '') => {
+export const sendMembershipRejectionEmail = async (participantData: any, rejectionReason: string = '') => {
   try {
-    console.log("===== PRÉPARATION EMAIL DE REJET =====");
-    console.log("Utilisation du service REJET UNIQUEMENT:", REJECTION_EMAILJS_SERVICE_ID);
+    console.log("Tentative d'envoi d'email de rejet d'adhésion...");
     
-    const validation = validateEmailData(participantData?.email, participantData);
+    // Valider les données de l'email
+    const validation = validateEmailData(participantData.email, participantData);
     if (!validation.isValid) {
-      console.error(validation.error);
+      console.error(`Échec de validation de l'email: ${validation.error}`);
       return false;
     }
     
-    const email = prepareEmailData(participantData.email);
+    // Récupérer l'URL de base pour les liens
+    const currentURL = window.location.href;
+    const baseURL = currentURL.split('/').slice(0, 3).join('/');
     
-    // Construction explicite de l'URL complète
-    const appUrl = window.location.origin;
-    const tryAgainUrl = `${appUrl}/payment/${participantData.id}`;
-    
-    console.log("URL de nouvel essai construite:", tryAgainUrl);
-    console.log("ID du participant:", participantData.id);
-    console.log("Origine de l'application:", appUrl);
-    
-    const templateParams: EmailTemplateParams = {
-      to_email: email,
+    // Préparer les paramètres du template
+    const templateParams = {
+      to_email: participantData.email.trim(),
       to_name: `${participantData.first_name} ${participantData.last_name}`,
-      from_name: "IFTAR 2025",
+      from_name: "LA CITADELLE",
       prenom: participantData.first_name,
       nom: participantData.last_name,
-      participant_id: participantData.id, // Ajout explicite de l'ID
-      rejection_reason: rejectionReason || "Le paiement n'a pas pu être vérifié ou confirmé",
-      app_url: appUrl, // URL de base complète
-      try_again_url: tryAgainUrl, // URL complète construite
-      reply_to: "ne-pas-repondre@lacitadelle.ci"
+      rejection_reason: rejectionReason || "Votre profil ne correspond pas aux critères d'adhésion actuels de notre association.",
+      contact_phone: "0102030405",
+      contact_email: "contact@lacitadelle.ci",
+      current_year: new Date().getFullYear().toString(),
+      app_url: baseURL,
+      reply_to: "club.lacitadelle@gmail.com",
     };
-
-    // Logs supplémentaires pour le débogage
-    console.log("Paramètres EmailJS pour email de rejet:", {
-      to_email: templateParams.to_email,
-      participant_name: `${participantData.first_name} ${participantData.last_name}`,
-      participant_id: templateParams.participant_id,
-      try_again_url: templateParams.try_again_url,
-      app_url: templateParams.app_url
-    });
-
-    const response = await emailjs.send(
-      REJECTION_EMAILJS_SERVICE_ID,
-      REJECTION_TEMPLATE_ID,
+    
+    // Utilisation du template HTML personnalisé pour l'email de rejet
+    const customHTML = ADHESION_REJECTION_TEMPLATE;
+    
+    // Envoi de l'email
+    await emailjs.send(
+      "service_is5645q", // Service ID
+      "template_xvdr1iq", // Template ID
       templateParams,
-      REJECTION_EMAILJS_PUBLIC_KEY
+      "j9nKf3IoZXvL8mSae" // Public API Key
     );
-
-    console.log("Email de rejet envoyé avec succès:", response);
+    
+    console.log("Email de rejet d'adhésion envoyé avec succès:", participantData.email);
     return true;
   } catch (error) {
-    console.error("Erreur lors de l'envoi de l'email de rejet:", error);
+    console.error("Erreur lors de l'envoi de l'email de rejet d'adhésion:", error);
+    toast({
+      title: "Erreur",
+      description: "Impossible d'envoyer l'email de rejet au participant.",
+      variant: "destructive",
+    });
     return false;
   }
 };
