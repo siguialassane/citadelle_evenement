@@ -1,17 +1,16 @@
 
 // Service d'emails pour les remerciements aux participants
 // - Implémentation d'emails personnalisés et groupés
+// Mise à jour: Correction des identifiants EmailJS avec les nouvelles clés
 
 import emailjs from '@emailjs/browser';
 import { validateEmailData, prepareEmailData } from './emailValidation';
 import { EmailSendResult, ParticipantEmailData, AdminNotificationEmailData } from './types';
-import { 
-  EMAILJS_SERVICE_ID, 
-  EMAILJS_PUBLIC_KEY,
-  EVENT_LOCATION
-} from "../../config";
+import { EVENT_LOCATION } from "../../config";
 
-// Template IDs pour les emails de remerciement
+// Mise à jour des identifiants EmailJS pour les emails de remerciement
+const THANKS_EMAILJS_SERVICE_ID = "service_is5645q";
+const THANKS_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
 const THANKS_TEMPLATE_ID = "template_xvdr1iq";
 
 /**
@@ -35,7 +34,7 @@ export const sendPersonalThanksEmail = async (participant: any, message: string)
     
     // Préparation des paramètres pour le template
     const templateParams = {
-      to_email: email,
+      to_email: email, // Email dynamique positionné en premier
       to_name: `${participant.first_name} ${participant.last_name}`,
       from_name: "LA CITADELLE",
       prenom: participant.first_name,
@@ -59,12 +58,12 @@ export const sendPersonalThanksEmail = async (participant: any, message: string)
       message_preview: templateParams.message.substring(0, 30) + "..."
     });
 
-    // Envoi de l'email avec EmailJS
+    // Envoi de l'email avec les NOUVELLES identifiants EmailJS
     const response = await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      THANKS_TEMPLATE_ID,
+      THANKS_EMAILJS_SERVICE_ID, // Nouvelle valeur: service_is5645q
+      THANKS_TEMPLATE_ID,        // Nouvelle valeur: template_xvdr1iq
       templateParams,
-      EMAILJS_PUBLIC_KEY
+      THANKS_EMAILJS_PUBLIC_KEY  // Nouvelle valeur: j9nKf3IoZXvL8mSae
     );
 
     console.log("Email personnalisé envoyé avec succès:", response);
@@ -103,7 +102,7 @@ export const sendPublicThanksEmail = async (participants: any[], message: string
         
         // Préparation des paramètres pour le template
         const templateParams = {
-          to_email: email,
+          to_email: email, // Email dynamique positionné en premier
           to_name: `${participant.first_name} ${participant.last_name}`,
           from_name: "LA CITADELLE",
           prenom: participant.first_name,
@@ -118,12 +117,12 @@ export const sendPublicThanksEmail = async (participants: any[], message: string
           reply_to: "club.lacitadelle@gmail.com"
         };
         
-        // Envoi de l'email avec EmailJS
+        // Envoi de l'email avec les NOUVELLES identifiants EmailJS
         await emailjs.send(
-          EMAILJS_SERVICE_ID,
-          THANKS_TEMPLATE_ID,
+          THANKS_EMAILJS_SERVICE_ID, // Nouvelle valeur: service_is5645q
+          THANKS_TEMPLATE_ID,        // Nouvelle valeur: template_xvdr1iq
           templateParams,
-          EMAILJS_PUBLIC_KEY
+          THANKS_EMAILJS_PUBLIC_KEY  // Nouvelle valeur: j9nKf3IoZXvL8mSae
         );
         
         successCount++;
