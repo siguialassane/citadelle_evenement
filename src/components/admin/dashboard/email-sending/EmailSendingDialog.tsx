@@ -1,6 +1,7 @@
 
 // Service d'envoi d'emails pour les participants
 // Mise à jour: Correction des erreurs de type
+// Mise à jour: Correction des importations manquantes
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
@@ -15,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { 
   sendPersonalThanksEmail,
   sendPublicThanksEmail 
-} from "@/components/manual-payment/services/emailService";
+} from "@/components/manual-payment/services/emails/thanksEmailService";
 import { type Participant } from "@/types/participant";
 import { EmailSendResult } from "@/components/manual-payment/services/emails/types";
 
@@ -101,7 +102,7 @@ export const EmailSendingDialog = ({
         }
       } else {
         // Envoi d'un email public à tous les participants
-        const result = await sendPublicThanksEmail(participants, publicMessage) as EmailSendResult;
+        const result = await sendPublicThanksEmail(participants, publicMessage);
         
         setProgress(prev => ({
           ...prev,

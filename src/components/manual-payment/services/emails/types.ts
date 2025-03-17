@@ -3,6 +3,7 @@
 // Mise à jour: 
 // - Ajout de types pour les formulaires d'adhésion
 // - Mise à jour des schémas de paiement pour inclure mobile_money
+// - Ajout des types pour les emails de remerciement qui manquaient
 
 export interface EmailTemplateParams {
   to_email: string;

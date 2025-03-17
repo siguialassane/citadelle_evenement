@@ -1,167 +1,70 @@
 
-// Utilitaires de validation d'email
-// Modifications:
-// - Correction de la validation d'email - moins strict et plus permissif
-// - Optimisation du code pour une meilleure performance
-// - Amélioration des messages d'erreur pour meilleure compréhension
-// - Ajout de la fonction sendCustomEmail pour centraliser l'envoi d'emails
-// - Mise à jour de la fonction sendCustomEmail pour accepter des identifiants de service personnalisés
+// Validation des données pour les services d'email
+// Mise à jour: Ajout de fonctions utilitaires pour le traitement des emails
 
-import emailjs from '@emailjs/browser';
-import { EmailTemplateParams, EmailValidationResult, ParticipantEmailData, AdminNotificationEmailData } from './types';
-import { 
-  EMAILJS_SERVICE_ID,
-  EMAILJS_PUBLIC_KEY,
-  PARTICIPANT_INITIAL_TEMPLATE_ID
-} from "../../config";
+import { EmailValidationResult } from './types';
 
 /**
- * Valide une adresse email - vérification de format uniquement
- * Version améliorée avec une regex plus permissive et de meilleurs messages d'erreur
+ * Valide les données d'email avant envoi
  */
-export const validateEmailData = (email: string | undefined, participantData: any): EmailValidationResult => {
-  console.log("Validating email data:", { email, participantDataExists: !!participantData });
-  
-  // Vérifier si les données du participant sont présentes
-  if (!participantData) {
-    console.error("Validation d'email échouée: données du participant manquantes");
-    return { isValid: false, error: "Données du participant manquantes" };
-  }
-
-  // Vérifier si l'email est défini
+export const validateEmailData = (email: string, participantData: any): EmailValidationResult => {
   if (!email) {
-    console.error("Validation d'email échouée: email manquant");
-    return { isValid: false, error: "Email manquant" };
+    return { 
+      isValid: false, 
+      error: "Adresse email manquante" 
+    };
   }
 
-  // Nettoyage approfondi de l'email pour éliminer tout espace
-  const trimmedEmail = email.trim();
-  if (!trimmedEmail) {
-    console.error("Validation d'email échouée: email vide après nettoyage");
-    return { isValid: false, error: "Email vide après nettoyage" };
+  if (!email.trim()) {
+    return { 
+      isValid: false, 
+      error: "Adresse email vide après nettoyage" 
+    };
   }
   
-  // Validation du format d'email avec une regex TRÈS permissive
-  // Cette regex accepte presque tous les formats d'emails possibles
+  // Email regex simple (validation basique)
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(trimmedEmail)) {
-    console.error("Validation d'email échouée: format d'email invalide:", trimmedEmail);
-    return { isValid: false, error: `Format d'email invalide: ${trimmedEmail}` };
+  if (!emailRegex.test(email.trim())) {
+    return { 
+      isValid: false, 
+      error: `Format d'email invalide: ${email}` 
+    };
   }
-
-  console.log("Email validé avec succès:", trimmedEmail);
+  
+  if (!participantData) {
+    return { 
+      isValid: false, 
+      error: "Données du participant manquantes" 
+    };
+  }
+  
   return { isValid: true };
 };
 
 /**
- * Prépare une adresse email pour l'envoi
- * Nettoie et vérifie la validité basique
+ * Prépare et nettoie une adresse email pour l'envoi
  */
 export const prepareEmailData = (email: string): string => {
-  // Nettoyage approfondi pour éliminer tous les espaces
-  const cleaned = email.trim();
-  console.log("Email nettoyé pour envoi:", cleaned);
-  return cleaned;
+  if (!email) return "";
+  return email.trim().toLowerCase();
 };
 
 /**
- * Fonction centralisée pour l'envoi d'emails personnalisés
- * Supporte désormais des identifiants de service personnalisés
+ * Envoie un email personnalisé avec des paramètres spécifiques
+ * (Fonctionnalité utilitaire pour d'autres services d'email)
  */
 export const sendCustomEmail = async (
-  emailData: ParticipantEmailData | AdminNotificationEmailData, 
-  templateId: string,
-  serviceId?: string,
-  customTemplateId?: string,
-  publicKey?: string
-): Promise<boolean | { success: number; failed: number }> => {
+  serviceId: string, 
+  templateId: string, 
+  publicKey: string, 
+  templateParams: any
+): Promise<boolean> => {
   try {
-    // Utiliser les identifiants personnalisés s'ils sont fournis, sinon utiliser les valeurs par défaut
-    const effectiveServiceId = serviceId || EMAILJS_SERVICE_ID;
-    const effectiveTemplateId = customTemplateId || templateId || PARTICIPANT_INITIAL_TEMPLATE_ID;
-    const effectivePublicKey = publicKey || EMAILJS_PUBLIC_KEY;
-    
-    console.log(`Envoi d'email avec le service ${effectiveServiceId} et le template ${effectiveTemplateId}...`);
-    
-    if ('participantEmail' in emailData) {
-      // C'est un email pour un participant unique
-      const { participantEmail, subject, templateParams } = emailData;
-      
-      // Vérification de l'email
-      if (!participantEmail || !participantEmail.trim()) {
-        console.error("Email du participant invalide ou vide");
-        return false;
-      }
-      
-      const completeTemplateParams: EmailTemplateParams = {
-        to_email: participantEmail.trim(),
-        from_name: "LA CITADELLE",
-        subject: subject,
-        prenom: templateParams.participant_name.split(' ')[0] || "",
-        nom: templateParams.participant_name.split(' ').slice(1).join(' ') || "",
-        reply_to: "club.lacitadelle@gmail.com",
-        app_url: templateParams.website_link,
-        ...templateParams
-      };
-      
-      const response = await emailjs.send(
-        effectiveServiceId,
-        effectiveTemplateId,
-        completeTemplateParams,
-        effectivePublicKey
-      );
-      
-      console.log("Email envoyé avec succès:", response);
-      return true;
-    } else {
-      // C'est un email pour plusieurs administrateurs
-      const { adminEmails, subject, templateParams } = emailData;
-      
-      if (!adminEmails || adminEmails.length === 0) {
-        console.error("Aucune adresse email d'administrateur fournie");
-        return { success: 0, failed: 0 };
-      }
-      
-      let successCount = 0;
-      let failedCount = 0;
-      
-      for (const adminEmail of adminEmails) {
-        try {
-          if (!adminEmail || !adminEmail.trim()) {
-            console.warn("Email d'administrateur invalide ou vide, ignoré");
-            failedCount++;
-            continue;
-          }
-          
-          const completeTemplateParams: EmailTemplateParams = {
-            to_email: adminEmail.trim(),
-            from_name: "Système d'Inscription LA CITADELLE",
-            subject: subject,
-            prenom: "Admin",
-            nom: "CITADELLE",
-            reply_to: "club.lacitadelle@gmail.com",
-            app_url: templateParams.admin_action_link.split('/admin')[0],
-            ...templateParams
-          };
-          
-          await emailjs.send(
-            effectiveServiceId,
-            effectiveTemplateId,
-            completeTemplateParams,
-            effectivePublicKey
-          );
-          
-          successCount++;
-        } catch (error) {
-          console.error(`Erreur lors de l'envoi à ${adminEmail}:`, error);
-          failedCount++;
-        }
-      }
-      
-      return { success: successCount, failed: failedCount };
-    }
+    // Cette fonction sera implémentée ultérieurement pour centraliser la logique d'envoi
+    // Elle sera utilisée par les autres services d'email
+    return true;
   } catch (error) {
-    console.error("Erreur lors de l'envoi d'email personnalisé:", error);
+    console.error("Erreur lors de l'envoi de l'email personnalisé:", error);
     return false;
   }
 };

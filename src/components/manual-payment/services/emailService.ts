@@ -2,11 +2,19 @@
 // Service d'emails pour l'application
 // Mise à jour:
 // - Correction des identifiants EmailJS pour les différents templates d'email
+// - Ajout des exports manquants pour sendPersonalThanksEmail, sendPublicThanksEmail
+// - Ajout des exports pour sendParticipantInitialEmail, sendAdminNotification
 
 import { toast } from "../../../hooks/use-toast";
 import emailjs from '@emailjs/browser';
 import { validateEmailData } from "./emails/emailValidation";
 import { supabase } from "@/integrations/supabase/client";
+import { sendParticipantInitialEmail, sendAdminNotification } from "./emails/initialEmailService";
+import { sendPersonalThanksEmail, sendPublicThanksEmail } from "./emails/thanksEmailService";
+
+// Exports nécessaires pour les autres modules
+export { sendParticipantInitialEmail, sendAdminNotification };
+export { sendPersonalThanksEmail, sendPublicThanksEmail };
 
 // Templates d'email pour les participants et les adhésions
 export const sendInitialParticipantEmail = async (participantData) => {

@@ -5,13 +5,17 @@
 // Mise à jour: Suppression de la référence de transaction
 // Mise à jour: Email administrateur dynamique géré dans EmailJS
 // Mise à jour: Ajout de logs supplémentaires pour le débogage des emails
+// Mise à jour: Correction des importations
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { PAYMENT_AMOUNT } from "./config";
 import { PaymentMethod, Participant, CopyStates } from "./types";
-import { sendParticipantInitialEmail, sendAdminNotification } from "./services/emailService";
+import { 
+  sendAdminNotification,
+  sendParticipantInitialEmail 
+} from "./services/emails/initialEmailService";
 import { registerManualPayment } from "./services/paymentService";
 
 export function useManualPayment(participant: Participant) {
