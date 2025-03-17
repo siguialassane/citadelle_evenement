@@ -1,5 +1,6 @@
 
 // Formulaire d'adhésion pour les participants
+// Mis à jour pour utiliser la nouvelle table memberships
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -15,16 +16,46 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UserPlus, ArrowLeft } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
-// Schéma de validation pour le formulaire d'adhésion
+// Schéma de validation mis à jour pour le formulaire d'adhésion
 const membershipFormSchema = z.object({
+  // Informations personnelles
   first_name: z.string().min(2, { message: 'Le prénom doit contenir au moins 2 caractères' }),
   last_name: z.string().min(2, { message: 'Le nom doit contenir au moins 2 caractères' }),
   email: z.string().email({ message: 'Email invalide' }),
   contact_number: z.string().min(8, { message: 'Numéro de téléphone invalide' }),
   profession: z.string().min(2, { message: 'Veuillez indiquer votre profession' }),
-  motivation: z.string().min(10, { message: 'Veuillez expliquer votre motivation (minimum 10 caractères)' }),
-  agree_terms: z.boolean().refine(val => val === true, { message: 'Vous devez accepter les conditions' })
+  address: z.string().optional(),
+  
+  // Information de souscription
+  subscription_amount: z.preprocess(
+    (val) => (val === '' ? 100000 : Number(val)), 
+    z.number().min(1, { message: 'Le montant doit être supérieur à 0' })
+  ),
+  subscription_start_month: z.string().optional(),
+  
+  // Mode de règlement
+  payment_method: z.enum(['especes', 'cheque', 'virement'], { 
+    message: 'Veuillez sélectionner un mode de règlement valide' 
+  }),
+  
+  // Périodicité
+  payment_frequency: z.enum(['mensuelle', 'trimestrielle', 'annuelle'], { 
+    message: 'Veuillez sélectionner une périodicité valide' 
+  }),
+  
+  // Domaines de compétence et attentes
+  competence_domains: z.string().optional(),
+  club_expectations: z.string().optional(),
+  other_expectations: z.string().optional(),
+  
+  // Accord des conditions
+  agree_terms: z.boolean().refine(val => val === true, { 
+    message: 'Vous devez accepter les conditions' 
+  })
 });
 
 type MembershipFormValues = z.infer<typeof membershipFormSchema>;
@@ -42,7 +73,14 @@ const MembershipForm = () => {
       email: '',
       contact_number: '',
       profession: '',
-      motivation: '',
+      address: '',
+      subscription_amount: 100000,
+      subscription_start_month: '',
+      payment_method: 'especes',
+      payment_frequency: 'mensuelle',
+      competence_domains: '',
+      club_expectations: '',
+      other_expectations: '',
       agree_terms: false
     }
   });
@@ -50,17 +88,17 @@ const MembershipForm = () => {
   const handleSubmit = async (values: MembershipFormValues) => {
     setIsSubmitting(true);
     try {
-      // Vérifier si l'email existe déjà dans la base de données
-      const { data: existingParticipants, error: checkError } = await supabase
-        .from('participants')
-        .select('id, membership_status')
+      // Vérifier si l'email existe déjà dans la base de données des adhésions
+      const { data: existingMemberships, error: checkError } = await supabase
+        .from('memberships')
+        .select('id, status')
         .eq('email', values.email);
       
       if (checkError) throw checkError;
       
-      // Si un participant avec cet email existe déjà et a une demande d'adhésion en cours
-      if (existingParticipants && existingParticipants.length > 0) {
-        const existingRequest = existingParticipants.find(p => p.membership_status === 'pending');
+      // Si un membre avec cet email existe déjà et a une demande d'adhésion en cours
+      if (existingMemberships && existingMemberships.length > 0) {
+        const existingRequest = existingMemberships.find(m => m.status === 'pending');
         if (existingRequest) {
           toast({
             title: "Demande déjà en cours",
@@ -71,7 +109,7 @@ const MembershipForm = () => {
           return;
         }
         
-        const existingMember = existingParticipants.find(p => p.membership_status === 'approved');
+        const existingMember = existingMemberships.find(m => m.status === 'approved');
         if (existingMember) {
           toast({
             title: "Déjà membre",
@@ -82,29 +120,79 @@ const MembershipForm = () => {
           return;
         }
       }
-      
-      // Créer un nouvel enregistrement participant pour l'adhésion
-      const { data: newParticipant, error: insertError } = await supabase
-        .from('participants')
+
+      // Formatter les attentes comme un tableau pour la base de données
+      const clubExpectationsArray = values.club_expectations ? 
+        [values.club_expectations] : [];
+
+      // Créer un nouvel enregistrement d'adhésion
+      const { data: newMembership, error: insertError } = await supabase
+        .from('memberships')
         .insert({
           first_name: values.first_name,
           last_name: values.last_name,
           email: values.email,
           contact_number: values.contact_number,
           profession: values.profession,
-          motivation_text: values.motivation,
-          membership_status: 'pending',
-          is_member: false,
-          membership_requested_at: new Date().toISOString()
+          address: values.address || null,
+          subscription_amount: values.subscription_amount,
+          subscription_start_month: values.subscription_start_month || null,
+          payment_method: values.payment_method,
+          payment_frequency: values.payment_frequency,
+          competence_domains: values.competence_domains || null,
+          club_expectations: clubExpectationsArray,
+          other_expectations: values.other_expectations || null,
+          status: 'pending',
+          requested_at: new Date().toISOString()
         })
         .select()
         .single();
       
       if (insertError) throw insertError;
       
+      // Vérifier si un participant avec cet email existe déjà
+      const { data: existingParticipant } = await supabase
+        .from('participants')
+        .select('id')
+        .eq('email', values.email)
+        .maybeSingle();
+      
+      let participantId = existingParticipant?.id;
+      
+      // Si le participant n'existe pas, le créer
+      if (!participantId) {
+        const { data: newParticipant, error: participantError } = await supabase
+          .from('participants')
+          .insert({
+            first_name: values.first_name,
+            last_name: values.last_name,
+            email: values.email,
+            contact_number: values.contact_number,
+            is_member: false
+          })
+          .select()
+          .single();
+        
+        if (participantError) throw participantError;
+        
+        participantId = newParticipant.id;
+      }
+      
+      // Mettre à jour l'adhésion avec l'id du participant
+      if (participantId) {
+        await supabase
+          .from('memberships')
+          .update({ participant_id: participantId })
+          .eq('id', newMembership.id);
+      }
+      
       // Envoyer des emails de notification
-      const adminEmailSent = await sendMembershipRequestAdminEmail(newParticipant);
-      const participantEmailSent = await sendMembershipRequestParticipantEmail(newParticipant);
+      const adminEmailSent = await sendMembershipRequestAdminEmail(
+        { ...newMembership, id: participantId || newMembership.id }
+      );
+      const participantEmailSent = await sendMembershipRequestParticipantEmail(
+        { ...newMembership, id: participantId || newMembership.id }
+      );
       
       if (!adminEmailSent || !participantEmailSent) {
         console.warn("Problème lors de l'envoi des emails de notification");
@@ -186,15 +274,273 @@ const MembershipForm = () => {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Section Identité */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Identité</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="first_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Prénom</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Votre prénom" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="last_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nom</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Votre nom" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input placeholder="votre.email@exemple.com" type="email" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="contact_number"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Téléphone</FormLabel>
+                          <FormControl>
+                            <Input placeholder="0X XX XX XX XX" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="profession"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Profession</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Votre profession actuelle" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Adresse (optionnel)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Votre adresse" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                
+                {/* Section Souscription */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Souscription</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="subscription_amount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Montant de la souscription (FCFA)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="100000" 
+                              {...field}
+                              onChange={(e) => field.onChange(e.target.value === '' ? 100000 : Number(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="subscription_start_month"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mois de début (optionnel)</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sélectionnez un mois" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="janvier">Janvier</SelectItem>
+                              <SelectItem value="fevrier">Février</SelectItem>
+                              <SelectItem value="mars">Mars</SelectItem>
+                              <SelectItem value="avril">Avril</SelectItem>
+                              <SelectItem value="mai">Mai</SelectItem>
+                              <SelectItem value="juin">Juin</SelectItem>
+                              <SelectItem value="juillet">Juillet</SelectItem>
+                              <SelectItem value="aout">Août</SelectItem>
+                              <SelectItem value="septembre">Septembre</SelectItem>
+                              <SelectItem value="octobre">Octobre</SelectItem>
+                              <SelectItem value="novembre">Novembre</SelectItem>
+                              <SelectItem value="decembre">Décembre</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                
+                {/* Section Mode de règlement */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Mode de règlement</h3>
+                  
                   <FormField
                     control={form.control}
-                    name="first_name"
+                    name="payment_method"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>Choisissez un mode de règlement</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex flex-col space-y-1"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="especes" id="especes" />
+                              <Label htmlFor="especes">Espèces</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="cheque" id="cheque" />
+                              <Label htmlFor="cheque">Chèque</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="virement" id="virement" />
+                              <Label htmlFor="virement">Virement</Label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                {/* Section Périodicité */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Périodicité</h3>
+                  
+                  <FormField
+                    control={form.control}
+                    name="payment_frequency"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>Choisissez une périodicité</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex flex-col space-y-1"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="mensuelle" id="mensuelle" />
+                              <Label htmlFor="mensuelle">Mensuelle</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="trimestrielle" id="trimestrielle" />
+                              <Label htmlFor="trimestrielle">Trimestrielle</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="annuelle" id="annuelle" />
+                              <Label htmlFor="annuelle">Annuelle</Label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                {/* Section Domaines de compétence */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Domaines de compétence</h3>
+                  
+                  <FormField
+                    control={form.control}
+                    name="competence_domains"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Prénom</FormLabel>
+                        <FormLabel>Vos domaines de compétence (optionnel)</FormLabel>
                         <FormControl>
-                          <Input placeholder="Votre prénom" {...field} />
+                          <Textarea 
+                            placeholder="Décrivez vos domaines de compétence" 
+                            className="min-h-[100px]"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                {/* Section Attentes */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Attentes vis-à-vis du Club</h3>
+                  
+                  <FormField
+                    control={form.control}
+                    name="club_expectations"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Vos attentes (optionnel)</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Quelles sont vos attentes vis-à-vis du Club?" 
+                            className="min-h-[100px]"
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -203,12 +549,16 @@ const MembershipForm = () => {
                   
                   <FormField
                     control={form.control}
-                    name="last_name"
+                    name="other_expectations"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nom</FormLabel>
+                        <FormLabel>Autres attentes (optionnel)</FormLabel>
                         <FormControl>
-                          <Input placeholder="Votre nom" {...field} />
+                          <Textarea 
+                            placeholder="Avez-vous d'autres attentes ou commentaires?" 
+                            className="min-h-[100px]"
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -216,68 +566,7 @@ const MembershipForm = () => {
                   />
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="votre.email@exemple.com" type="email" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="contact_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Téléphone</FormLabel>
-                        <FormControl>
-                          <Input placeholder="0X XX XX XX XX" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="profession"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Profession</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Votre profession actuelle" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="motivation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Motivation</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Pourquoi souhaitez-vous rejoindre LA CITADELLE?" 
-                          className="min-h-[100px]"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
+                {/* Section Conditions */}
                 <FormField
                   control={form.control}
                   name="agree_terms"

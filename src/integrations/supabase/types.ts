@@ -101,6 +101,86 @@ export type Database = {
           },
         ]
       }
+      memberships: {
+        Row: {
+          address: string | null
+          approved_at: string | null
+          approved_by: string | null
+          club_expectations: string[] | null
+          competence_domains: string | null
+          contact_number: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          other_expectations: string | null
+          participant_id: string | null
+          payment_frequency: string | null
+          payment_method: string | null
+          profession: string
+          rejected_at: string | null
+          rejected_by: string | null
+          requested_at: string | null
+          status: string | null
+          subscription_amount: number | null
+          subscription_start_month: string | null
+        }
+        Insert: {
+          address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          club_expectations?: string[] | null
+          competence_domains?: string | null
+          contact_number: string
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          other_expectations?: string | null
+          participant_id?: string | null
+          payment_frequency?: string | null
+          payment_method?: string | null
+          profession: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          requested_at?: string | null
+          status?: string | null
+          subscription_amount?: number | null
+          subscription_start_month?: string | null
+        }
+        Update: {
+          address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          club_expectations?: string[] | null
+          competence_domains?: string | null
+          contact_number?: string
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          other_expectations?: string | null
+          participant_id?: string | null
+          payment_frequency?: string | null
+          payment_method?: string | null
+          profession?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          requested_at?: string | null
+          status?: string | null
+          subscription_amount?: number | null
+          subscription_start_month?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memberships_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       participants: {
         Row: {
           check_in_status: boolean | null

@@ -1,6 +1,6 @@
-
 // Tableau de bord administrateur refactorisé en composants plus petits
 // Mise à jour: Ajout de la fonctionnalité de paiement rapide et gestion du rafraîchissement
+// Mise à jour: Ajout d'un raccourci vers le tableau de bord d'adhésion
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -9,7 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { type Participant } from "../../types/participant";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Mail, CheckCircle } from "lucide-react";
+import { Bell, Mail, CheckCircle, Users } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 
@@ -19,6 +19,7 @@ import { SearchAndExport } from "@/components/admin/dashboard/search-export";
 import { ParticipantTable } from "@/components/admin/dashboard/ParticipantTable";
 import { ParticipantDetails } from "@/components/admin/dashboard/ParticipantDetails";
 import { DeleteConfirmation } from "@/components/admin/dashboard/DeleteConfirmation";
+import { DashboardCommunication } from "@/components/admin/dashboard/DashboardCommunication";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -243,6 +244,14 @@ const AdminDashboard = () => {
             >
               <Mail className="h-4 w-4" />
               Gestion des emails
+            </Button>
+            
+            <Button 
+              onClick={() => navigate("/admin/membership")}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+            >
+              <Users className="h-4 w-4" />
+              Gestion des adhésions
             </Button>
             
             <Button 

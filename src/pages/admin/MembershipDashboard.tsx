@@ -1,22 +1,66 @@
 
-// Dashboard d'adhésion - Nouveau tableau de bord spécialisé pour la gestion des adhésions
+// Dashboard d'adhésion - Tableau de bord spécialisé pour la gestion des adhésions
+// Mis à jour pour utiliser la nouvelle table memberships
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CheckCircle, XCircle, UserPlus } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, UserPlus, Eye } from "lucide-react";
 import { Header } from "@/components/admin/dashboard/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { sendMembershipConfirmationEmail } from "@/components/manual-payment/services/emailService";
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogClose
+} from "@/components/ui/dialog";
+
+// Interface pour les adhésions
+interface Membership {
+  id: string;
+  participant_id: string | null;
+  status: string;
+  requested_at: string;
+  approved_at: string | null;
+  approved_by: string | null;
+  rejected_at: string | null;
+  rejected_by: string | null;
+  first_name: string;
+  last_name: string;
+  email: string;
+  contact_number: string;
+  address: string | null;
+  profession: string;
+  subscription_amount: number;
+  subscription_start_month: string | null;
+  payment_method: string;
+  payment_frequency: string;
+  competence_domains: string | null;
+  club_expectations: string[] | null;
+  other_expectations: string | null;
+}
 
 const MembershipDashboard = () => {
   const navigate = useNavigate();
-  const [membershipRequests, setMembershipRequests] = useState<any[]>([]);
-  const [members, setMembers] = useState<any[]>([]);
+  const [membershipRequests, setMembershipRequests] = useState<Membership[]>([]);
+  const [members, setMembers] = useState<Membership[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"pending" | "approved">("pending");
+  const [selectedMembership, setSelectedMembership] = useState<Membership | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -40,19 +84,19 @@ const MembershipDashboard = () => {
     try {
       // Récupérer les demandes d'adhésion en attente
       const { data: pendingRequests, error: pendingError } = await supabase
-        .from('participants')
+        .from('memberships')
         .select('*')
-        .eq('membership_status', 'pending')
-        .order('created_at', { ascending: false });
+        .eq('status', 'pending')
+        .order('requested_at', { ascending: false });
 
       if (pendingError) throw pendingError;
       
       // Récupérer les membres approuvés
       const { data: approvedMembers, error: approvedError } = await supabase
-        .from('participants')
+        .from('memberships')
         .select('*')
-        .eq('membership_status', 'approved')
-        .order('created_at', { ascending: false });
+        .eq('status', 'approved')
+        .order('approved_at', { ascending: false });
 
       if (approvedError) throw approvedError;
 
@@ -70,32 +114,60 @@ const MembershipDashboard = () => {
     }
   };
 
-  const handleApprove = async (participantId: string) => {
+  const handleApprove = async (membershipId: string) => {
     try {
-      // Récupérer les données du participant
-      const { data: participant, error: fetchError } = await supabase
-        .from('participants')
-        .select('*')
-        .eq('id', participantId)
-        .single();
-
-      if (fetchError) throw fetchError;
-      
       // Mettre à jour le statut de l'adhésion
-      const { error: updateError } = await supabase
-        .from('participants')
+      const { data: updatedMembership, error: updateError } = await supabase
+        .from('memberships')
         .update({
-          membership_status: 'approved',
-          is_member: true,
-          membership_approved_at: new Date().toISOString(),
-          membership_approved_by: localStorage.getItem("adminEmail") || "admin"
+          status: 'approved',
+          approved_at: new Date().toISOString(),
+          approved_by: localStorage.getItem("adminEmail") || "admin"
         })
-        .eq('id', participantId);
+        .eq('id', membershipId)
+        .select()
+        .single();
 
       if (updateError) throw updateError;
       
+      // Mettre à jour le statut de membre du participant associé s'il existe
+      if (updatedMembership.participant_id) {
+        const { error: participantError } = await supabase
+          .from('participants')
+          .update({
+            is_member: true
+          })
+          .eq('id', updatedMembership.participant_id);
+
+        if (participantError) throw participantError;
+      }
+      
+      // Récupérer les informations complètes du participant
+      let participantData = {
+        id: updatedMembership.participant_id,
+        first_name: updatedMembership.first_name,
+        last_name: updatedMembership.last_name,
+        email: updatedMembership.email,
+        membership_status: 'approved'
+      };
+      
+      if (updatedMembership.participant_id) {
+        const { data: participant } = await supabase
+          .from('participants')
+          .select('*')
+          .eq('id', updatedMembership.participant_id)
+          .maybeSingle();
+          
+        if (participant) {
+          participantData = {
+            ...participant,
+            membership_status: 'approved'
+          };
+        }
+      }
+      
       // Envoyer l'email de confirmation
-      const emailSent = await sendMembershipConfirmationEmail(participant);
+      const emailSent = await sendMembershipConfirmationEmail(participantData);
       
       if (emailSent) {
         toast({
@@ -122,18 +194,17 @@ const MembershipDashboard = () => {
     }
   };
 
-  const handleReject = async (participantId: string) => {
+  const handleReject = async (membershipId: string) => {
     try {
       // Mettre à jour le statut de l'adhésion
       const { error: updateError } = await supabase
-        .from('participants')
+        .from('memberships')
         .update({
-          membership_status: 'rejected',
-          is_member: false,
-          membership_rejected_at: new Date().toISOString(),
-          membership_rejected_by: localStorage.getItem("adminEmail") || "admin"
+          status: 'rejected',
+          rejected_at: new Date().toISOString(),
+          rejected_by: localStorage.getItem("adminEmail") || "admin"
         })
-        .eq('id', participantId);
+        .eq('id', membershipId);
 
       if (updateError) throw updateError;
       
@@ -154,8 +225,34 @@ const MembershipDashboard = () => {
     }
   };
 
+  const handleViewDetails = (membership: Membership) => {
+    setSelectedMembership(membership);
+    setDetailsOpen(true);
+  };
+
   const handleBackToDashboard = () => {
     navigate("/admin/dashboard");
+  };
+
+  const formatMembershipDetails = (membership: Membership | null) => {
+    if (!membership) return [];
+    
+    return [
+      { label: "Prénom", value: membership.first_name },
+      { label: "Nom", value: membership.last_name },
+      { label: "Email", value: membership.email },
+      { label: "Téléphone", value: membership.contact_number },
+      { label: "Profession", value: membership.profession },
+      { label: "Adresse", value: membership.address || "Non spécifiée" },
+      { label: "Montant de souscription", value: `${membership.subscription_amount.toLocaleString()} FCFA` },
+      { label: "Mois de début", value: membership.subscription_start_month || "Non spécifié" },
+      { label: "Mode de règlement", value: membership.payment_method },
+      { label: "Périodicité", value: membership.payment_frequency },
+      { label: "Domaines de compétence", value: membership.competence_domains || "Non spécifiés" },
+      { label: "Attentes vis-à-vis du Club", value: membership.club_expectations ? membership.club_expectations.join(", ") : "Non spécifiées" },
+      { label: "Autres attentes", value: membership.other_expectations || "Non spécifiées" },
+      { label: "Date de demande", value: new Date(membership.requested_at).toLocaleDateString('fr-FR') }
+    ];
   };
 
   return (
@@ -181,6 +278,13 @@ const MembershipDashboard = () => {
               Gestion des adhésions
             </h1>
           </div>
+          
+          <Button 
+            onClick={fetchMembershipData}
+            variant="outline"
+          >
+            Actualiser
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -230,26 +334,33 @@ const MembershipDashboard = () => {
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          <th className="px-4 py-2 text-left">Nom</th>
-                          <th className="px-4 py-2 text-left">Email</th>
-                          <th className="px-4 py-2 text-left">Téléphone</th>
-                          <th className="px-4 py-2 text-left">Date de demande</th>
-                          <th className="px-4 py-2 text-center">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nom</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Téléphone</TableHead>
+                          <TableHead>Date de demande</TableHead>
+                          <TableHead className="text-center">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {membershipRequests.map((request) => (
-                          <tr key={request.id} className="border-b">
-                            <td className="px-4 py-3">{request.first_name} {request.last_name}</td>
-                            <td className="px-4 py-3">{request.email}</td>
-                            <td className="px-4 py-3">{request.contact_number}</td>
-                            <td className="px-4 py-3">
-                              {new Date(request.membership_requested_at || request.created_at).toLocaleDateString('fr-FR')}
-                            </td>
-                            <td className="px-4 py-3 flex justify-center space-x-2">
+                          <TableRow key={request.id}>
+                            <TableCell>{request.first_name} {request.last_name}</TableCell>
+                            <TableCell>{request.email}</TableCell>
+                            <TableCell>{request.contact_number}</TableCell>
+                            <TableCell>
+                              {new Date(request.requested_at).toLocaleDateString('fr-FR')}
+                            </TableCell>
+                            <TableCell className="flex justify-center space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewDetails(request)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="default"
                                 size="sm"
@@ -267,11 +378,11 @@ const MembershipDashboard = () => {
                                 <XCircle className="h-4 w-4 mr-1" />
                                 Rejeter
                               </Button>
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </TabsContent>
@@ -285,30 +396,40 @@ const MembershipDashboard = () => {
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          <th className="px-4 py-2 text-left">Nom</th>
-                          <th className="px-4 py-2 text-left">Email</th>
-                          <th className="px-4 py-2 text-left">Téléphone</th>
-                          <th className="px-4 py-2 text-left">Date d'approbation</th>
-                          <th className="px-4 py-2 text-left">Approuvé par</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nom</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Téléphone</TableHead>
+                          <TableHead>Date d'approbation</TableHead>
+                          <TableHead>Approuvé par</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {members.map((member) => (
-                          <tr key={member.id} className="border-b">
-                            <td className="px-4 py-3">{member.first_name} {member.last_name}</td>
-                            <td className="px-4 py-3">{member.email}</td>
-                            <td className="px-4 py-3">{member.contact_number}</td>
-                            <td className="px-4 py-3">
-                              {new Date(member.membership_approved_at).toLocaleDateString('fr-FR')}
-                            </td>
-                            <td className="px-4 py-3">{member.membership_approved_by}</td>
-                          </tr>
+                          <TableRow key={member.id}>
+                            <TableCell>{member.first_name} {member.last_name}</TableCell>
+                            <TableCell>{member.email}</TableCell>
+                            <TableCell>{member.contact_number}</TableCell>
+                            <TableCell>
+                              {member.approved_at ? new Date(member.approved_at).toLocaleDateString('fr-FR') : 'N/A'}
+                            </TableCell>
+                            <TableCell>{member.approved_by || 'N/A'}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewDetails(member)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </TabsContent>
@@ -316,6 +437,58 @@ const MembershipDashboard = () => {
           </CardContent>
         </Card>
       </main>
+
+      {/* Dialogue de détails de l'adhésion */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Détails de l'adhésion</DialogTitle>
+            <DialogDescription>
+              Informations complètes sur la demande d'adhésion
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            {formatMembershipDetails(selectedMembership).map((detail, index) => (
+              <div key={index} className="space-y-1">
+                <h4 className="text-sm font-medium text-gray-500">{detail.label}</h4>
+                <p className="text-sm">{detail.value}</p>
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex justify-end mt-6 gap-2">
+            {selectedMembership?.status === 'pending' && (
+              <>
+                <Button
+                  variant="default"
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={() => {
+                    handleApprove(selectedMembership.id);
+                    setDetailsOpen(false);
+                  }}
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Approuver
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    handleReject(selectedMembership.id);
+                    setDetailsOpen(false);
+                  }}
+                >
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Rejeter
+                </Button>
+              </>
+            )}
+            <DialogClose asChild>
+              <Button variant="outline">Fermer</Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
