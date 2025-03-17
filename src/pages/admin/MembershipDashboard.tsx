@@ -1,12 +1,17 @@
 
 // Dashboard d'adhésion - Tableau de bord spécialisé pour la gestion des adhésions
-// Mis à jour pour utiliser la nouvelle table memberships
+// Mise à jour:
+// - Ajout de l'exportation PDF et CSV
+// - Ajout de la suppression d'adhésions
+// - Amélioration de l'affichage et notifications
+// - Correction des liens entre adhésions et participants
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CheckCircle, XCircle, UserPlus, Eye } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, UserPlus, Eye, FileText, Download, Trash } from "lucide-react";
 import { Header } from "@/components/admin/dashboard/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,14 +24,8 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogClose
-} from "@/components/ui/dialog";
+import MembershipDetails from "@/components/admin/membership/MembershipDetails";
+import { exportToCSV } from "@/utils/exportUtils";
 
 // Interface pour les adhésions
 interface Membership {
@@ -225,6 +224,33 @@ const MembershipDashboard = () => {
     }
   };
 
+  const handleDelete = async (membershipId: string) => {
+    try {
+      // Supprimer l'adhésion
+      const { error: deleteError } = await supabase
+        .from('memberships')
+        .delete()
+        .eq('id', membershipId);
+
+      if (deleteError) throw deleteError;
+      
+      toast({
+        title: "Adhésion supprimée",
+        description: "L'adhésion a été supprimée avec succès.",
+      });
+      
+      // Rafraîchir les données
+      fetchMembershipData();
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'adhésion:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'adhésion.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleViewDetails = (membership: Membership) => {
     setSelectedMembership(membership);
     setDetailsOpen(true);
@@ -234,25 +260,27 @@ const MembershipDashboard = () => {
     navigate("/admin/dashboard");
   };
 
-  const formatMembershipDetails = (membership: Membership | null) => {
-    if (!membership) return [];
+  const handleExportCSV = (data: Membership[], type: 'pending' | 'approved' | 'all') => {
+    const fileName = type === 'pending' 
+      ? 'demandes_adhesion_en_attente' 
+      : type === 'approved' 
+        ? 'membres_approuves' 
+        : 'toutes_les_adhesions';
     
-    return [
-      { label: "Prénom", value: membership.first_name },
-      { label: "Nom", value: membership.last_name },
-      { label: "Email", value: membership.email },
-      { label: "Téléphone", value: membership.contact_number },
-      { label: "Profession", value: membership.profession },
-      { label: "Adresse", value: membership.address || "Non spécifiée" },
-      { label: "Montant de souscription", value: `${membership.subscription_amount.toLocaleString()} FCFA` },
-      { label: "Mois de début", value: membership.subscription_start_month || "Non spécifié" },
-      { label: "Mode de règlement", value: membership.payment_method },
-      { label: "Périodicité", value: membership.payment_frequency },
-      { label: "Domaines de compétence", value: membership.competence_domains || "Non spécifiés" },
-      { label: "Attentes vis-à-vis du Club", value: membership.club_expectations ? membership.club_expectations.join(", ") : "Non spécifiées" },
-      { label: "Autres attentes", value: membership.other_expectations || "Non spécifiées" },
-      { label: "Date de demande", value: new Date(membership.requested_at).toLocaleDateString('fr-FR') }
-    ];
+    const success = exportToCSV(data, fileName);
+    
+    if (success) {
+      toast({
+        title: "Exportation réussie",
+        description: `Les données ont été exportées dans le fichier "${fileName}.xlsx"`,
+      });
+    } else {
+      toast({
+        title: "Erreur d'exportation",
+        description: "Impossible d'exporter les données.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -279,12 +307,22 @@ const MembershipDashboard = () => {
             </h1>
           </div>
           
-          <Button 
-            onClick={fetchMembershipData}
-            variant="outline"
-          >
-            Actualiser
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => handleExportCSV([...membershipRequests, ...members], 'all')}
+              variant="outline"
+              className="flex items-center gap-1"
+            >
+              <Download className="h-4 w-4" />
+              Exporter tout
+            </Button>
+            <Button 
+              onClick={fetchMembershipData}
+              variant="outline"
+            >
+              Actualiser
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -315,13 +353,42 @@ const MembershipDashboard = () => {
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-wrap justify-between items-center">
             <CardTitle>Gérer les adhésions</CardTitle>
+            {activeTab === 'pending' && membershipRequests.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleExportCSV(membershipRequests, 'pending')}
+                className="flex items-center gap-1"
+              >
+                <FileText className="h-4 w-4 mr-1" />
+                Exporter les demandes
+              </Button>
+            )}
+            {activeTab === 'approved' && members.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleExportCSV(members, 'approved')}
+                className="flex items-center gap-1"
+              >
+                <FileText className="h-4 w-4 mr-1" />
+                Exporter les membres
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="pending" value={activeTab} onValueChange={(v) => setActiveTab(v as "pending" | "approved")}>
               <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="pending">Demandes en attente</TabsTrigger>
+                <TabsTrigger value="pending" className="relative">
+                  Demandes en attente
+                  {membershipRequests.length > 0 && (
+                    <span className="absolute top-0 right-1 transform -translate-y-1/4 translate-x-1/4 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                      {membershipRequests.length}
+                    </span>
+                  )}
+                </TabsTrigger>
                 <TabsTrigger value="approved">Membres</TabsTrigger>
               </TabsList>
               
@@ -358,6 +425,7 @@ const MembershipDashboard = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleViewDetails(request)}
+                                title="Voir les détails"
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -366,6 +434,7 @@ const MembershipDashboard = () => {
                                 size="sm"
                                 className="bg-green-600 hover:bg-green-700"
                                 onClick={() => handleApprove(request.id)}
+                                title="Approuver"
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />
                                 Approuver
@@ -374,9 +443,18 @@ const MembershipDashboard = () => {
                                 variant="destructive"
                                 size="sm"
                                 onClick={() => handleReject(request.id)}
+                                title="Rejeter"
                               >
                                 <XCircle className="h-4 w-4 mr-1" />
                                 Rejeter
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDelete(request.id)}
+                                title="Supprimer"
+                              >
+                                <Trash className="h-4 w-4" />
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -418,13 +496,24 @@ const MembershipDashboard = () => {
                             </TableCell>
                             <TableCell>{member.approved_by || 'N/A'}</TableCell>
                             <TableCell className="text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleViewDetails(member)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleViewDetails(member)}
+                                  title="Voir les détails"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleDelete(member.id)}
+                                  title="Supprimer"
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -439,56 +528,14 @@ const MembershipDashboard = () => {
       </main>
 
       {/* Dialogue de détails de l'adhésion */}
-      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Détails de l'adhésion</DialogTitle>
-            <DialogDescription>
-              Informations complètes sur la demande d'adhésion
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            {formatMembershipDetails(selectedMembership).map((detail, index) => (
-              <div key={index} className="space-y-1">
-                <h4 className="text-sm font-medium text-gray-500">{detail.label}</h4>
-                <p className="text-sm">{detail.value}</p>
-              </div>
-            ))}
-          </div>
-          
-          <div className="flex justify-end mt-6 gap-2">
-            {selectedMembership?.status === 'pending' && (
-              <>
-                <Button
-                  variant="default"
-                  className="bg-green-600 hover:bg-green-700"
-                  onClick={() => {
-                    handleApprove(selectedMembership.id);
-                    setDetailsOpen(false);
-                  }}
-                >
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  Approuver
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    handleReject(selectedMembership.id);
-                    setDetailsOpen(false);
-                  }}
-                >
-                  <XCircle className="h-4 w-4 mr-1" />
-                  Rejeter
-                </Button>
-              </>
-            )}
-            <DialogClose asChild>
-              <Button variant="outline">Fermer</Button>
-            </DialogClose>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <MembershipDetails
+        membership={selectedMembership}
+        isOpen={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onDelete={handleDelete}
+      />
     </div>
   );
 };

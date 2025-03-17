@@ -1,6 +1,8 @@
 
 // Types partagés pour les services d'email
-// Mise à jour: Ajout de types pour les formulaires d'adhésion
+// Mise à jour: 
+// - Ajout de types pour les formulaires d'adhésion
+// - Mise à jour des schémas de paiement pour inclure mobile_money
 
 export interface EmailTemplateParams {
   to_email: string;
@@ -71,7 +73,7 @@ export interface MembershipFormData {
   address?: string;
   subscription_amount: number;
   subscription_start_month?: string;
-  payment_method: 'especes' | 'cheque' | 'virement';
+  payment_method: 'especes' | 'cheque' | 'virement' | 'mobile_money';
   payment_frequency: 'mensuelle' | 'trimestrielle' | 'annuelle';
   competence_domains?: string;
   club_expectations?: string[];
