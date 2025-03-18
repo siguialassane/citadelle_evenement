@@ -1,5 +1,6 @@
-
 // Dashboard d'envoi d'emails - Nouveau tableau de bord spécialisé
+// Mise à jour: Déplacement du bouton d'envoi dans le header du MessageComposer
+// Mise à jour: Correction du formatage des variables dynamiques prénom et nom
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -131,6 +132,11 @@ const EmailDashboard = () => {
     navigate("/admin/dashboard");
   };
 
+  // Nouveau gestionnaire pour ouvrir le dialogue d'envoi
+  const handleOpenSendingDialog = () => {
+    setIsSending(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header onLogout={() => {
@@ -191,7 +197,9 @@ const EmailDashboard = () => {
                         value={personalMessage}
                         onChange={setPersonalMessage}
                         onPreview={() => selectedParticipants.length > 0 && setIsPreview(true)}
+                        onSend={handleOpenSendingDialog}
                         previewDisabled={selectedParticipants.length === 0}
+                        sendDisabled={selectedParticipants.length === 0 || !personalMessage.trim()}
                       />
                     </>
                   )}
@@ -218,7 +226,9 @@ const EmailDashboard = () => {
                         value={publicMessage}
                         onChange={setPublicMessage}
                         onPreview={() => selectedParticipants.length > 0 && setIsPreview(true)}
+                        onSend={handleOpenSendingDialog}
                         previewDisabled={selectedParticipants.length === 0}
+                        sendDisabled={selectedParticipants.length === 0 || !publicMessage.trim()}
                       />
                     </>
                   )}
@@ -250,21 +260,6 @@ const EmailDashboard = () => {
                       }}
                     >
                       Réinitialiser
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => {
-                        // Ouvrir le dialogue d'envoi d'emails
-                        setIsSending(true);
-                        // Logique d'envoi placée dans le composant EmailSendingDialog
-                        // qui sera implanté dans une étape ultérieure
-                      }}
-                      disabled={selectedParticipants.length === 0 || 
-                        (activeTab === "private" && !personalMessage.trim()) || 
-                        (activeTab === "public" && !publicMessage.trim())}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      {activeTab === "private" ? "Envoyer Emails Personnalisés" : "Envoyer Email Public"}
                     </Button>
                   </div>
                 </div>

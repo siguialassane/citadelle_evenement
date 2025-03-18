@@ -1,17 +1,22 @@
 
 // Composant d'édition de message pour les emails
+// Mise à jour: Correction du formatage des variables dynamiques [prénom] et [nom]
+// Mise à jour: Ajout d'information sur les variables disponibles
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import { Eye, Type } from "lucide-react";
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
+import { Eye, Type, Send, InfoIcon } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface MessageComposerProps {
   messageType: "personal" | "public";
   value: string;
   onChange: (value: string) => void;
   onPreview: () => void;
+  onSend?: () => void;
   previewDisabled: boolean;
+  sendDisabled?: boolean;
 }
 
 export function MessageComposer({ 
@@ -19,14 +24,16 @@ export function MessageComposer({
   value, 
   onChange, 
   onPreview,
-  previewDisabled
+  onSend,
+  previewDisabled,
+  sendDisabled = false
 }: MessageComposerProps) {
   // Quelques modèles de messages prédéfinis
   const messageTemplates = {
     personal: [
-      "Cher(e) [prénom] [nom], nous tenons à vous remercier personnellement pour votre participation à l'IFTAR 2025. Votre présence a contribué au succès de cet événement.",
-      "Cher(e) [prénom] [nom], c'est avec une grande joie que nous avons pu vous accueillir à l'IFTAR 2025. Merci pour votre participation qui a rendu cet événement spécial.",
-      "Assalamou Aleykoum [prénom] [nom], suite à votre intérêt pour notre association, nous souhaitons vous inviter officiellement à rejoindre LA CITADELLE en tant que membre actif. Votre contribution nous aiderait à organiser davantage d'événements comme l'IFTAR et à soutenir nos actions sociales tout au long de l'année."
+      "Cher(e) {{prenom}} {{nom}}, nous tenons à vous remercier personnellement pour votre participation à l'IFTAR 2025. Votre présence a contribué au succès de cet événement.",
+      "Cher(e) {{prenom}} {{nom}}, c'est avec une grande joie que nous avons pu vous accueillir à l'IFTAR 2025. Merci pour votre participation qui a rendu cet événement spécial.",
+      "Assalamou Aleykoum {{prenom}} {{nom}}, suite à votre intérêt pour notre association, nous souhaitons vous inviter officiellement à rejoindre LA CITADELLE en tant que membre actif. Votre contribution nous aiderait à organiser davantage d'événements comme l'IFTAR et à soutenir nos actions sociales tout au long de l'année."
     ],
     public: [
       "Chers participants, nous tenons à vous remercier chaleureusement pour votre présence à l'IFTAR 2025. Cet événement a été un succès grâce à vous tous.",
@@ -40,10 +47,48 @@ export function MessageComposer({
 
   return (
     <Card>
+      <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-medium">
+            {messageType === "personal" ? "Message personnel" : "Message public"}
+          </h3>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-sm">
+                <div className="space-y-2 p-1">
+                  <p className="font-semibold">Variables disponibles:</p>
+                  <ul className="text-xs space-y-1 list-disc pl-4">
+                    <li><code>{'{{prenom}}'}</code> - Prénom du participant</li>
+                    <li><code>{'{{nom}}'}</code> - Nom du participant</li>
+                    <li><code>{'{{participant_name}}'}</code> - Nom complet</li>
+                    <li><code>{'{{event_location}}'}</code> - Lieu de l'événement</li>
+                    <li><code>{'{{event_address}}'}</code> - Adresse de l'événement</li>
+                    <li><code>{'{{current_date}}'}</code> - Date actuelle</li>
+                  </ul>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        {onSend && (
+          <Button
+            onClick={onSend}
+            disabled={sendDisabled || !value.trim()}
+            className="bg-green-600 hover:bg-green-700"
+            size="sm"
+          >
+            <Send className="h-4 w-4 mr-2" />
+            {messageType === "personal" ? "Envoyer Emails Personnalisés" : "Envoyer Email Public"}
+          </Button>
+        )}
+      </CardHeader>
       <CardContent className="p-4 space-y-4">
         <div className="space-y-2">
           <Label htmlFor="message">
-            {messageType === "personal" ? "Message personnel" : "Message public"}
+            Votre message
           </Label>
           <Textarea
             id="message"

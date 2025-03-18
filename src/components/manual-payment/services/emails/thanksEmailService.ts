@@ -2,6 +2,7 @@
 // Service d'emails pour les remerciements aux participants
 // - Implémentation d'emails personnalisés et groupés
 // Mise à jour: Correction des identifiants EmailJS avec les nouvelles clés
+// Mise à jour: Correction du formatage des variables personnalisées {{prenom}} et {{nom}}
 
 import emailjs from '@emailjs/browser';
 import { validateEmailData, prepareEmailData } from './emailValidation';
@@ -18,7 +19,7 @@ const THANKS_TEMPLATE_ID = "template_xvdr1iq";
  */
 export const sendPersonalThanksEmail = async (participant: any, message: string): Promise<boolean> => {
   try {
-    console.log("Envoi d'email personnalisé de remerciement au participant:", participant.email);
+    console.log("===== PRÉPARATION EMAIL PERSONNALISÉ =====");
     
     // Validation de l'email
     const validation = validateEmailData(participant?.email, participant);
@@ -55,6 +56,8 @@ export const sendPersonalThanksEmail = async (participant: any, message: string)
     console.log("Paramètres pour email personnalisé:", {
       to_email: templateParams.to_email,
       participant_name: templateParams.participant_name,
+      prenom: templateParams.prenom,
+      nom: templateParams.nom,
       message_preview: templateParams.message.substring(0, 30) + "..."
     });
 

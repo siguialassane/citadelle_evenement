@@ -1,5 +1,6 @@
 
 // Composant de prévisualisation de message pour les emails
+// Mise à jour: Correction du formatage des variables dynamiques {{prenom}} et {{nom}}
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
@@ -18,10 +19,14 @@ export function MessagePreview({
   participant,
   onBack 
 }: MessagePreviewProps) {
-  // Remplacer [prénom] et [nom] par les valeurs du participant
+  // Remplacer {{prenom}} et {{nom}} par les valeurs du participant
   const formattedMessage = message
-    .replace(/\[prénom\]/g, participant.first_name)
-    .replace(/\[nom\]/g, participant.last_name);
+    .replace(/\{\{prenom\}\}/g, participant.first_name)
+    .replace(/\{\{nom\}\}/g, participant.last_name)
+    .replace(/\{\{participant_name\}\}/g, `${participant.first_name} ${participant.last_name}`)
+    .replace(/\{\{event_location\}\}/g, "NOOM HOTEL ABIDJAN PLATEAU")
+    .replace(/\{\{event_address\}\}/g, "8XFG+9H3, Boulevard de Gaulle, BP 7393, Abidjan")
+    .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'));
 
   return (
     <div className="space-y-4">
@@ -43,7 +48,7 @@ export function MessagePreview({
         </CardHeader>
         <CardContent className="p-6 prose-sm max-w-none">
           <div className="mb-4">
-            <p className="font-medium">Cher(e) {participant.last_name} {participant.first_name},</p>
+            <p className="font-medium">Cher(e) {participant.first_name} {participant.last_name},</p>
           </div>
           
           {messageType === "personal" ? (
