@@ -1,6 +1,8 @@
 
 // Composant de prévisualisation de message pour les emails
 // Mise à jour: Correction du formatage des variables dynamiques {{prenom}} et {{nom}}
+// Mise à jour: Uniformisation du formatage entre la prévisualisation et l'envoi réel
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
@@ -13,6 +15,21 @@ interface MessagePreviewProps {
   onBack: () => void;
 }
 
+/**
+ * Formate les variables dynamiques dans un message
+ */
+const formatMessage = (message: string, participant: Participant): string => {
+  if (!message) return "";
+  
+  return message
+    .replace(/\{\{prenom\}\}/g, participant.first_name)
+    .replace(/\{\{nom\}\}/g, participant.last_name)
+    .replace(/\{\{participant_name\}\}/g, `${participant.first_name} ${participant.last_name}`)
+    .replace(/\{\{event_location\}\}/g, "NOOM HOTEL ABIDJAN PLATEAU")
+    .replace(/\{\{event_address\}\}/g, "8XFG+9H3, Boulevard de Gaulle, BP 7393, Abidjan")
+    .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'));
+};
+
 export function MessagePreview({ 
   messageType, 
   message, 
@@ -20,13 +37,7 @@ export function MessagePreview({
   onBack 
 }: MessagePreviewProps) {
   // Remplacer {{prenom}} et {{nom}} par les valeurs du participant
-  const formattedMessage = message
-    .replace(/\{\{prenom\}\}/g, participant.first_name)
-    .replace(/\{\{nom\}\}/g, participant.last_name)
-    .replace(/\{\{participant_name\}\}/g, `${participant.first_name} ${participant.last_name}`)
-    .replace(/\{\{event_location\}\}/g, "NOOM HOTEL ABIDJAN PLATEAU")
-    .replace(/\{\{event_address\}\}/g, "8XFG+9H3, Boulevard de Gaulle, BP 7393, Abidjan")
-    .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'));
+  const formattedMessage = formatMessage(message, participant);
 
   return (
     <div className="space-y-4">

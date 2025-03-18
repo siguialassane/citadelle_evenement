@@ -3,6 +3,7 @@
 // - Implémentation d'emails personnalisés et groupés
 // Mise à jour: Correction des identifiants EmailJS avec les nouvelles clés
 // Mise à jour: Correction du formatage des variables personnalisées {{prenom}} et {{nom}}
+// Mise à jour: Amélioration du remplacement des variables dynamiques dans les messages personnalisés
 
 import emailjs from '@emailjs/browser';
 import { validateEmailData, prepareEmailData } from './emailValidation';
@@ -13,6 +14,22 @@ import { EVENT_LOCATION } from "../../config";
 const THANKS_EMAILJS_SERVICE_ID = "service_is5645q";
 const THANKS_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
 const THANKS_TEMPLATE_ID = "template_xvdr1iq";
+
+/**
+ * Formate les variables dynamiques dans le message
+ * Cette fonction remplace les occurrences de {{variable}} par leur valeur
+ */
+const formatMessageVariables = (message: string, participant: any): string => {
+  if (!message) return "";
+  
+  return message
+    .replace(/\{\{prenom\}\}/g, participant.first_name)
+    .replace(/\{\{nom\}\}/g, participant.last_name)
+    .replace(/\{\{participant_name\}\}/g, `${participant.first_name} ${participant.last_name}`)
+    .replace(/\{\{event_location\}\}/g, EVENT_LOCATION.name || "NOOM HOTEL ABIDJAN PLATEAU")
+    .replace(/\{\{event_address\}\}/g, EVENT_LOCATION.address || "8XFG+9H3, Boulevard de Gaulle, BP 7393, Abidjan")
+    .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'));
+};
 
 /**
  * Envoie un email de remerciement personnalisé à un participant
@@ -33,6 +50,9 @@ export const sendPersonalThanksEmail = async (participant: any, message: string)
     // Construire l'URL complète pour le site
     const appUrl = window.location.origin;
     
+    // Préformatage du message avec les variables remplacées
+    const formattedMessage = formatMessageVariables(message, participant);
+    
     // Préparation des paramètres pour le template
     const templateParams = {
       to_email: email, // Email dynamique positionné en premier
@@ -43,7 +63,7 @@ export const sendPersonalThanksEmail = async (participant: any, message: string)
       participant_name: `${participant.first_name} ${participant.last_name}`,
       participant_email: participant.email,
       participant_id: participant.id,
-      message: message,
+      message: formattedMessage, // Message déjà formaté avec les variables remplacées
       app_url: appUrl,
       maps_url: EVENT_LOCATION.mapsUrl,
       event_location: EVENT_LOCATION.name,
@@ -103,6 +123,9 @@ export const sendPublicThanksEmail = async (participants: any[], message: string
         // Construire l'URL complète
         const appUrl = window.location.origin;
         
+        // Préformatage du message avec les variables remplacées
+        const formattedMessage = formatMessageVariables(message, participant);
+        
         // Préparation des paramètres pour le template
         const templateParams = {
           to_email: email, // Email dynamique positionné en premier
@@ -111,7 +134,7 @@ export const sendPublicThanksEmail = async (participants: any[], message: string
           prenom: participant.first_name,
           nom: participant.last_name,
           participant_name: `${participant.first_name} ${participant.last_name}`,
-          message: message,
+          message: formattedMessage, // Message déjà formaté avec les variables remplacées
           app_url: appUrl,
           maps_url: EVENT_LOCATION.mapsUrl,
           event_location: EVENT_LOCATION.name,
