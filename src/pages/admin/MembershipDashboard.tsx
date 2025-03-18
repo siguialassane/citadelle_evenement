@@ -1,9 +1,10 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CheckCircle, XCircle, UserPlus, Eye, FileText, Download, Trash } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, UserPlus, Eye, FileText, Download, Trash, FileCheck } from "lucide-react";
 import { Header } from "@/components/admin/dashboard/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,8 +52,9 @@ const MembershipDashboard = () => {
   const navigate = useNavigate();
   const [membershipRequests, setMembershipRequests] = useState<Membership[]>([]);
   const [members, setMembers] = useState<Membership[]>([]);
+  const [rejectedRequests, setRejectedRequests] = useState<Membership[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"pending" | "approved">("pending");
+  const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected">("pending");
   const [selectedMembership, setSelectedMembership] = useState<Membership | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
@@ -95,9 +97,19 @@ const MembershipDashboard = () => {
         .order('approved_at', { ascending: false });
 
       if (approvedError) throw approvedError;
+      
+      // Récupérer les demandes rejetées
+      const { data: rejectedMembers, error: rejectedError } = await supabase
+        .from('memberships')
+        .select('*')
+        .eq('status', 'rejected')
+        .order('rejected_at', { ascending: false });
+
+      if (rejectedError) throw rejectedError;
 
       setMembershipRequests(pendingRequests || []);
       setMembers(approvedMembers || []);
+      setRejectedRequests(rejectedMembers || []);
     } catch (error) {
       console.error("Erreur lors de la récupération des données d'adhésion:", error);
       toast({
@@ -301,12 +313,18 @@ const MembershipDashboard = () => {
     navigate("/admin/dashboard");
   };
 
-  const handleExportCSV = (data: Membership[], type: 'pending' | 'approved' | 'all') => {
+  const handleGoToMembershipForm = () => {
+    navigate("/membership");
+  };
+
+  const handleExportCSV = (data: Membership[], type: 'pending' | 'approved' | 'rejected' | 'all') => {
     const fileName = type === 'pending' 
       ? 'demandes_adhesion_en_attente' 
       : type === 'approved' 
         ? 'membres_approuves' 
-        : 'toutes_les_adhesions';
+        : type === 'rejected'
+          ? 'demandes_adhesion_rejetees'
+          : 'toutes_les_adhesions';
     
     const success = exportToCSV(data, fileName);
     
@@ -350,7 +368,15 @@ const MembershipDashboard = () => {
           
           <div className="flex gap-2">
             <Button 
-              onClick={() => handleExportCSV([...membershipRequests, ...members], 'all')}
+              onClick={handleGoToMembershipForm}
+              variant="dashboard"
+              className="flex items-center gap-1"
+            >
+              <FileCheck className="h-4 w-4" />
+              Formulaire d'adhésion
+            </Button>
+            <Button 
+              onClick={() => handleExportCSV([...membershipRequests, ...members, ...rejectedRequests], 'all')}
               variant="outline"
               className="flex items-center gap-1"
             >
@@ -366,7 +392,7 @@ const MembershipDashboard = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium">Demandes en attente</CardTitle>
@@ -385,10 +411,18 @@ const MembershipDashboard = () => {
           </Card>
           <Card>
             <CardHeader className="pb-2">
+              <CardTitle className="text-base font-medium">Demandes rejetées</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{rejectedRequests.length}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium">Total</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{membershipRequests.length + members.length}</p>
+              <p className="text-2xl font-bold">{membershipRequests.length + members.length + rejectedRequests.length}</p>
             </CardContent>
           </Card>
         </div>
@@ -418,10 +452,21 @@ const MembershipDashboard = () => {
                 Exporter les membres
               </Button>
             )}
+            {activeTab === 'rejected' && rejectedRequests.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleExportCSV(rejectedRequests, 'rejected')}
+                className="flex items-center gap-1"
+              >
+                <FileText className="h-4 w-4 mr-1" />
+                Exporter les rejets
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="pending" value={activeTab} onValueChange={(v) => setActiveTab(v as "pending" | "approved")}>
-              <TabsList className="grid w-full grid-cols-2 mb-4">
+            <Tabs defaultValue="pending" value={activeTab} onValueChange={(v) => setActiveTab(v as "pending" | "approved" | "rejected")}>
+              <TabsList className="grid w-full grid-cols-3 mb-4">
                 <TabsTrigger value="pending" className="relative">
                   Demandes en attente
                   {membershipRequests.length > 0 && (
@@ -431,6 +476,7 @@ const MembershipDashboard = () => {
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="approved">Membres</TabsTrigger>
+                <TabsTrigger value="rejected">Demandes rejetées</TabsTrigger>
               </TabsList>
               
               <TabsContent value="pending">
@@ -550,6 +596,64 @@ const MembershipDashboard = () => {
                                   variant="destructive"
                                   size="sm"
                                   onClick={() => handleDelete(member.id)}
+                                  title="Supprimer"
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="rejected">
+                {isLoading ? (
+                  <div className="text-center py-4">Chargement...</div>
+                ) : rejectedRequests.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500">Aucune demande d'adhésion rejetée</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nom</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Téléphone</TableHead>
+                          <TableHead>Date de rejet</TableHead>
+                          <TableHead>Rejeté par</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rejectedRequests.map((request) => (
+                          <TableRow key={request.id}>
+                            <TableCell>{request.first_name} {request.last_name}</TableCell>
+                            <TableCell>{request.email}</TableCell>
+                            <TableCell>{request.contact_number}</TableCell>
+                            <TableCell>
+                              {request.rejected_at ? new Date(request.rejected_at).toLocaleDateString('fr-FR') : 'N/A'}
+                            </TableCell>
+                            <TableCell>{request.rejected_by || 'N/A'}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleViewDetails(request)}
+                                  title="Voir les détails"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleDelete(request.id)}
                                   title="Supprimer"
                                 >
                                   <Trash className="h-4 w-4" />
