@@ -1,5 +1,7 @@
+
 // Composant pour afficher le tableau des participants
 // Mise à jour: Ajout de la fonctionnalité de paiement rapide
+// Mise à jour: Ajout de la fonctionnalité de modification du statut de membre
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,12 +22,16 @@ import {
   RefreshCw,
   Trash,
   CreditCard,
-  Zap
+  Zap,
+  UserCheck,
+  UserX
 } from "lucide-react";
 import { type Participant, type Payment } from "../../../types/participant";
 import { ParticipantDeleteDialog } from "./ParticipantDeleteDialog";
 import { useNavigate } from "react-router-dom";
 import { QuickPaymentDialog } from "./QuickPaymentDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface ParticipantTableProps {
   participants: Participant[];
@@ -36,6 +42,7 @@ interface ParticipantTableProps {
   onCheckIn: (participantId: string, currentStatus: boolean | null) => void;
   onDelete?: () => void;
   onPaymentProcessed?: () => void;
+  onMemberStatusChanged?: () => void; // Nouveau callback pour le statut de membre
 }
 
 export const ParticipantTable = ({
@@ -46,12 +53,14 @@ export const ParticipantTable = ({
   onViewDetails,
   onCheckIn,
   onDelete,
-  onPaymentProcessed
+  onPaymentProcessed,
+  onMemberStatusChanged
 }: ParticipantTableProps) => {
   const [participantToDelete, setParticipantToDelete] = useState<Participant | null>(null);
   const [participantForQuickPayment, setParticipantForQuickPayment] = useState<Participant | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [quickPaymentDialogOpen, setQuickPaymentDialogOpen] = useState(false);
+  const [changingMemberStatus, setChangingMemberStatus] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const handleRedirectToPayment = (participantId: string) => {
@@ -62,6 +71,42 @@ export const ParticipantTable = ({
   const handleQuickPayment = (participant: Participant) => {
     setParticipantForQuickPayment(participant);
     setQuickPaymentDialogOpen(true);
+  };
+
+  // Fonction pour modifier le statut de membre d'un participant
+  const handleToggleMemberStatus = async (participant: Participant) => {
+    try {
+      setChangingMemberStatus(participant.id);
+      const newStatus = !participant.is_member;
+      
+      const { error } = await supabase
+        .from('participants')
+        .update({ is_member: newStatus })
+        .eq('id', participant.id);
+        
+      if (error) throw error;
+      
+      toast({
+        title: `Statut modifié`,
+        description: newStatus 
+          ? `${participant.first_name} ${participant.last_name} est maintenant membre` 
+          : `${participant.first_name} ${participant.last_name} n'est plus membre`,
+      });
+      
+      // Appeler le callback pour rafraîchir les données
+      if (onMemberStatusChanged) {
+        onMemberStatusChanged();
+      }
+    } catch (error) {
+      console.error("Erreur lors de la modification du statut de membre:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le statut de membre",
+        variant: "destructive",
+      });
+    } finally {
+      setChangingMemberStatus(null);
+    }
   };
 
   // Fonction pour dédupliquer la liste des participants
@@ -222,11 +267,29 @@ export const ParticipantTable = ({
                   <TableCell>{participant.email}</TableCell>
                   <TableCell>{participant.contact_number}</TableCell>
                   <TableCell>
-                    {participant.is_member ? (
-                      <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Membre</Badge>
-                    ) : (
-                      <Badge variant="outline">Non-membre</Badge>
-                    )}
+                    <div className="flex items-center">
+                      {participant.is_member ? (
+                        <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 mr-2">Membre</Badge>
+                      ) : (
+                        <Badge variant="outline" className="mr-2">Non-membre</Badge>
+                      )}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleToggleMemberStatus(participant)}
+                        disabled={changingMemberStatus === participant.id}
+                        title={participant.is_member ? "Retirer le statut de membre" : "Définir comme membre"}
+                        className="h-6 w-6"
+                      >
+                        {changingMemberStatus === participant.id ? (
+                          <RefreshCw className="h-3 w-3 animate-spin" />
+                        ) : participant.is_member ? (
+                          <UserX className="h-3 w-3 text-red-500" />
+                        ) : (
+                          <UserCheck className="h-3 w-3 text-green-500" />
+                        )}
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell>
                     {new Date(participant.created_at).toLocaleDateString()}

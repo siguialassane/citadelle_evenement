@@ -1,6 +1,7 @@
 // Dashboard d'envoi d'emails - Nouveau tableau de bord spécialisé
 // Mise à jour: Déplacement du bouton d'envoi dans le header du MessageComposer
 // Mise à jour: Correction du formatage des variables dynamiques prénom et nom
+// Mise à jour: Filtrage par défaut des participants non-membres uniquement
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -182,7 +183,16 @@ const EmailDashboard = () => {
               {!isPreview && !isSending && <div className="mt-6">
                   <h3 className="text-lg font-medium mb-2">Sélection des participants</h3>
                   
-                  <ParticipantSelector allParticipants={participants} selectedParticipants={selectedParticipants} hiddenParticipants={hiddenParticipants} onSelectParticipant={handleParticipantSelection} onToggleVisibility={handleToggleParticipantVisibility} onSelectAll={handleSelectAllVisible} onDeselectAll={handleDeselectAll} />
+                  <ParticipantSelector 
+                    allParticipants={participants} 
+                    selectedParticipants={selectedParticipants} 
+                    hiddenParticipants={hiddenParticipants} 
+                    onSelectParticipant={handleParticipantSelection} 
+                    onToggleVisibility={handleToggleParticipantVisibility} 
+                    onSelectAll={handleSelectAllVisible} 
+                    onDeselectAll={handleDeselectAll}
+                    filterNonMembers={true} // Filtrer par défaut pour n'afficher que les non-membres
+                  />
                   
                   <div className="flex justify-end mt-4">
                     <Button variant="outline" className="mr-2" onClick={() => {

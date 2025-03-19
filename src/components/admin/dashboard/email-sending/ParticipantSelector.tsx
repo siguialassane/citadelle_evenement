@@ -1,11 +1,12 @@
 
 // Composant de sélection des participants pour les emails
+// Mise à jour: Ajout du filtrage des participants non-membres par défaut
 import { useState } from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Eye, EyeOff, User, Users } from "lucide-react";
+import { Search, Eye, EyeOff, User, Users, Badge } from "lucide-react";
 import { type Participant } from "@/types/participant";
 
 interface ParticipantSelectorProps {
@@ -16,6 +17,7 @@ interface ParticipantSelectorProps {
   onToggleVisibility: (participantId: string) => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
+  filterNonMembers?: boolean; // Nouvelle prop pour filtrer les non-membres
 }
 
 export function ParticipantSelector({
@@ -25,14 +27,21 @@ export function ParticipantSelector({
   onSelectParticipant,
   onToggleVisibility,
   onSelectAll,
-  onDeselectAll
+  onDeselectAll,
+  filterNonMembers = true // Par défaut, on filtre les membres
 }: ParticipantSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [showMembers, setShowMembers] = useState(false); // État pour afficher ou non les membres
 
-  // Filtrer les participants selon le terme de recherche
+  // Filtrer les participants selon le terme de recherche et le statut de membre
   const filteredParticipants = allParticipants.filter(participant => {
     const searchText = searchTerm.toLowerCase();
     const isHidden = hiddenParticipants.includes(participant.id);
+    
+    // Filtrer selon le statut de membre si filterNonMembers est activé
+    if (filterNonMembers && !showMembers && participant.is_member) {
+      return false;
+    }
 
     if (isHidden) return false;
 
@@ -49,7 +58,7 @@ export function ParticipantSelector({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 flex-wrap gap-2">
         <div className="relative flex-grow">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -59,11 +68,24 @@ export function ParticipantSelector({
             className="pl-8"
           />
         </div>
+        {filterNonMembers && (
+          <Button 
+            size="sm" 
+            variant={showMembers ? "default" : "outline"}
+            onClick={() => setShowMembers(!showMembers)}
+            title={showMembers ? "Masquer les membres" : "Afficher les membres"}
+            className="whitespace-nowrap"
+          >
+            <Badge className="h-4 w-4 mr-2" />
+            {showMembers ? "Masquer membres" : "Afficher membres"}
+          </Button>
+        )}
         <Button 
           size="sm" 
           variant="outline" 
           onClick={onSelectAll}
           title="Sélectionner tous les participants visibles"
+          className="whitespace-nowrap"
         >
           <Users className="h-4 w-4 mr-2" />
           Tout sélectionner
@@ -73,6 +95,7 @@ export function ParticipantSelector({
           variant="outline" 
           onClick={onDeselectAll}
           title="Désélectionner tous les participants"
+          className="whitespace-nowrap"
         >
           <User className="h-4 w-4 mr-2" />
           Tout désélectionner
@@ -87,6 +110,7 @@ export function ParticipantSelector({
               <TableHead>Nom</TableHead>
               <TableHead className="hidden md:table-cell">Email</TableHead>
               <TableHead className="hidden md:table-cell">Téléphone</TableHead>
+              <TableHead className="hidden md:table-cell">Statut</TableHead>
               <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
@@ -111,6 +135,9 @@ export function ParticipantSelector({
                   <TableCell className="hidden md:table-cell">
                     {participant.contact_number}
                   </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {participant.is_member ? "Membre" : "Non-membre"}
+                  </TableCell>
                   <TableCell>
                     <Button
                       variant="ghost"
@@ -125,8 +152,10 @@ export function ParticipantSelector({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
-                  {searchTerm ? "Aucun résultat trouvé." : "Aucun participant visible."}
+                <TableCell colSpan={6} className="h-24 text-center">
+                  {searchTerm ? "Aucun résultat trouvé." : 
+                   filterNonMembers && !showMembers ? "Aucun participant non-membre visible." : 
+                   "Aucun participant visible."}
                 </TableCell>
               </TableRow>
             )}

@@ -1,6 +1,7 @@
 // Tableau de bord administrateur refactorisé en composants plus petits
 // Mise à jour: Ajout de la fonctionnalité de paiement rapide et gestion du rafraîchissement
 // Mise à jour: Ajout d'un raccourci vers le tableau de bord d'adhésion
+// Mise à jour: Ajout de la fonctionnalité de modification du statut de membre
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -301,6 +302,7 @@ const AdminDashboard = () => {
           onCheckIn={handleCheckIn}
           onDelete={handleRefresh}
           onPaymentProcessed={handlePaymentProcessed}
+          onMemberStatusChanged={handleRefresh}
         />
       </main>
 
