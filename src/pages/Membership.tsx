@@ -1,4 +1,3 @@
-
 // Formulaire d'adhésion pour les participants
 // Mise à jour:
 // - Correction du problème d'envoi du formulaire
@@ -6,6 +5,7 @@
 // - Ajout de la logique de calcul pour la souscription
 // - Ajout de l'option "Mobile Money" dans les modes de règlement
 // - Correction du problème de création de participant lors de l'adhésion
+// - Suppression de la vérification d'unicité d'email pour permettre plusieurs adhésions avec le même email
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -150,42 +150,10 @@ const MembershipForm = () => {
     console.log("Soumission du formulaire avec les valeurs:", values);
     setIsSubmitting(true);
     try {
-      // Vérifier si l'email existe déjà dans la base de données des adhésions
-      const { data: existingMemberships, error: checkError } = await supabase
-        .from('memberships')
-        .select('id, status')
-        .eq('email', values.email);
+      // SUPPRESSION DE LA VÉRIFICATION D'EMAIL EXISTANT
+      // Nous ne vérifions plus si l'email existe déjà dans la base de données
+      // Un même email peut maintenant être utilisé pour plusieurs demandes d'adhésion
       
-      if (checkError) {
-        console.error("Erreur lors de la vérification de l'email:", checkError);
-        throw checkError;
-      }
-      
-      // Si un membre avec cet email existe déjà et a une demande d'adhésion en cours
-      if (existingMemberships && existingMemberships.length > 0) {
-        const existingRequest = existingMemberships.find(m => m.status === 'pending');
-        if (existingRequest) {
-          toast({
-            title: "Demande déjà en cours",
-            description: "Vous avez déjà une demande d'adhésion en cours d'examen.",
-            variant: "destructive"
-          });
-          setIsSubmitting(false);
-          return;
-        }
-        
-        const existingMember = existingMemberships.find(m => m.status === 'approved');
-        if (existingMember) {
-          toast({
-            title: "Déjà membre",
-            description: "Vous êtes déjà membre de LA CITADELLE.",
-            variant: "destructive"
-          });
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
       // Collecter les attentes comme un tableau pour la base de données
       const clubExpectationsArray: string[] = [];
       if (values.formation) clubExpectationsArray.push("Formation");
@@ -237,6 +205,9 @@ const MembershipForm = () => {
       }
       
       let participantId = existingParticipant?.id;
+      
+      // Si le participant n'existe pas, nous n'en créons pas automatiquement un nouveau
+      // Nous utilisons simplement l'ID de l'adhésion pour les e-mails
       
       // Si le participant existe, mettons à jour l'adhésion avec l'id du participant
       if (participantId) {
