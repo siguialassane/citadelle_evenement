@@ -1,6 +1,6 @@
-
 // Formulaire d'adhésion pour les participants
 // Mise à jour:
+// - Correction des erreurs de redéclaration de variables sectionStyle et sectionTitleStyle
 // - Amélioration de la compatibilité mobile du formulaire
 // - Optimisation de l'affichage des sections sur les petits écrans
 // - Amélioration de la taille des champs de saisie et boutons sur mobile
@@ -285,9 +285,9 @@ const MembershipForm = () => {
     navigate('/');
   };
 
-  // Style commun pour les sections
-  const sectionStyle = "border border-gray-300 rounded-md p-4 mb-6";
-  const sectionTitleStyle = "text-lg font-medium -mt-7 bg-white px-2 inline-block";
+  // Style commun pour les sections avec responsive
+  const sectionStyle = "border border-gray-300 rounded-md p-3 md:p-4 mb-4 md:mb-6 relative mt-6";
+  const sectionTitleStyle = "text-base md:text-lg font-medium -mt-5 md:-mt-7 bg-white px-2 inline-block absolute top-0 left-4";
 
   if (isSuccess) {
     return (
@@ -317,10 +317,6 @@ const MembershipForm = () => {
       </div>
     );
   }
-
-  // Style commun pour les sections avec responsive
-  const sectionStyle = "border border-gray-300 rounded-md p-3 md:p-4 mb-4 md:mb-6 relative mt-6";
-  const sectionTitleStyle = "text-base md:text-lg font-medium -mt-5 md:-mt-7 bg-white px-2 inline-block absolute top-0 left-4";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-100 flex flex-col items-center p-2 md:p-4">
@@ -770,94 +766,4 @@ const MembershipForm = () => {
                   <h3 className={sectionTitleStyle}>Vos attentes vis-à-vis du Club</h3>
                   
                   <div className="grid grid-cols-2 gap-2 md:gap-4 mt-2">
-                    {CLUB_EXPECTATIONS.map((expectation) => (
-                      <FormField
-                        key={expectation.id}
-                        control={form.control}
-                        name={expectation.id as any}
-                        render={({ field }) => (
-                          <FormItem className="flex items-center space-x-2">
-                            <FormControl>
-                              <Checkbox 
-                                id={expectation.id}
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                className="text-amber-600 border-amber-600 h-4 w-4 md:h-5 md:w-5"
-                              />
-                            </FormControl>
-                            <FormLabel htmlFor={expectation.id} className="cursor-pointer text-xs md:text-sm">
-                              {expectation.label}
-                            </FormLabel>
-                          </FormItem>
-                        )}
-                      />
-                    ))}
-                  </div>
-                  
-                  <div className="mt-3 md:mt-4">
-                    <FormField
-                      control={form.control}
-                      name="other_expectations"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm md:text-base">Autres attentes</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Précisez vos autres attentes vis-à-vis du Club" 
-                              className="min-h-[60px] md:min-h-[80px] text-base md:text-sm"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage className="text-xs" />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-                
-                {/* Section Conditions */}
-                <FormField
-                  control={form.control}
-                  name="agree_terms"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-2 space-y-0 border p-3 md:p-4 rounded-md bg-amber-50">
-                      <FormControl>
-                        <Checkbox 
-                          checked={field.value} 
-                          onCheckedChange={field.onChange}
-                          className="text-amber-600 border-amber-600 h-4 w-4 md:h-5 md:w-5 mt-0.5"
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="text-xs md:text-sm">
-                          J'accepte les conditions d'adhésion et je m'engage à respecter les valeurs de LA CITADELLE
-                        </FormLabel>
-                        <FormMessage className="text-xs" />
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 py-3 h-auto text-sm md:text-base font-medium"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 
-                    <span className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Envoi en cours...
-                    </span> : 
-                    "Envoyer ma demande d'adhésion"
-                  }
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-};
-
-export default MembershipForm;
+                    {CLUB_EXPECTATIONS.map((expectation)
