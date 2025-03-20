@@ -2,6 +2,8 @@
 // Composant d'édition de message pour les emails
 // Mise à jour: Correction du formatage des variables dynamiques [prénom] et [nom]
 // Mise à jour: Ajout d'information sur les variables disponibles
+// Mise à jour: Modification du texte du modèle 3
+
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,7 +35,7 @@ export function MessageComposer({
     personal: [
       "Cher(e) {{prenom}} {{nom}}, nous tenons à vous remercier personnellement pour votre participation à l'IFTAR 2025. Votre présence a contribué au succès de cet événement.",
       "Cher(e) {{prenom}} {{nom}}, c'est avec une grande joie que nous avons pu vous accueillir à l'IFTAR 2025. Merci pour votre participation qui a rendu cet événement spécial.",
-      "Assalamou Aleykoum {{prenom}} {{nom}}, suite à votre intérêt pour notre association, nous souhaitons vous inviter officiellement à rejoindre LA CITADELLE en tant que membre actif. Votre contribution nous aiderait à organiser davantage d'événements comme l'IFTAR et à soutenir nos actions sociales tout au long de l'année."
+      "Assalam Aleykoum {{prenom}} {{nom}},\nSuite à votre intérêt pour notre club service, nous souhaitons vous inviter officiellement à rejoindre LA CITADELLE en tant que membre actif."
     ],
     public: [
       "Chers participants, nous tenons à vous remercier chaleureusement pour votre présence à l'IFTAR 2025. Cet événement a été un succès grâce à vous tous.",
