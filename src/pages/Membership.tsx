@@ -1,3 +1,4 @@
+
 // Formulaire d'adhésion pour les participants
 // Mise à jour:
 // - Correction du problème d'envoi du formulaire
@@ -6,6 +7,8 @@
 // - Ajout de l'option "Mobile Money" dans les modes de règlement
 // - Correction du problème de création de participant lors de l'adhésion
 // - Suppression de la vérification d'unicité d'email pour permettre plusieurs adhésions avec le même email
+// - Amélioration des messages d'erreur pour une meilleure compréhension des problèmes
+// - Correction du problème avec l'option Mobile Money
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -21,10 +24,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { UserPlus, ArrowLeft, LucideCalculator } from 'lucide-react';
+import { UserPlus, ArrowLeft, LucideCalculator, AlertCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { CLUB_EXPECTATIONS, ClubExpectationType } from '@/components/manual-payment/services/emails/types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Schéma de validation pour le formulaire d'adhésion
 const membershipFormSchema = z.object({
@@ -103,6 +107,7 @@ const MembershipForm = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [periodicAmount, setPeriodicAmount] = useState(0);
   const [remainingAmount, setRemainingAmount] = useState(100000);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const form = useForm<MembershipFormValues>({
@@ -146,14 +151,17 @@ const MembershipForm = () => {
     form.watch('subscription_start_month')
   ]);
 
+  // Réinitialiser le message d'erreur lorsque la méthode de paiement change
+  useEffect(() => {
+    setErrorMessage(null);
+  }, [form.watch('payment_method')]);
+
   const handleSubmit = async (values: MembershipFormValues) => {
     console.log("Soumission du formulaire avec les valeurs:", values);
     setIsSubmitting(true);
+    setErrorMessage(null);
+    
     try {
-      // SUPPRESSION DE LA VÉRIFICATION D'EMAIL EXISTANT
-      // Nous ne vérifions plus si l'email existe déjà dans la base de données
-      // Un même email peut maintenant être utilisé pour plusieurs demandes d'adhésion
-      
       // Collecter les attentes comme un tableau pour la base de données
       const clubExpectationsArray: string[] = [];
       if (values.formation) clubExpectationsArray.push("Formation");
@@ -187,6 +195,18 @@ const MembershipForm = () => {
       
       if (insertError) {
         console.error("Erreur lors de l'insertion de l'adhésion:", insertError);
+        
+        // Analyser l'erreur pour un message plus spécifique
+        if (insertError.message.includes('check constraint')) {
+          if (insertError.message.includes('payment_method')) {
+            setErrorMessage("Le mode de règlement sélectionné n'est pas valide. Veuillez en choisir un autre.");
+          } else {
+            setErrorMessage("Une contrainte de validation a échoué. Veuillez vérifier vos informations.");
+          }
+        } else {
+          setErrorMessage(insertError.message);
+        }
+        
         throw insertError;
       }
       
@@ -245,11 +265,15 @@ const MembershipForm = () => {
         description: "Votre demande d'adhésion a été envoyée avec succès. Vous recevrez une réponse par email.",
       });
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur lors de la soumission de la demande d'adhésion:", error);
+      
+      // Utiliser le message d'erreur personnalisé s'il existe, sinon un message générique
+      const errorMsg = errorMessage || "Une erreur est survenue lors de la soumission de votre demande. Veuillez réessayer.";
+      
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la soumission de votre demande. Veuillez réessayer.",
+        description: errorMsg,
         variant: "destructive"
       });
     } finally {
@@ -326,6 +350,17 @@ const MembershipForm = () => {
           </CardHeader>
           
           <CardContent className="pt-6">
+            {/* Message d'erreur */}
+            {errorMessage && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erreur lors de la soumission</AlertTitle>
+                <AlertDescription>
+                  {errorMessage}
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {/* Information sur les objectifs */}
             <div className={`${sectionStyle} mb-8 bg-amber-50`}>
               <h3 className={`${sectionTitleStyle} font-bold`}>Objectifs et Conditions</h3>
