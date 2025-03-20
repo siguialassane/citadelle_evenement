@@ -1,12 +1,10 @@
+
 // Formulaire d'adhésion pour les participants
 // Mise à jour:
-// - Correction des erreurs de redéclaration de variables sectionStyle et sectionTitleStyle
-// - Amélioration de la compatibilité mobile du formulaire
-// - Optimisation de l'affichage des sections sur les petits écrans
-// - Amélioration de la taille des champs de saisie et boutons sur mobile
-// - Ajustement de l'espacement et de la lisibilité pour les écrans tactiles
-// - Correction du problème d'inscription avec Mobile Money
-// - Ajout de messages d'erreur plus clairs
+// - Correction des balises JSX non fermées dans tout le document
+// - Correction de la structure du document pour garantir l'intégrité des composants
+// - Résolution des erreurs de redéclaration des variables sectionStyle et sectionTitleStyle
+// - Maintien de la compatibilité mobile du formulaire et des optimisations d'affichage
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -766,4 +764,97 @@ const MembershipForm = () => {
                   <h3 className={sectionTitleStyle}>Vos attentes vis-à-vis du Club</h3>
                   
                   <div className="grid grid-cols-2 gap-2 md:gap-4 mt-2">
-                    {CLUB_EXPECTATIONS.map((expectation)
+                    {CLUB_EXPECTATIONS.map((expectation) => (
+                      <FormField
+                        key={expectation.id}
+                        control={form.control}
+                        name={expectation.id as 'formation' | 'loisirs' | 'echanges' | 'reseau'}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-2 space-y-0 py-1">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                id={expectation.id}
+                                className="mt-0.5"
+                              />
+                            </FormControl>
+                            <FormLabel
+                              htmlFor={expectation.id}
+                              className="text-xs md:text-sm font-normal cursor-pointer"
+                            >
+                              {expectation.label}
+                            </FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+                  
+                  <div className="mt-3 md:mt-4">
+                    <FormField
+                      control={form.control}
+                      name="other_expectations"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm md:text-base">Autres attentes</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Décrivez vos autres attentes" 
+                              className="min-h-[60px] md:min-h-[80px] text-base md:text-sm"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage className="text-xs" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                
+                {/* Section Accord des conditions */}
+                <div className="my-4 md:my-6">
+                  <FormField
+                    control={form.control}
+                    name="agree_terms"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-2 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            id="agree_terms"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel
+                            htmlFor="agree_terms"
+                            className="text-xs md:text-sm font-normal cursor-pointer"
+                          >
+                            Je déclare avoir pris connaissance des statuts et règlement intérieur de LA CITADELLE et m'engage à les respecter.
+                          </FormLabel>
+                          <FormMessage className="text-xs" />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                {/* Bouton de soumission */}
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 py-2 px-4 h-auto text-base"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Envoi en cours..." : "Soumettre ma demande d'adhésion"}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default MembershipForm;
