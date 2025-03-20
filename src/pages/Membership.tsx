@@ -1,14 +1,12 @@
 
 // Formulaire d'adhésion pour les participants
 // Mise à jour:
-// - Correction du problème d'envoi du formulaire
-// - Amélioration du design avec les couleurs du formulaire d'inscription et le logo
-// - Ajout de la logique de calcul pour la souscription
-// - Ajout de l'option "Mobile Money" dans les modes de règlement
-// - Correction du problème de création de participant lors de l'adhésion
-// - Suppression de la vérification d'unicité d'email pour permettre plusieurs adhésions avec le même email
-// - Amélioration des messages d'erreur pour une meilleure compréhension des problèmes
-// - Correction du problème avec l'option Mobile Money
+// - Amélioration de la compatibilité mobile du formulaire
+// - Optimisation de l'affichage des sections sur les petits écrans
+// - Amélioration de la taille des champs de saisie et boutons sur mobile
+// - Ajustement de l'espacement et de la lisibilité pour les écrans tactiles
+// - Correction du problème d'inscription avec Mobile Money
+// - Ajout de messages d'erreur plus clairs
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { CLUB_EXPECTATIONS, ClubExpectationType } from '@/components/manual-payment/services/emails/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Schéma de validation pour le formulaire d'adhésion
 const membershipFormSchema = z.object({
@@ -109,6 +108,7 @@ const MembershipForm = () => {
   const [remainingAmount, setRemainingAmount] = useState(100000);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   const form = useForm<MembershipFormValues>({
     resolver: zodResolver(membershipFormSchema),
@@ -294,21 +294,21 @@ const MembershipForm = () => {
       <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-100 flex flex-col items-center justify-center p-4">
         <Card className="w-full max-w-lg shadow-lg">
           <CardHeader className="text-center bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-t-lg">
-            <CardTitle className="text-center text-2xl">Demande envoyée avec succès</CardTitle>
+            <CardTitle className="text-center text-xl md:text-2xl">Demande envoyée avec succès</CardTitle>
           </CardHeader>
           <CardContent className="text-center pt-6">
             <div className="flex justify-center my-6">
-              <UserPlus className="h-20 w-20 text-amber-600" />
+              <UserPlus className="h-16 w-16 md:h-20 md:w-20 text-amber-600" />
             </div>
-            <p className="mb-4">
+            <p className="mb-4 text-sm md:text-base">
               Votre demande d'adhésion à LA CITADELLE a été envoyée avec succès.
             </p>
-            <p className="mb-4">
+            <p className="mb-4 text-sm md:text-base">
               Nous examinerons votre demande dans les plus brefs délais et vous contacterons par email.
             </p>
           </CardContent>
           <CardFooter className="flex justify-center pb-6">
-            <Button onClick={handleBackToHome} className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700">
+            <Button onClick={handleBackToHome} className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-sm md:text-base py-2 px-4 h-auto">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour à l'accueil
             </Button>
@@ -318,41 +318,45 @@ const MembershipForm = () => {
     );
   }
 
+  // Style commun pour les sections avec responsive
+  const sectionStyle = "border border-gray-300 rounded-md p-3 md:p-4 mb-4 md:mb-6 relative mt-6";
+  const sectionTitleStyle = "text-base md:text-lg font-medium -mt-5 md:-mt-7 bg-white px-2 inline-block absolute top-0 left-4";
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-100 flex flex-col items-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-100 flex flex-col items-center p-2 md:p-4">
       <div className="w-full max-w-4xl">
         <Button 
           variant="outline" 
-          className="mb-4 bg-white" 
+          className="mb-4 bg-white text-sm py-1 px-2 h-auto md:py-2 md:px-4" 
           onClick={handleBackToHome}
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour à l'accueil
+          <ArrowLeft className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+          <span className="text-sm">Retour</span>
         </Button>
         
         <Card className="shadow-lg">
-          <CardHeader className="text-center border-b pb-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-t-lg">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-sm">
+          <CardHeader className="text-center border-b pb-2 md:pb-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-t-lg">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-1 md:mb-2">
+              <div className="text-xs md:text-sm mb-2 md:mb-0">
                 <p>LA CITADELLE (Ex CDA)</p>
                 <p>07 08 10 50 05 - 07 07 08 06 10</p>
                 <p>mail: club.lacitadelle@gmail.com</p>
               </div>
-              <div className="flex-shrink-0">
+              <div className="flex justify-center md:flex-shrink-0">
                 <img 
                   src="/lovable-uploads/958417a8-6efc-40bd-865c-03214b65b4a2.png" 
                   alt="LA CITADELLE" 
-                  className="h-16 w-auto"
+                  className="h-12 md:h-16 w-auto"
                 />
               </div>
             </div>
-            <CardTitle className="text-xl mt-2">Fiche de demande d'adhésion Individuelle</CardTitle>
+            <CardTitle className="text-lg md:text-xl mt-1 md:mt-2">Fiche de demande d'adhésion Individuelle</CardTitle>
           </CardHeader>
           
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 md:pt-6 px-3 md:px-6">
             {/* Message d'erreur */}
             {errorMessage && (
-              <Alert variant="destructive" className="mb-6">
+              <Alert variant="destructive" className="mb-4 md:mb-6 text-sm md:text-base">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Erreur lors de la soumission</AlertTitle>
                 <AlertDescription>
@@ -361,42 +365,43 @@ const MembershipForm = () => {
               </Alert>
             )}
             
-            {/* Information sur les objectifs */}
-            <div className={`${sectionStyle} mb-8 bg-amber-50`}>
-              <h3 className={`${sectionTitleStyle} font-bold`}>Objectifs et Conditions</h3>
-              <p className="text-sm mb-2">
-                <span className="font-bold">LA CITADELLE</span> a pour <span className="font-bold">objectif principal</span> de réunir dans un creuset, les cadres musulmans de l'administration et du secteur privé pour une participation plus active aux activités de la communauté en particulier et en général à l'essor de la NATION d'où son slogan "SUNIR POUR SERVIR". Assister les couches vulnérables et promouvoir l'entraide.
+            {/* Information sur les objectifs - Simplifié sur mobile */}
+            <div className={`${sectionStyle} mb-4 md:mb-8 bg-amber-50 text-xs md:text-sm`}>
+              <h3 className={`${sectionTitleStyle} font-bold text-sm md:text-base`}>Objectifs et Conditions</h3>
+              <p className="mb-1 md:mb-2 mt-2">
+                <span className="font-bold">LA CITADELLE</span> a pour <span className="font-bold">objectif principal</span> de réunir les cadres musulmans pour participer aux activités de la communauté et à l'essor de la NATION: "S'UNIR POUR SERVIR". 
               </p>
-              <p className="text-sm mb-2">
-                <span className="font-bold">L'adhésion au Club Service LA CITADELLE est ouverte:</span>
+              <p className="mb-1 md:mb-2">
+                <span className="font-bold">L'adhésion est ouverte:</span>
               </p>
-              <ul className="list-disc pl-6 text-sm mb-2 space-y-1">
-                <li>aux cadres musulmans de l'administration publique et para-publique</li>
-                <li>aux cadres musulmans du secteur privé ou Chefs d'entreprises</li>
-                <li>aux sœurs et frères de la diaspora ou les artisans, capables de cotiser régulièrement au moins 100 000 FCFA par an.</li>
+              <ul className="list-disc pl-4 md:pl-6 space-y-0.5 md:space-y-1 mb-1 md:mb-2">
+                <li>aux cadres musulmans de l'administration</li>
+                <li>aux cadres musulmans du secteur privé</li>
+                <li>à la diaspora ou artisans, capables de cotiser au moins 100 000 FCFA par an</li>
               </ul>
-              <p className="text-sm">
-                Les adhérents au Club Service s'engagent à respecter les principes de la charte du club et à verser au moins la somme de 100 000 FCFA au titre des cotisations annuelles.
-              </p>
             </div>
             
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 md:space-y-6">
                 {/* Section Identité */}
                 <div className={sectionStyle}>
                   <h3 className={sectionTitleStyle}>Identité</h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-2">
                     <FormField
                       control={form.control}
                       name="last_name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Nom</FormLabel>
+                          <FormLabel className="text-sm md:text-base">Nom</FormLabel>
                           <FormControl>
-                            <Input placeholder="Votre nom" {...field} />
+                            <Input 
+                              placeholder="Votre nom" 
+                              {...field} 
+                              className="h-10 md:h-11 text-base md:text-sm"
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
@@ -406,27 +411,35 @@ const MembershipForm = () => {
                       name="first_name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Prénom</FormLabel>
+                          <FormLabel className="text-sm md:text-base">Prénom</FormLabel>
                           <FormControl>
-                            <Input placeholder="Votre prénom" {...field} />
+                            <Input 
+                              placeholder="Votre prénom" 
+                              {...field} 
+                              className="h-10 md:h-11 text-base md:text-sm" 
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-3 md:mt-4">
                     <FormField
                       control={form.control}
                       name="profession"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Profession</FormLabel>
+                          <FormLabel className="text-sm md:text-base">Profession</FormLabel>
                           <FormControl>
-                            <Input placeholder="Votre profession actuelle" {...field} />
+                            <Input 
+                              placeholder="Votre profession actuelle" 
+                              {...field} 
+                              className="h-10 md:h-11 text-base md:text-sm"
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
@@ -436,27 +449,36 @@ const MembershipForm = () => {
                       name="contact_number"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Contact</FormLabel>
+                          <FormLabel className="text-sm md:text-base">Contact</FormLabel>
                           <FormControl>
-                            <Input placeholder="0X XX XX XX XX" {...field} />
+                            <Input 
+                              placeholder="0X XX XX XX XX" 
+                              {...field} 
+                              className="h-10 md:h-11 text-base md:text-sm"
+                              type="tel"
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-3 md:mt-4">
                     <FormField
                       control={form.control}
                       name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Adresse Géographique</FormLabel>
+                          <FormLabel className="text-sm md:text-base">Adresse</FormLabel>
                           <FormControl>
-                            <Input placeholder="Votre adresse" {...field} />
+                            <Input 
+                              placeholder="Votre adresse" 
+                              {...field} 
+                              className="h-10 md:h-11 text-base md:text-sm"
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
@@ -466,11 +488,16 @@ const MembershipForm = () => {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel className="text-sm md:text-base">Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="votre.email@exemple.com" type="email" {...field} />
+                            <Input 
+                              placeholder="votre.email@exemple.com" 
+                              type="email" 
+                              {...field} 
+                              className="h-10 md:h-11 text-base md:text-sm"
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
@@ -481,22 +508,24 @@ const MembershipForm = () => {
                 <div className={sectionStyle}>
                   <h3 className={sectionTitleStyle}>Souscription</h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-2">
                     <FormField
                       control={form.control}
                       name="subscription_amount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Montant de la Souscription annuelle</FormLabel>
+                          <FormLabel className="text-sm md:text-base">Montant annuel</FormLabel>
                           <FormControl>
                             <Input 
                               type="number" 
                               placeholder="100000" 
                               {...field}
                               onChange={(e) => field.onChange(e.target.value === '' ? 100000 : Number(e.target.value))}
+                              className="h-10 md:h-11 text-base md:text-sm"
+                              inputMode="numeric"
                             />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
@@ -506,17 +535,17 @@ const MembershipForm = () => {
                       name="subscription_start_month"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>À compter du mois de</FormLabel>
+                          <FormLabel className="text-sm md:text-base">À compter du mois de</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="h-10 md:h-11 text-base md:text-sm">
                                 <SelectValue placeholder="Sélectionnez un mois" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="text-base md:text-sm">
                               <SelectItem value="janvier">Janvier</SelectItem>
                               <SelectItem value="fevrier">Février</SelectItem>
                               <SelectItem value="mars">Mars</SelectItem>
@@ -531,19 +560,19 @@ const MembershipForm = () => {
                               <SelectItem value="decembre">Décembre</SelectItem>
                             </SelectContent>
                           </Select>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
                   </div>
                   
-                  {/* Résumé des calculs */}
-                  <div className="bg-amber-100 p-4 rounded-md mt-4 mb-4">
-                    <h4 className="font-medium flex items-center mb-2">
-                      <LucideCalculator className="h-4 w-4 mr-2" />
+                  {/* Résumé des calculs - Adapté pour mobile */}
+                  <div className="bg-amber-100 p-3 md:p-4 rounded-md mt-3 md:mt-4 mb-3 md:mb-4">
+                    <h4 className="font-medium flex items-center mb-2 text-sm md:text-base">
+                      <LucideCalculator className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                       Résumé de votre souscription
                     </h4>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="grid grid-cols-2 gap-1 md:gap-2 text-xs md:text-sm">
                       <p>Montant annuel total:</p>
                       <p className="font-bold text-right">{(form.getValues('subscription_amount') || 100000).toLocaleString()} FCFA</p>
                       
@@ -562,11 +591,12 @@ const MembershipForm = () => {
                     </div>
                   </div>
                   
-                  <div className="mt-4">
+                  {/* Mode de Règlement - Optimisé pour mobile */}
+                  <div className="mt-3 md:mt-4">
                     <div className="mb-2">
-                      <FormLabel>Mode de Règlement</FormLabel>
+                      <FormLabel className="text-sm md:text-base">Mode de Règlement</FormLabel>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 gap-2 md:gap-4">
                       <FormField
                         control={form.control}
                         name="payment_method"
@@ -582,7 +612,7 @@ const MembershipForm = () => {
                                 className="form-radio h-4 w-4 text-amber-600"
                               />
                             </FormControl>
-                            <FormLabel htmlFor="especes" className="cursor-pointer">Espèces</FormLabel>
+                            <FormLabel htmlFor="especes" className="cursor-pointer text-xs md:text-sm">Espèces</FormLabel>
                           </FormItem>
                         )}
                       />
@@ -601,7 +631,7 @@ const MembershipForm = () => {
                                 className="form-radio h-4 w-4 text-amber-600"
                               />
                             </FormControl>
-                            <FormLabel htmlFor="cheque" className="cursor-pointer">Chèque</FormLabel>
+                            <FormLabel htmlFor="cheque" className="cursor-pointer text-xs md:text-sm">Chèque</FormLabel>
                           </FormItem>
                         )}
                       />
@@ -620,7 +650,7 @@ const MembershipForm = () => {
                                 className="form-radio h-4 w-4 text-amber-600"
                               />
                             </FormControl>
-                            <FormLabel htmlFor="virement" className="cursor-pointer">Virement bancaire</FormLabel>
+                            <FormLabel htmlFor="virement" className="cursor-pointer text-xs md:text-sm">Virement bancaire</FormLabel>
                           </FormItem>
                         )}
                       />
@@ -639,18 +669,19 @@ const MembershipForm = () => {
                                 className="form-radio h-4 w-4 text-amber-600"
                               />
                             </FormControl>
-                            <FormLabel htmlFor="mobile_money" className="cursor-pointer">Mobile Money</FormLabel>
+                            <FormLabel htmlFor="mobile_money" className="cursor-pointer text-xs md:text-sm">Mobile Money</FormLabel>
                           </FormItem>
                         )}
                       />
                     </div>
                   </div>
                   
-                  <div className="mt-4">
+                  {/* Périodicité - Optimisé pour mobile */}
+                  <div className="mt-3 md:mt-4">
                     <div className="mb-2">
-                      <FormLabel>Périodicité</FormLabel>
+                      <FormLabel className="text-sm md:text-base">Périodicité</FormLabel>
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3 gap-2 md:gap-4">
                       <FormField
                         control={form.control}
                         name="payment_frequency"
@@ -666,7 +697,7 @@ const MembershipForm = () => {
                                 className="form-radio h-4 w-4 text-amber-600"
                               />
                             </FormControl>
-                            <FormLabel htmlFor="mensuelle" className="cursor-pointer">Mensuelle</FormLabel>
+                            <FormLabel htmlFor="mensuelle" className="cursor-pointer text-xs md:text-sm">Mensuelle</FormLabel>
                           </FormItem>
                         )}
                       />
@@ -685,7 +716,7 @@ const MembershipForm = () => {
                                 className="form-radio h-4 w-4 text-amber-600"
                               />
                             </FormControl>
-                            <FormLabel htmlFor="trimestrielle" className="cursor-pointer">Trimestrielle</FormLabel>
+                            <FormLabel htmlFor="trimestrielle" className="cursor-pointer text-xs md:text-sm">Trimestrielle</FormLabel>
                           </FormItem>
                         )}
                       />
@@ -704,7 +735,7 @@ const MembershipForm = () => {
                                 className="form-radio h-4 w-4 text-amber-600"
                               />
                             </FormControl>
-                            <FormLabel htmlFor="annuelle" className="cursor-pointer">Annuelle</FormLabel>
+                            <FormLabel htmlFor="annuelle" className="cursor-pointer text-xs md:text-sm">Annuelle</FormLabel>
                           </FormItem>
                         )}
                       />
@@ -720,15 +751,15 @@ const MembershipForm = () => {
                     control={form.control}
                     name="competence_domains"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="mt-2">
                         <FormControl>
                           <Textarea 
                             placeholder="Décrivez vos domaines de compétence" 
-                            className="min-h-[100px]"
+                            className="min-h-[80px] md:min-h-[100px] text-base md:text-sm"
                             {...field} 
                           />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-xs" />
                       </FormItem>
                     )}
                   />
@@ -738,7 +769,7 @@ const MembershipForm = () => {
                 <div className={sectionStyle}>
                   <h3 className={sectionTitleStyle}>Vos attentes vis-à-vis du Club</h3>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 gap-2 md:gap-4 mt-2">
                     {CLUB_EXPECTATIONS.map((expectation) => (
                       <FormField
                         key={expectation.id}
@@ -751,10 +782,10 @@ const MembershipForm = () => {
                                 id={expectation.id}
                                 checked={field.value}
                                 onCheckedChange={field.onChange}
-                                className="text-amber-600 border-amber-600"
+                                className="text-amber-600 border-amber-600 h-4 w-4 md:h-5 md:w-5"
                               />
                             </FormControl>
-                            <FormLabel htmlFor={expectation.id} className="cursor-pointer">
+                            <FormLabel htmlFor={expectation.id} className="cursor-pointer text-xs md:text-sm">
                               {expectation.label}
                             </FormLabel>
                           </FormItem>
@@ -763,21 +794,21 @@ const MembershipForm = () => {
                     ))}
                   </div>
                   
-                  <div className="mt-4">
+                  <div className="mt-3 md:mt-4">
                     <FormField
                       control={form.control}
                       name="other_expectations"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Autres attentes</FormLabel>
+                          <FormLabel className="text-sm md:text-base">Autres attentes</FormLabel>
                           <FormControl>
                             <Textarea 
                               placeholder="Précisez vos autres attentes vis-à-vis du Club" 
-                              className="min-h-[80px]"
+                              className="min-h-[60px] md:min-h-[80px] text-base md:text-sm"
                               {...field} 
                             />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
@@ -789,19 +820,19 @@ const MembershipForm = () => {
                   control={form.control}
                   name="agree_terms"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 border p-4 rounded-md bg-amber-50">
+                    <FormItem className="flex flex-row items-start space-x-2 space-y-0 border p-3 md:p-4 rounded-md bg-amber-50">
                       <FormControl>
                         <Checkbox 
                           checked={field.value} 
                           onCheckedChange={field.onChange}
-                          className="text-amber-600 border-amber-600"
+                          className="text-amber-600 border-amber-600 h-4 w-4 md:h-5 md:w-5 mt-0.5"
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>
+                        <FormLabel className="text-xs md:text-sm">
                           J'accepte les conditions d'adhésion et je m'engage à respecter les valeurs de LA CITADELLE
                         </FormLabel>
-                        <FormMessage />
+                        <FormMessage className="text-xs" />
                       </div>
                     </FormItem>
                   )}
@@ -809,10 +840,16 @@ const MembershipForm = () => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 py-3 h-auto text-sm md:text-base font-medium"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Envoi en cours..." : "Envoyer ma demande d'adhésion"}
+                  {isSubmitting ? 
+                    <span className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Envoi en cours...
+                    </span> : 
+                    "Envoyer ma demande d'adhésion"
+                  }
                 </Button>
               </form>
             </Form>
