@@ -766,42 +766,49 @@ const Statistics = () => {
         </Tabs>
       </main>
       
-      {/* Styles spécifiques pour l'impression */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4 landscape;
-            margin: 1cm;
+      {/* Styles spécifiques pour l'impression - corrigé pour éviter l'erreur TypeScript */}
+      <style>
+        {`
+          @media print {
+            @page {
+              size: A4 landscape;
+              margin: 1cm;
+            }
+            
+            body {
+              background: white;
+              color: black;
+            }
+            
+            .print\\:block {
+              display: block !important;
+            }
+            
+            .print\\:hidden {
+              display: none !important;
+            }
+            
+            .print\\:break-inside-avoid {
+              break-inside: avoid;
+            }
+            
+            .print\\:mt-8 {
+              margin-top: 2rem !important;
+            }
+            
+            .print\\:border {
+              border: 1px solid #e5e7eb !important;
+            }
+            
+            .chart-container {
+              page-break-inside: avoid;
+            }
           }
-          
-          body {
-            background: white;
-            color: black;
-          }
-          
-          .print\\:block {
-            display: block !important;
-          }
-          
-          .print\\:hidden {
-            display: none !important;
-          }
-          
-          .print\\:break-inside-avoid {
-            break-inside: avoid;
-          }
-          
-          .print\\:mt-8 {
-            margin-top: 2rem !important;
-          }
-          
-          .chart-container {
-            page-break-inside: avoid;
-          }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };
 
 export default Statistics;
+
