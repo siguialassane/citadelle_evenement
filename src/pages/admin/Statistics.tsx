@@ -3,7 +3,7 @@
 // Mise à jour: Amélioration de la présentation visuelle et ajout de détails sur les périodes d'inscription
 // Affiche les données statistiques sous forme de camemberts et de graphiques avec des détails plus précis
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -34,6 +34,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import jsPDF from "jspdf";
+import { exportToPDF } from "@/utils/exportUtils";
 
 type Event = {
   date: string;
@@ -46,6 +48,12 @@ type PaymentMethodData = {
   method: string;
   count: number;
   amount: number;
+};
+
+type MonthlyStat = {
+  month: string;
+  count: number;
+  month_num: number;
 };
 
 type CheckInStatistics = {
@@ -85,12 +93,15 @@ const Statistics = () => {
   const [paymentMethodsData, setPaymentMethodsData] = useState<PaymentMethodData[]>([]);
   const [checkInData, setCheckInData] = useState<CheckInStatistics[]>([]);
   const [membershipStatusData, setMembershipStatusData] = useState<{ status: string; count: number }[]>([]);
+  const [membershipMonthlyData, setMembershipMonthlyData] = useState<MonthlyStat[]>([]);
   const [summaryData, setSummaryData] = useState({
     totalParticipants: 0,
     totalRevenue: 0,
     totalCheckedIn: 0,
     totalMembers: 0
   });
+  
+  const statisticsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -198,6 +209,39 @@ const Statistics = () => {
         count
       }));
       setMembershipStatusData(membershipStatusArray);
+      
+      // Analyse adhésions par mois (données réelles)
+      const monthData: Record<string, number> = {};
+      const months = [
+        'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 
+        'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'
+      ];
+      
+      // Initialiser les mois avec des comptes à 0
+      months.forEach((month, index) => {
+        monthData[month] = 0;
+      });
+      
+      // Compter les adhésions par mois
+      (membershipsData || []).forEach(membership => {
+        if (membership.status === 'approved' && membership.requested_at) {
+          const date = new Date(membership.requested_at);
+          const monthIndex = date.getMonth();
+          const monthName = months[monthIndex];
+          monthData[monthName] = (monthData[monthName] || 0) + 1;
+        }
+      });
+      
+      // Convertir en tableau pour le graphique
+      const membershipMonthlyArray = Object.entries(monthData)
+        .map(([month, count], index) => ({
+          month,
+          count,
+          month_num: index
+        }))
+        .sort((a, b) => a.month_num - b.month_num);
+      
+      setMembershipMonthlyData(membershipMonthlyArray);
 
       // Calcul des revenus totaux
       const totalRevenue = allPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
@@ -246,6 +290,61 @@ const Statistics = () => {
   const handlePrint = () => {
     window.print();
   };
+  
+  const handleExportPDF = async () => {
+    if (statisticsRef.current) {
+      toast({
+        title: "Génération du PDF",
+        description: "Veuillez patienter pendant la création du PDF...",
+      });
+      
+      try {
+        const doc = new jsPDF('landscape', 'mm', 'a4');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        
+        // Titre
+        doc.setFontSize(18);
+        doc.text("Statistiques générales - IFTAR 2025", pageWidth/2, 20, { align: 'center' });
+        
+        // Sous-titre
+        doc.setFontSize(12);
+        doc.text(`Rapport généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth/2, 30, { align: 'center' });
+        
+        // Statistiques
+        doc.setFontSize(14);
+        doc.text("Participants inscrits:", 20, 50);
+        doc.text(`${summaryData.totalParticipants}`, 100, 50);
+        
+        doc.text("Revenus totaux:", 20, 60);
+        doc.text(`${formatMoneyAmount(summaryData.totalRevenue)}`, 100, 60);
+        
+        doc.text("Participants présents:", 20, 70);
+        doc.text(`${summaryData.totalCheckedIn} (${summaryData.totalParticipants > 0 ? Math.round((summaryData.totalCheckedIn / summaryData.totalParticipants) * 100) : 0}%)`, 100, 70);
+        
+        doc.text("Membres:", 20, 80);
+        doc.text(`${summaryData.totalMembers}`, 100, 80);
+        
+        // Pied de page
+        doc.setFontSize(10);
+        doc.text("LA CITADELLE - Rapport statistique confidentiel", pageWidth/2, pageHeight - 10, { align: 'center' });
+        
+        doc.save(`statistiques-iftar-${new Date().toISOString().slice(0,10)}.pdf`);
+        
+        toast({
+          title: "PDF généré",
+          description: "Le fichier PDF a été téléchargé avec succès.",
+        });
+      } catch (error) {
+        console.error("Erreur lors de la génération du PDF:", error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de générer le PDF. Veuillez réessayer.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -261,16 +360,16 @@ const Statistics = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 print:bg-white">
+    <div className="min-h-screen bg-gray-50 print:bg-white print:text-black">
       <Header onLogout={handleLogout} />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" ref={statisticsRef}>
         <div className="flex flex-wrap justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900 print:text-black">
               Statistiques générales
             </h1>
-            <p className="text-gray-500 mt-1">IFTAR 2025 - 15 Mars 2025</p>
+            <p className="text-gray-500 mt-1 print:text-gray-700">IFTAR 2025 - 15 Mars 2025</p>
           </div>
           
           <div className="flex items-center gap-3 print:hidden">
@@ -278,7 +377,7 @@ const Statistics = () => {
               <Printer className="h-4 w-4" />
               Imprimer
             </Button>
-            <Button onClick={handleRefresh} variant="outline" className="flex items-center gap-2">
+            <Button onClick={handleExportPDF} variant="outline" className="flex items-center gap-2">
               <Download className="h-4 w-4" />
               Exporter PDF
             </Button>
@@ -289,8 +388,8 @@ const Statistics = () => {
         </div>
 
         {/* Cartes récapitulatives */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className="border-t-4 border-t-blue-500">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 print:grid-cols-4">
+          <Card className="border-t-4 border-t-blue-500 print:break-inside-avoid print:border">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
                 <CardTitle className="text-lg font-medium">Participants</CardTitle>
@@ -303,7 +402,7 @@ const Statistics = () => {
             </CardContent>
           </Card>
           
-          <Card className="border-t-4 border-t-green-500">
+          <Card className="border-t-4 border-t-green-500 print:break-inside-avoid print:border">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
                 <CardTitle className="text-lg font-medium">Revenus</CardTitle>
@@ -316,7 +415,7 @@ const Statistics = () => {
             </CardContent>
           </Card>
           
-          <Card className="border-t-4 border-t-amber-500">
+          <Card className="border-t-4 border-t-amber-500 print:break-inside-avoid print:border">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
                 <CardTitle className="text-lg font-medium">Présences</CardTitle>
@@ -333,7 +432,7 @@ const Statistics = () => {
             </CardContent>
           </Card>
           
-          <Card className="border-t-4 border-t-purple-500">
+          <Card className="border-t-4 border-t-purple-500 print:break-inside-avoid print:border">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
                 <CardTitle className="text-lg font-medium">Membres</CardTitle>
@@ -347,15 +446,15 @@ const Statistics = () => {
           </Card>
         </div>
         
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid grid-cols-3 mb-6">
+        <Tabs defaultValue="general" className="w-full print:block">
+          <TabsList className="grid grid-cols-3 mb-6 print:hidden">
             <TabsTrigger value="general">Vue d'ensemble</TabsTrigger>
             <TabsTrigger value="payments">Paiements</TabsTrigger>
             <TabsTrigger value="memberships">Adhésions</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="general" className="space-y-6">
-            <Card>
+          <TabsContent value="general" className="space-y-6 print:block">
+            <Card className="print:break-inside-avoid print:border">
               <CardHeader>
                 <CardTitle>Évolution des inscriptions avant l'événement</CardTitle>
                 <CardDescription>
@@ -363,7 +462,7 @@ const Statistics = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[400px] w-full">
+                <div className="h-[400px] w-full print:h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart 
                       data={registrationPeriods} 
@@ -406,14 +505,14 @@ const Statistics = () => {
               </CardContent>
             </Card>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:grid-cols-2">
+              <Card className="print:break-inside-avoid print:border">
                 <CardHeader>
                   <CardTitle>Statut des participants</CardTitle>
                   <CardDescription>Répartition des participants présents et absents</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[300px] w-full flex justify-center">
+                  <div className="h-[300px] w-full flex justify-center print:h-[200px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -449,13 +548,13 @@ const Statistics = () => {
                 </CardFooter>
               </Card>
               
-              <Card>
+              <Card className="print:break-inside-avoid print:border">
                 <CardHeader>
                   <CardTitle>Méthodes de paiement</CardTitle>
                   <CardDescription>Répartition des paiements par méthode</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[300px] w-full flex justify-center">
+                  <div className="h-[300px] w-full flex justify-center print:h-[200px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -479,7 +578,7 @@ const Statistics = () => {
                           ))}
                         </Pie>
                         <Tooltip 
-                          formatter={(value, name, props) => {
+                          formatter={(value, name) => {
                             if (name === 'count') {
                               return [`${value} transactions`, 'Nombre'];
                             }
@@ -498,14 +597,14 @@ const Statistics = () => {
             </div>
           </TabsContent>
           
-          <TabsContent value="payments" className="space-y-6">
-            <Card>
-              <CardHeader>
+          <TabsContent value="payments" className="space-y-6 print:mt-8">
+            <Card className="print:break-inside-avoid print:border print:mt-8">
+              <CardHeader className="print:block">
                 <CardTitle>Valeur des paiements par méthode</CardTitle>
                 <CardDescription>Montant total des paiements reçus par méthode</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[400px] w-full">
+                <div className="h-[400px] w-full print:h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart 
                       data={paymentMethodsData} 
@@ -545,13 +644,13 @@ const Statistics = () => {
               </CardFooter>
             </Card>
             
-            <Card>
-              <CardHeader>
+            <Card className="print:break-inside-avoid print:border print:mt-8">
+              <CardHeader className="print:block">
                 <CardTitle>Nombre de transactions par méthode</CardTitle>
                 <CardDescription>Nombre de paiements effectués par méthode</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[400px] w-full">
+                <div className="h-[400px] w-full print:h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart 
                       data={paymentMethodsData} 
@@ -586,14 +685,14 @@ const Statistics = () => {
             </Card>
           </TabsContent>
           
-          <TabsContent value="memberships" className="space-y-6">
-            <Card>
-              <CardHeader>
+          <TabsContent value="memberships" className="space-y-6 print:mt-8">
+            <Card className="print:break-inside-avoid print:border print:mt-8">
+              <CardHeader className="print:block">
                 <CardTitle>Statut des adhésions</CardTitle>
                 <CardDescription>Répartition des adhésions par statut</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[400px] w-full flex justify-center">
+                <div className="h-[400px] w-full flex justify-center print:h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -631,33 +730,26 @@ const Statistics = () => {
               </CardFooter>
             </Card>
             
-            <Card>
-              <CardHeader>
-                <CardTitle>Répartition des adhérents</CardTitle>
-                <CardDescription>Nombre d'adhérents par mois d'adhésion</CardDescription>
+            <Card className="print:break-inside-avoid print:border print:mt-8">
+              <CardHeader className="print:block">
+                <CardTitle>Répartition des adhérents par mois</CardTitle>
+                <CardDescription>Nombre de nouvelles adhésions approuvées par mois en 2025</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px] w-full">
+                <div className="h-[300px] w-full print:h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart 
-                      data={[
-                        { month: 'Jan', count: 12 },
-                        { month: 'Fév', count: 15 },
-                        { month: 'Mar', count: 8 },
-                        { month: 'Avr', count: 10 },
-                        { month: 'Mai', count: 20 },
-                        { month: 'Juin', count: 25 }
-                      ]} 
+                      data={membershipMonthlyData} 
                       margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
-                      <Tooltip />
+                      <Tooltip formatter={(value) => [`${value} adhérent(s)`, 'Nombre']} />
                       <Legend />
                       <Bar 
                         dataKey="count" 
-                        name="Adhérents" 
+                        name="Nouvelles adhésions" 
                         fill="#8B5CF6"
                       >
                         <LabelList dataKey="count" position="top" />
@@ -667,12 +759,47 @@ const Statistics = () => {
                 </div>
               </CardContent>
               <CardFooter className="text-sm text-gray-500 border-t px-6 py-3">
-                Données pour l'année 2025
+                Adhésions approuvées en 2025 - Données basées sur {summaryData.totalMembers} membres
               </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
       </main>
+      
+      {/* Styles spécifiques pour l'impression */}
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: A4 landscape;
+            margin: 1cm;
+          }
+          
+          body {
+            background: white;
+            color: black;
+          }
+          
+          .print\\:block {
+            display: block !important;
+          }
+          
+          .print\\:hidden {
+            display: none !important;
+          }
+          
+          .print\\:break-inside-avoid {
+            break-inside: avoid;
+          }
+          
+          .print\\:mt-8 {
+            margin-top: 2rem !important;
+          }
+          
+          .chart-container {
+            page-break-inside: avoid;
+          }
+        }
+      `}</style>
     </div>
   );
 };
