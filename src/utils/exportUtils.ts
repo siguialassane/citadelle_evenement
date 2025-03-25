@@ -1,6 +1,6 @@
 
 // Utilitaires d'exportation pour PDF et CSV
-// Créé pour permettre l'exportation des données d'adhésion
+// Mise à jour: Amélioration de l'exportation PDF pour inclure les graphiques et tableaux complets
 
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -39,6 +39,99 @@ export const exportToPDF = async (element: HTMLElement, fileName: string) => {
     return true;
   } catch (error) {
     console.error("Erreur lors de l'exportation en PDF:", error);
+    return false;
+  }
+};
+
+/**
+ * Exporte une section entière avec tous les graphes en multi-pages PDF
+ * Cette fonction capture chaque section et les ajoute comme pages séparées au PDF
+ */
+export const exportStatsToPDF = async (element: HTMLElement, fileName: string) => {
+  try {
+    // Créer une instance de jsPDF en mode paysage pour les graphiques
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    // Dimensions du PDF A4 en paysage
+    const pageWidth = 297; // mm
+    const pageHeight = 210; // mm
+    
+    // Ajouter l'en-tête au PDF
+    doc.setFontSize(18);
+    doc.text("Statistiques complètes - IFTAR 2025", pageWidth / 2, 15, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.text(`Rapport généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 25, { align: 'center' });
+    
+    // Obtenir tous les éléments à exporter (cartes, graphiques, tableau)
+    const sections = element.querySelectorAll('.print\\:break-inside-avoid, .stats-summary-table');
+    
+    if (sections.length === 0) {
+      throw new Error("Aucune section trouvée pour l'exportation");
+    }
+    
+    // Variables pour gérer la pagination
+    let currentPage = 1;
+    let yPosition = 35; // Position initiale après l'en-tête
+    const margin = 10;
+    const maxHeight = pageHeight - margin * 2;
+    
+    // Fonction pour ajouter le pied de page
+    const addFooter = (page: number, totalPages: number) => {
+      doc.setPage(page);
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Page ${page} / ${totalPages} - LA CITADELLE`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+    };
+    
+    // Parcourir les sections et les ajouter au PDF
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i] as HTMLElement;
+      
+      // Calculer la hauteur nécessaire pour cette section
+      const scale = section.classList.contains('stats-summary-table') ? 1 : 1.5;
+      
+      // Capturer la section comme image
+      const canvas = await html2canvas(section, {
+        scale,
+        useCORS: true,
+        backgroundColor: '#FFFFFF'
+      });
+      
+      // Calculer les dimensions de l'image dans le PDF
+      const imgWidth = pageWidth - margin * 2;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Si la section ne tient pas sur la page actuelle, commencer une nouvelle page
+      if (yPosition + imgHeight > pageHeight - margin) {
+        doc.addPage();
+        currentPage++;
+        yPosition = margin;
+      }
+      
+      // Ajouter l'image au PDF
+      const imgData = canvas.toDataURL('image/png');
+      doc.addImage(imgData, 'PNG', margin, yPosition, imgWidth, imgHeight);
+      
+      // Mettre à jour la position Y pour la prochaine section
+      yPosition += imgHeight + 10;
+    }
+    
+    // Ajouter les pieds de page à toutes les pages
+    for (let page = 1; page <= currentPage; page++) {
+      addFooter(page, currentPage);
+    }
+    
+    // Télécharger le PDF
+    doc.save(`${fileName}.pdf`);
+    
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de l'exportation en PDF complet:", error);
     return false;
   }
 };

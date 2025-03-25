@@ -1,6 +1,5 @@
-
 // Page des statistiques générales avec des graphiques
-// Mise à jour: Correction des erreurs de syntaxe JSX et finalisation des styles d'impression
+// Mise à jour: Ajout d'un tableau récapitulatif complet et amélioration de l'export PDF
 // Affiche les données statistiques sous forme de camemberts et de graphiques avec des détails plus précis
 
 import React, { useEffect, useState, useRef } from "react";
@@ -30,12 +29,14 @@ import {
   Users, 
   Wallet, 
   CheckCircle,
-  Clock
+  Clock,
+  FileText
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
-import { exportToPDF } from "@/utils/exportUtils";
+import { exportToPDF, exportStatsToPDF } from "@/utils/exportUtils";
+import { StatsSummaryTable } from "@/components/admin/dashboard/stats/StatsSummaryTable";
 
 type Event = {
   date: string;
@@ -290,50 +291,24 @@ const Statistics = () => {
   const handlePrint = () => {
     window.print();
   };
-  
+
   const handleExportPDF = async () => {
     if (statisticsRef.current) {
       toast({
         title: "Génération du PDF",
-        description: "Veuillez patienter pendant la création du PDF...",
+        description: "Veuillez patienter pendant la création du PDF complet...",
       });
       
       try {
-        const doc = new jsPDF('landscape', 'mm', 'a4');
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        
-        // Titre
-        doc.setFontSize(18);
-        doc.text("Statistiques générales - IFTAR 2025", pageWidth/2, 20, { align: 'center' });
-        
-        // Sous-titre
-        doc.setFontSize(12);
-        doc.text(`Rapport généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth/2, 30, { align: 'center' });
-        
-        // Statistiques
-        doc.setFontSize(14);
-        doc.text("Participants inscrits:", 20, 50);
-        doc.text(`${summaryData.totalParticipants}`, 100, 50);
-        
-        doc.text("Revenus totaux:", 20, 60);
-        doc.text(`${formatMoneyAmount(summaryData.totalRevenue)}`, 100, 60);
-        
-        doc.text("Participants présents:", 20, 70);
-        doc.text(`${summaryData.totalCheckedIn} (${summaryData.totalParticipants > 0 ? Math.round((summaryData.totalCheckedIn / summaryData.totalParticipants) * 100) : 0}%)`, 100, 70);
-        
-        doc.text("Membres:", 20, 80);
-        doc.text(`${summaryData.totalMembers}`, 100, 80);
-        
-        // Pied de page
-        doc.setFontSize(10);
-        doc.text("LA CITADELLE - Rapport statistique confidentiel", pageWidth/2, pageHeight - 10, { align: 'center' });
-        
-        doc.save(`statistiques-iftar-${new Date().toISOString().slice(0,10)}.pdf`);
+        // Utiliser la nouvelle fonction qui exporte toutes les sections
+        await exportStatsToPDF(
+          statisticsRef.current, 
+          `statistiques-iftar-${new Date().toISOString().slice(0,10)}`
+        );
         
         toast({
           title: "PDF généré",
-          description: "Le fichier PDF a été téléchargé avec succès.",
+          description: "Le fichier PDF avec les graphiques a été téléchargé avec succès.",
         });
       } catch (error) {
         console.error("Erreur lors de la génération du PDF:", error);
@@ -379,7 +354,7 @@ const Statistics = () => {
             </Button>
             <Button onClick={handleExportPDF} variant="outline" className="flex items-center gap-2">
               <Download className="h-4 w-4" />
-              Exporter PDF
+              Exporter PDF complet
             </Button>
             <Button onClick={() => navigate('/admin/dashboard')}>
               Retour au tableau de bord
@@ -444,6 +419,17 @@ const Statistics = () => {
               <p className="text-sm text-muted-foreground mt-1">Adhésions approuvées</p>
             </CardContent>
           </Card>
+        </div>
+        
+        {/* Tableau récapitulatif complet - Nouveau */}
+        <div className="mb-6">
+          <StatsSummaryTable 
+            summaryData={summaryData}
+            paymentMethodsData={paymentMethodsData}
+            membershipStatusData={membershipStatusData}
+            checkInData={checkInData}
+            className="stats-summary-table print:break-inside-avoid"
+          />
         </div>
         
         <Tabs defaultValue="general" className="w-full print:block">
@@ -813,29 +799,4 @@ const Statistics = () => {
             }
             
             .print\\:h-\\[300px\\] {
-              height: 300px !important;
-            }
-            
-            .print\\:border {
-              border: 1px solid #e5e7eb !important;
-            }
-            
-            .print\\:text-black {
-              color: black !important;
-            }
-            
-            .print\\:bg-white {
-              background-color: white !important;
-            }
-            
-            .print\\:mt-8 {
-              margin-top: 2rem !important;
-            }
-          }
-        `}
-      </style>
-    </div>
-  );
-};
-
-export default Statistics;
+              height: 300px !

@@ -1,3 +1,6 @@
+// Fonctions d'exportation de données en PDF et CSV
+// Mise à jour: Amélioration de l'exportation PDF avec formatage standardisé
+
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { toast } from "@/hooks/use-toast";
@@ -255,13 +258,12 @@ export const exportToPDF = async (
     const margin = 10;
     const usableWidth = pageWidth - (margin * 2);
     
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(16);
-    pdf.text('Liste des participants', margin, margin + 10);
+    // En-tête amélioré
+    pdf.setFontSize(18);
+    pdf.text('Liste complète des participants', pageWidth / 2, margin + 10, { align: 'center' });
     
-    pdf.setFont("helvetica", "normal");
     pdf.setFontSize(10);
-    pdf.text(`Extrait le: ${new Date().toLocaleDateString('fr-FR')}`, margin, margin + 20);
+    pdf.text(`Extrait le: ${new Date().toLocaleDateString('fr-FR')} - IFTAR 2025`, pageWidth / 2, margin + 20, { align: 'center' });
     
     const columns = [
       "Nom", 
@@ -374,6 +376,31 @@ export const exportToPDF = async (
       pdf.setFontSize(8);
       pdf.setTextColor(100, 100, 100);
       pdf.text(`Page ${i + 1}/${totalPages}`, pageWidth - 25, pageHeight - 10);
+    }
+    
+    // Ajouter des informations récapitulatives supplémentaires
+    let yPosition = pageHeight - 30;
+    pdf.setFontSize(11);
+    pdf.text("Récapitulatif:", margin, yPosition);
+    yPosition += 6;
+    
+    const presentCount = filteredParticipants.filter(p => p.check_in_status).length;
+    const memberCount = filteredParticipants.filter(p => p.is_member).length;
+    
+    pdf.setFontSize(9);
+    pdf.text(`• Total des participants: ${filteredParticipants.length}`, margin + 5, yPosition);
+    yPosition += 4;
+    pdf.text(`• Participants enregistrés: ${presentCount} (${Math.round((presentCount / filteredParticipants.length) * 100) || 0}%)`, margin + 5, yPosition);
+    yPosition += 4;
+    pdf.text(`• Membres de la communauté: ${memberCount} (${Math.round((memberCount / filteredParticipants.length) * 100) || 0}%)`, margin + 5, yPosition);
+    
+    // Pied de page amélioré avec date et numéro de page
+    for (let i = 0; i < pdf.getNumberOfPages(); i++) {
+      pdf.setPage(i + 1);
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`LA CITADELLE - Rapport généré le ${new Date().toLocaleDateString('fr-FR')}`, margin, pageHeight - 5);
+      pdf.text(`Page ${i + 1} / ${pdf.getNumberOfPages()}`, pageWidth - margin - 20, pageHeight - 5);
     }
     
     pdf.save(`participants-${new Date().toISOString().slice(0,10)}.pdf`);
