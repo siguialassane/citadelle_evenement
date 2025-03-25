@@ -1,5 +1,6 @@
+
 // Page des statistiques générales avec des graphiques
-// Mise à jour: Correction des données d'inscriptions et ajout d'informations supplémentaires
+// Mise à jour: Correction des erreurs de syntaxe JSX et finalisation des styles d'impression
 // Affiche les données statistiques sous forme de camemberts et de graphiques avec des détails plus précis
 
 import React, { useEffect, useState, useRef } from "react";
@@ -772,7 +773,69 @@ const Statistics = () => {
         </Tabs>
       </main>
       
-      {/* Styles spécifiques pour l'impression - corrigé pour éviter l'erreur TypeScript */}
+      {/* Styles spécifiques pour l'impression - correction du style */}
       <style>
         {`
           @media print {
+            body {
+              background-color: white;
+              color: black;
+              margin: 0;
+              padding: 0;
+            }
+            
+            .print\\:hidden {
+              display: none !important;
+            }
+            
+            .print\\:block {
+              display: block !important;
+            }
+            
+            .print\\:break-inside-avoid {
+              break-inside: avoid;
+            }
+            
+            .print\\:grid-cols-2 {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+            
+            .print\\:grid-cols-4 {
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            }
+            
+            .print\\:h-\\[200px\\] {
+              height: 200px !important;
+            }
+            
+            .print\\:h-\\[250px\\] {
+              height: 250px !important;
+            }
+            
+            .print\\:h-\\[300px\\] {
+              height: 300px !important;
+            }
+            
+            .print\\:border {
+              border: 1px solid #e5e7eb !important;
+            }
+            
+            .print\\:text-black {
+              color: black !important;
+            }
+            
+            .print\\:bg-white {
+              background-color: white !important;
+            }
+            
+            .print\\:mt-8 {
+              margin-top: 2rem !important;
+            }
+          }
+        `}
+      </style>
+    </div>
+  );
+};
+
+export default Statistics;
