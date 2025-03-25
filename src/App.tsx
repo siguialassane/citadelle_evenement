@@ -14,6 +14,7 @@ import QrCodeScan from './pages/admin/QrCodeScan';
 import ExcelAnalyzer from './pages/ExcelAnalyzer';
 import MembershipDashboard from './pages/admin/MembershipDashboard';
 import MembershipForm from './pages/Membership';
+import Statistics from './pages/admin/Statistics';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
         <Route path="/admin/payment-validation/:paymentId" element={<PaymentValidation />} />
         <Route path="/admin/qr-scan" element={<QrCodeScan />} />
         <Route path="/admin/membership" element={<MembershipDashboard />} />
+        <Route path="/admin/statistics" element={<Statistics />} />
         
         {/* Routes pour les participants */}
         <Route path="/confirmation/:participantId" element={<Confirmation />} />

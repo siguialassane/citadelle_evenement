@@ -2,6 +2,7 @@
 // Mise à jour: Ajout de la fonctionnalité de paiement rapide et gestion du rafraîchissement
 // Mise à jour: Ajout d'un raccourci vers le tableau de bord d'adhésion
 // Mise à jour: Ajout de la fonctionnalité de modification du statut de membre
+// Mise à jour: Ajout d'un bouton vers les statistiques générales
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { type Participant } from "../../types/participant";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Mail, CheckCircle, Users } from "lucide-react";
+import { Bell, Mail, CheckCircle, Users, BarChart } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 
@@ -228,6 +229,10 @@ const AdminDashboard = () => {
     handleRefresh();
   };
 
+  const goToStatistics = () => {
+    navigate("/admin/statistics");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header onLogout={handleLogout} />
@@ -253,6 +258,14 @@ const AdminDashboard = () => {
             >
               <Users className="h-4 w-4" />
               Gestion des adhésions
+            </Button>
+            
+            <Button 
+              onClick={goToStatistics}
+              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              <BarChart className="h-4 w-4" />
+              Statistiques générales
             </Button>
             
             <Button 
