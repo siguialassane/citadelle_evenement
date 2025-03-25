@@ -1,5 +1,6 @@
+
 // Fonctions d'exportation de données en PDF et CSV
-// Mise à jour: Amélioration de l'exportation PDF avec formatage standardisé
+// Mise à jour: Correction de la redéfinition de variable yPosition et amélioration de l'exportation PDF
 
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -379,20 +380,21 @@ export const exportToPDF = async (
     }
     
     // Ajouter des informations récapitulatives supplémentaires
-    let yPosition = pageHeight - 30;
+    // Correction : renommé yPosition en recapYPosition pour éviter la redéfinition
+    let recapYPosition = pageHeight - 30;
     pdf.setFontSize(11);
-    pdf.text("Récapitulatif:", margin, yPosition);
-    yPosition += 6;
+    pdf.text("Récapitulatif:", margin, recapYPosition);
+    recapYPosition += 6;
     
     const presentCount = filteredParticipants.filter(p => p.check_in_status).length;
     const memberCount = filteredParticipants.filter(p => p.is_member).length;
     
     pdf.setFontSize(9);
-    pdf.text(`• Total des participants: ${filteredParticipants.length}`, margin + 5, yPosition);
-    yPosition += 4;
-    pdf.text(`• Participants enregistrés: ${presentCount} (${Math.round((presentCount / filteredParticipants.length) * 100) || 0}%)`, margin + 5, yPosition);
-    yPosition += 4;
-    pdf.text(`• Membres de la communauté: ${memberCount} (${Math.round((memberCount / filteredParticipants.length) * 100) || 0}%)`, margin + 5, yPosition);
+    pdf.text(`• Total des participants: ${filteredParticipants.length}`, margin + 5, recapYPosition);
+    recapYPosition += 4;
+    pdf.text(`• Participants enregistrés: ${presentCount} (${Math.round((presentCount / filteredParticipants.length) * 100) || 0}%)`, margin + 5, recapYPosition);
+    recapYPosition += 4;
+    pdf.text(`• Membres de la communauté: ${memberCount} (${Math.round((memberCount / filteredParticipants.length) * 100) || 0}%)`, margin + 5, recapYPosition);
     
     // Pied de page amélioré avec date et numéro de page
     for (let i = 0; i < pdf.getNumberOfPages(); i++) {
