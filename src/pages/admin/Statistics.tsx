@@ -1,6 +1,7 @@
 
 // Page des statistiques générales avec des graphiques
-// Affiche les données statistiques sous forme de camemberts et de graphiques
+// Mise à jour: Amélioration de la présentation visuelle et ajout de détails sur les périodes d'inscription
+// Affiche les données statistiques sous forme de camemberts et de graphiques avec des détails plus précis
 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -8,11 +9,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { 
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, 
-  CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line 
+  CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, 
+  Area, AreaChart, LabelList
 } from "recharts";
 import { Header } from "@/components/admin/dashboard/Header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { 
@@ -20,6 +22,18 @@ import {
   ChartTooltip, 
   ChartTooltipContent 
 } from "@/components/ui/chart";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Printer, 
+  Download, 
+  Calendar, 
+  Users, 
+  Wallet, 
+  CheckCircle,
+  Clock
+} from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 type Event = {
   date: string;
@@ -39,7 +53,29 @@ type CheckInStatistics = {
   count: number;
 };
 
-const COLORS = ['#8B5CF6', '#EC4899', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444'];
+// Périodes d'inscription (données fictives à remplacer par des données réelles)
+const registrationPeriods = [
+  { period: '3 mois avant', count: 15, date: '15 déc 2024' },
+  { period: '2 mois avant', count: 28, date: '15 jan 2025' },
+  { period: '1 mois avant', count: 42, date: '15 fév 2025' },
+  { period: '3 semaines avant', count: 60, date: '22 fév 2025' },
+  { period: '2 semaines avant', count: 85, date: '1 mar 2025' },
+  { period: '1 semaine avant', count: 120, date: '8 mar 2025' },
+  { period: 'Derniers jours', count: 150, date: '14 mar 2025' },
+  { period: 'Jour J', count: 165, date: '15 mar 2025' }
+];
+
+const COLORS = ['#10B981', '#8B5CF6', '#0EA5E9', '#F59E0B', '#EC4899', '#EF4444', '#64748B', '#6366F1'];
+const PAYMENT_COLORS = {
+  'Mobile Money': '#0EA5E9',
+  'Carte': '#8B5CF6',
+  'Espèces': '#10B981',
+  'Virement': '#F59E0B',
+  'Orange Money': '#F97316',
+  'Wave': '#06B6D4',
+  'MTN Mobile Money': '#FCD34D',
+  'Autre': '#64748B'
+};
 
 const Statistics = () => {
   const navigate = useNavigate();
@@ -49,6 +85,12 @@ const Statistics = () => {
   const [paymentMethodsData, setPaymentMethodsData] = useState<PaymentMethodData[]>([]);
   const [checkInData, setCheckInData] = useState<CheckInStatistics[]>([]);
   const [membershipStatusData, setMembershipStatusData] = useState<{ status: string; count: number }[]>([]);
+  const [summaryData, setSummaryData] = useState({
+    totalParticipants: 0,
+    totalRevenue: 0,
+    totalCheckedIn: 0,
+    totalMembers: 0
+  });
 
   useEffect(() => {
     const checkAuth = () => {
@@ -106,17 +148,6 @@ const Statistics = () => {
         throw membershipsError;
       }
 
-      // Données fictives pour démonstration (à remplacer par des données réelles)
-      const mockEventData: Event[] = [
-        { date: 'Jan 2023', participants: 45, completed_payments: 40, check_ins: 35 },
-        { date: 'Fév 2023', participants: 52, completed_payments: 48, check_ins: 42 },
-        { date: 'Mar 2023', participants: 38, completed_payments: 32, check_ins: 30 },
-        { date: 'Avr 2023', participants: 65, completed_payments: 60, check_ins: 55 },
-        { date: 'Mai 2023', participants: 80, completed_payments: 72, check_ins: 68 },
-        { date: 'Juin 2023', participants: 95, completed_payments: 85, check_ins: 80 }
-      ];
-      setEventData(mockEventData);
-
       // Analyse des méthodes de paiement
       const allPayments = [
         ...(paymentsData || []).map(p => ({ method: p.payment_method, amount: p.amount })),
@@ -125,7 +156,7 @@ const Statistics = () => {
 
       const paymentMethods: Record<string, { count: number, amount: number }> = {};
       allPayments.forEach(payment => {
-        const method = payment.method || 'Non spécifié';
+        const method = payment.method || 'Autre';
         if (!paymentMethods[method]) {
           paymentMethods[method] = { count: 0, amount: 0 };
         }
@@ -154,7 +185,12 @@ const Statistics = () => {
       const membershipStats: Record<string, number> = {};
       (membershipsData || []).forEach(membership => {
         const status = membership.status || 'Non spécifié';
-        membershipStats[status] = (membershipStats[status] || 0) + 1;
+        const displayStatus = 
+          status === 'pending' ? 'En attente' : 
+          status === 'approved' ? 'Approuvées' : 
+          status === 'rejected' ? 'Rejetées' : status;
+          
+        membershipStats[displayStatus] = (membershipStats[displayStatus] || 0) + 1;
       });
 
       const membershipStatusArray = Object.entries(membershipStats).map(([status, count]) => ({
@@ -162,6 +198,17 @@ const Statistics = () => {
         count
       }));
       setMembershipStatusData(membershipStatusArray);
+
+      // Calcul des revenus totaux
+      const totalRevenue = allPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+      
+      // Données récapitulatives
+      setSummaryData({
+        totalParticipants: totalParticipants,
+        totalRevenue: totalRevenue,
+        totalCheckedIn: checkedIn,
+        totalMembers: membershipsData?.filter(m => m.status === 'approved').length || 0
+      });
 
     } catch (error) {
       console.error("Erreur lors de la récupération des données statistiques:", error);
@@ -173,6 +220,10 @@ const Statistics = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatMoneyAmount = (amount: number) => {
+    return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
   };
 
   const handleRefresh = async () => {
@@ -192,6 +243,10 @@ const Statistics = () => {
     navigate("/");
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -206,23 +261,90 @@ const Statistics = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 print:bg-white">
       <Header onLogout={handleLogout} />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-wrap justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Statistiques générales
-          </h1>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Statistiques générales
+            </h1>
+            <p className="text-gray-500 mt-1">IFTAR 2025 - 15 Mars 2025</p>
+          </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 print:hidden">
+            <Button onClick={handlePrint} variant="outline" className="flex items-center gap-2">
+              <Printer className="h-4 w-4" />
+              Imprimer
+            </Button>
+            <Button onClick={handleRefresh} variant="outline" className="flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              Exporter PDF
+            </Button>
             <Button onClick={() => navigate('/admin/dashboard')}>
               Retour au tableau de bord
             </Button>
-            <Button onClick={handleRefresh} variant="outline">
-              Actualiser les données
-            </Button>
           </div>
+        </div>
+
+        {/* Cartes récapitulatives */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card className="border-t-4 border-t-blue-500">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-medium">Participants</CardTitle>
+                <Users className="h-5 w-5 text-blue-500" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{summaryData.totalParticipants}</p>
+              <p className="text-sm text-muted-foreground mt-1">Inscrits à l'événement</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-t-4 border-t-green-500">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-medium">Revenus</CardTitle>
+                <Wallet className="h-5 w-5 text-green-500" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{formatMoneyAmount(summaryData.totalRevenue)}</p>
+              <p className="text-sm text-muted-foreground mt-1">Total des paiements reçus</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-t-4 border-t-amber-500">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-medium">Présences</CardTitle>
+                <CheckCircle className="h-5 w-5 text-amber-500" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{summaryData.totalCheckedIn}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {summaryData.totalParticipants > 0 
+                  ? `${Math.round((summaryData.totalCheckedIn / summaryData.totalParticipants) * 100)}% de participation`
+                  : "Pas de participants"}
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-t-4 border-t-purple-500">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-medium">Membres</CardTitle>
+                <Users className="h-5 w-5 text-purple-500" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{summaryData.totalMembers}</p>
+              <p className="text-sm text-muted-foreground mt-1">Adhésions approuvées</p>
+            </CardContent>
+          </Card>
         </div>
         
         <Tabs defaultValue="general" className="w-full">
@@ -235,23 +357,51 @@ const Statistics = () => {
           <TabsContent value="general" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Évolution des participants</CardTitle>
-                <CardDescription>Nombre de participants, paiements complétés et présences par mois</CardDescription>
+                <CardTitle>Évolution des inscriptions avant l'événement</CardTitle>
+                <CardDescription>
+                  Progression des inscriptions du 15 décembre 2024 au 15 mars 2025 (jour de l'événement)
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-[400px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={eventData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <AreaChart 
+                      data={registrationPeriods} 
+                      margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
+                      <XAxis dataKey="period" />
                       <YAxis />
-                      <Tooltip />
+                      <Tooltip 
+                        formatter={(value, name) => [value, 'Inscrits']}
+                        labelFormatter={(label) => {
+                          const item = registrationPeriods.find(p => p.period === label);
+                          return `${label} (${item?.date})`;
+                        }}
+                      />
                       <Legend />
-                      <Line type="monotone" dataKey="participants" stroke="#8B5CF6" name="Participants" />
-                      <Line type="monotone" dataKey="completed_payments" stroke="#10B981" name="Paiements complétés" />
-                      <Line type="monotone" dataKey="check_ins" stroke="#0EA5E9" name="Présences" />
-                    </LineChart>
+                      <Area 
+                        type="monotone" 
+                        dataKey="count" 
+                        name="Participants inscrits" 
+                        stroke="#8B5CF6" 
+                        fill="#8B5CF6" 
+                        fillOpacity={0.3}
+                      >
+                        <LabelList dataKey="count" position="top" />
+                      </Area>
+                    </AreaChart>
                   </ResponsiveContainer>
+                </div>
+                <div className="text-center mt-4">
+                  <Badge className="bg-green-100 text-green-800 hover:bg-green-200 mr-2">
+                    <Calendar className="mr-1 h-3 w-3" />
+                    Événement: 15 Mars 2025
+                  </Badge>
+                  <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">
+                    <Clock className="mr-1 h-3 w-3" />
+                    Début des inscriptions: 15 Décembre 2024
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
@@ -264,45 +414,39 @@ const Statistics = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="h-[300px] w-full flex justify-center">
-                    <ChartContainer
-                      config={{
-                        checkedIn: { 
-                          color: "#10B981",
-                          label: "Présents" 
-                        },
-                        notCheckedIn: { 
-                          color: "#EF4444",
-                          label: "Absents" 
-                        }
-                      }}
-                    >
+                    <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={checkInData}
                           cx="50%"
                           cy="50%"
-                          labelLine={false}
+                          labelLine={true}
                           outerRadius={isMobile ? 80 : 100}
                           fill="#8884d8"
                           dataKey="count"
                           nameKey="status"
-                          label={({ name, percent }) => 
-                            `${name}: ${(percent * 100).toFixed(0)}%`
+                          label={({ name, percent, value }) => 
+                            `${name}: ${value} (${(percent * 100).toFixed(0)}%)`
                           }
                         >
                           {checkInData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={index === 0 ? '#10B981' : '#EF4444'} 
+                            />
                           ))}
                         </Pie>
-                        <ChartTooltip 
-                          content={
-                            <ChartTooltipContent labelKey="status" />
-                          } 
+                        <Tooltip 
+                          formatter={(value, name) => [`${value} participants`, name]}
                         />
+                        <Legend />
                       </PieChart>
-                    </ChartContainer>
+                    </ResponsiveContainer>
                   </div>
                 </CardContent>
+                <CardFooter className="text-sm text-gray-500 border-t px-6 py-3">
+                  Données enregistrées le jour de l'événement (15 Mars 2025)
+                </CardFooter>
               </Card>
               
               <Card>
@@ -312,32 +456,13 @@ const Statistics = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="h-[300px] w-full flex justify-center">
-                    <ChartContainer
-                      config={{
-                        mobMoney: { 
-                          color: "#0EA5E9",
-                          label: "Mobile Money" 
-                        },
-                        card: { 
-                          color: "#8B5CF6",
-                          label: "Carte" 
-                        },
-                        cash: { 
-                          color: "#10B981",
-                          label: "Espèces" 
-                        },
-                        bank: { 
-                          color: "#F59E0B",
-                          label: "Virement" 
-                        }
-                      }}
-                    >
+                    <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={paymentMethodsData}
                           cx="50%"
                           cy="50%"
-                          labelLine={false}
+                          labelLine={true}
                           outerRadius={isMobile ? 80 : 100}
                           fill="#8884d8"
                           dataKey="count"
@@ -347,18 +472,28 @@ const Statistics = () => {
                           }
                         >
                           {paymentMethodsData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={PAYMENT_COLORS[entry.method as keyof typeof PAYMENT_COLORS] || COLORS[index % COLORS.length]} 
+                            />
                           ))}
                         </Pie>
-                        <ChartTooltip 
-                          content={
-                            <ChartTooltipContent labelKey="method" />
-                          } 
+                        <Tooltip 
+                          formatter={(value, name, props) => {
+                            if (name === 'count') {
+                              return [`${value} transactions`, 'Nombre'];
+                            }
+                            return [value, name];
+                          }}
                         />
+                        <Legend />
                       </PieChart>
-                    </ChartContainer>
+                    </ResponsiveContainer>
                   </div>
                 </CardContent>
+                <CardFooter className="text-sm text-gray-500 border-t px-6 py-3">
+                  Statistiques basées sur {paymentMethodsData.reduce((sum, item) => sum + item.count, 0)} transactions
+                </CardFooter>
               </Card>
             </div>
           </TabsContent>
@@ -372,17 +507,42 @@ const Statistics = () => {
               <CardContent>
                 <div className="h-[400px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={paymentMethodsData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart 
+                      data={paymentMethodsData} 
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      layout="vertical"
+                    >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="method" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => `${value.toLocaleString()} XOF`} />
+                      <XAxis type="number" />
+                      <YAxis dataKey="method" type="category" width={100} />
+                      <Tooltip 
+                        formatter={(value) => [`${formatMoneyAmount(Number(value))}`, 'Montant']}
+                      />
                       <Legend />
-                      <Bar dataKey="amount" name="Montant (XOF)" fill="#8B5CF6" />
+                      <Bar 
+                        dataKey="amount" 
+                        name="Montant (FCFA)" 
+                        fill="#8B5CF6"
+                      >
+                        {paymentMethodsData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={PAYMENT_COLORS[entry.method as keyof typeof PAYMENT_COLORS] || COLORS[index % COLORS.length]} 
+                          />
+                        ))}
+                        <LabelList 
+                          dataKey="amount" 
+                          position="right" 
+                          formatter={(value) => formatMoneyAmount(Number(value))}
+                        />
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
+              <CardFooter className="text-sm text-gray-500 border-t px-6 py-3">
+                Montant total collecté: {formatMoneyAmount(summaryData.totalRevenue)}
+              </CardFooter>
             </Card>
             
             <Card>
@@ -393,17 +553,36 @@ const Statistics = () => {
               <CardContent>
                 <div className="h-[400px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={paymentMethodsData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart 
+                      data={paymentMethodsData} 
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      layout="vertical"
+                    >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="method" />
-                      <YAxis />
+                      <XAxis type="number" />
+                      <YAxis dataKey="method" type="category" width={100} />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="count" name="Nombre de transactions" fill="#0EA5E9" />
+                      <Bar 
+                        dataKey="count" 
+                        name="Nombre de transactions" 
+                        fill="#0EA5E9"
+                      >
+                        {paymentMethodsData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={PAYMENT_COLORS[entry.method as keyof typeof PAYMENT_COLORS] || COLORS[index % COLORS.length]} 
+                          />
+                        ))}
+                        <LabelList dataKey="count" position="right" />
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
+              <CardFooter className="text-sm text-gray-500 border-t px-6 py-3">
+                Total: {paymentMethodsData.reduce((sum, item) => sum + item.count, 0)} transactions
+              </CardFooter>
             </Card>
           </TabsContent>
           
@@ -415,49 +594,41 @@ const Statistics = () => {
               </CardHeader>
               <CardContent>
                 <div className="h-[400px] w-full flex justify-center">
-                  <ChartContainer
-                    config={{
-                      pending: { 
-                        color: "#F59E0B",
-                        label: "En attente" 
-                      },
-                      approved: { 
-                        color: "#10B981",
-                        label: "Approuvées" 
-                      },
-                      rejected: { 
-                        color: "#EF4444",
-                        label: "Rejetées" 
-                      }
-                    }}
-                  >
+                  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={membershipStatusData}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
+                        labelLine={true}
                         outerRadius={isMobile ? 120 : 150}
                         fill="#8884d8"
                         dataKey="count"
                         nameKey="status"
-                        label={({ name, percent }) => 
-                          `${name}: ${(percent * 100).toFixed(0)}%`
+                        label={({ name, percent, value }) => 
+                          `${name}: ${value} (${(percent * 100).toFixed(0)}%)`
                         }
                       >
-                        {membershipStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
+                        {membershipStatusData.map((entry, index) => {
+                          let color = COLORS[index % COLORS.length];
+                          if (entry.status === 'Approuvées') color = '#10B981';
+                          if (entry.status === 'En attente') color = '#F59E0B';
+                          if (entry.status === 'Rejetées') color = '#EF4444';
+                          
+                          return <Cell key={`cell-${index}`} fill={color} />;
+                        })}
                       </Pie>
-                      <ChartTooltip 
-                        content={
-                          <ChartTooltipContent labelKey="status" />
-                        } 
+                      <Tooltip 
+                        formatter={(value, name) => [`${value} adhésions`, name]}
                       />
+                      <Legend />
                     </PieChart>
-                  </ChartContainer>
+                  </ResponsiveContainer>
                 </div>
               </CardContent>
+              <CardFooter className="text-sm text-gray-500 border-t px-6 py-3">
+                Total: {membershipStatusData.reduce((sum, item) => sum + item.count, 0)} demandes d'adhésion
+              </CardFooter>
             </Card>
             
             <Card>
@@ -477,18 +648,27 @@ const Statistics = () => {
                         { month: 'Mai', count: 20 },
                         { month: 'Juin', count: 25 }
                       ]} 
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="count" name="Adhérents" fill="#8B5CF6" />
+                      <Bar 
+                        dataKey="count" 
+                        name="Adhérents" 
+                        fill="#8B5CF6"
+                      >
+                        <LabelList dataKey="count" position="top" />
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
+              <CardFooter className="text-sm text-gray-500 border-t px-6 py-3">
+                Données pour l'année 2025
+              </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
