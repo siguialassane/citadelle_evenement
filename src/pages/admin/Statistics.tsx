@@ -1,3 +1,4 @@
+
 // Page des statistiques générales avec des graphiques
 // Mise à jour: Ajout d'un tableau récapitulatif complet et amélioration de l'export PDF
 // Affiche les données statistiques sous forme de camemberts et de graphiques avec des détails plus précis
@@ -800,3 +801,12 @@ const Statistics = () => {
             
             .print\\:h-\\[300px\\] {
               height: 300px !important;
+            }
+          }
+        `}
+      </style>
+    </div>
+  );
+};
+
+export default Statistics;
