@@ -10,10 +10,16 @@ import { validateEmailData, prepareEmailData } from './emailValidation';
 import { EmailSendResult, ParticipantEmailData, AdminNotificationEmailData } from './types';
 import { EVENT_LOCATION } from "../../config";
 
-// Mise à jour des identifiants EmailJS pour les emails de remerciement
-const THANKS_EMAILJS_SERVICE_ID = "service_is5645q";
-const THANKS_EMAILJS_PUBLIC_KEY = "j9nKf3IoZXvL8mSae";
-const THANKS_TEMPLATE_ID = "template_xvdr1iq";
+import {
+  EMAILJS_SERVICE_ID,
+  EMAILJS_PUBLIC_KEY,
+  PARTICIPANT_TEMPLATE_ID
+} from "../../config";
+
+// Utilisation du service unique
+const THANKS_EMAILJS_SERVICE_ID = EMAILJS_SERVICE_ID;
+const THANKS_EMAILJS_PUBLIC_KEY = EMAILJS_PUBLIC_KEY;
+const THANKS_TEMPLATE_ID = PARTICIPANT_TEMPLATE_ID;
 
 /**
  * Formate les variables dynamiques dans le message
@@ -53,17 +59,24 @@ export const sendPersonalThanksEmail = async (participant: any, message: string)
     // Préformatage du message avec les variables remplacées
     const formattedMessage = formatMessageVariables(message, participant);
     
+    // Génération du HTML dynamique pour l'email de remerciement
+    const emailParticipantHtml = `
+      <div>${formattedMessage}</div>
+      <p style="margin-top:20px;">📍 ${EVENT_LOCATION.name}<br>${EVENT_LOCATION.address}</p>
+      <a href="${EVENT_LOCATION.mapsUrl}">Voir sur Google Maps</a>
+    `;
+
     // Préparation des paramètres pour le template
     const templateParams = {
-      to_email: email, // Email dynamique positionné en premier
-      to_name: `${participant.first_name} ${participant.last_name}`,
-      from_name: "LA CITADELLE",
+      to_email: email,
+      subject: `Message de La Citadelle - ${participant.first_name} ${participant.last_name}`,
+      email_participant: emailParticipantHtml,
       prenom: participant.first_name,
       nom: participant.last_name,
       participant_name: `${participant.first_name} ${participant.last_name}`,
       participant_email: participant.email,
       participant_id: participant.id,
-      message: formattedMessage, // Message déjà formaté avec les variables remplacées
+      message: formattedMessage,
       app_url: appUrl,
       maps_url: EVENT_LOCATION.mapsUrl,
       event_location: EVENT_LOCATION.name,
@@ -81,12 +94,12 @@ export const sendPersonalThanksEmail = async (participant: any, message: string)
       message_preview: templateParams.message.substring(0, 30) + "..."
     });
 
-    // Envoi de l'email avec les NOUVELLES identifiants EmailJS
+    // Envoi de l'email via le service unique
     const response = await emailjs.send(
-      THANKS_EMAILJS_SERVICE_ID, // Nouvelle valeur: service_is5645q
-      THANKS_TEMPLATE_ID,        // Nouvelle valeur: template_xvdr1iq
+      THANKS_EMAILJS_SERVICE_ID,
+      THANKS_TEMPLATE_ID,
       templateParams,
-      THANKS_EMAILJS_PUBLIC_KEY  // Nouvelle valeur: j9nKf3IoZXvL8mSae
+      THANKS_EMAILJS_PUBLIC_KEY
     );
 
     console.log("Email personnalisé envoyé avec succès:", response);
@@ -126,15 +139,22 @@ export const sendPublicThanksEmail = async (participants: any[], message: string
         // Préformatage du message avec les variables remplacées
         const formattedMessage = formatMessageVariables(message, participant);
         
+        // Génération du HTML dynamique pour l'email de remerciement
+        const emailParticipantHtml = `
+          <div>${formattedMessage}</div>
+          <p style="margin-top:20px;">📍 ${EVENT_LOCATION.name}<br>${EVENT_LOCATION.address}</p>
+          <a href="${EVENT_LOCATION.mapsUrl}">Voir sur Google Maps</a>
+        `;
+
         // Préparation des paramètres pour le template
         const templateParams = {
-          to_email: email, // Email dynamique positionné en premier
-          to_name: `${participant.first_name} ${participant.last_name}`,
-          from_name: "LA CITADELLE",
+          to_email: email,
+          subject: `Message de La Citadelle - ${participant.first_name} ${participant.last_name}`,
+          email_participant: emailParticipantHtml,
           prenom: participant.first_name,
           nom: participant.last_name,
           participant_name: `${participant.first_name} ${participant.last_name}`,
-          message: formattedMessage, // Message déjà formaté avec les variables remplacées
+          message: formattedMessage,
           app_url: appUrl,
           maps_url: EVENT_LOCATION.mapsUrl,
           event_location: EVENT_LOCATION.name,
@@ -143,12 +163,12 @@ export const sendPublicThanksEmail = async (participants: any[], message: string
           reply_to: "club.lacitadelle@gmail.com"
         };
         
-        // Envoi de l'email avec les NOUVELLES identifiants EmailJS
+        // Envoi de l'email via le service unique
         await emailjs.send(
-          THANKS_EMAILJS_SERVICE_ID, // Nouvelle valeur: service_is5645q
-          THANKS_TEMPLATE_ID,        // Nouvelle valeur: template_xvdr1iq
+          THANKS_EMAILJS_SERVICE_ID,
+          THANKS_TEMPLATE_ID,
           templateParams,
-          THANKS_EMAILJS_PUBLIC_KEY  // Nouvelle valeur: j9nKf3IoZXvL8mSae
+          THANKS_EMAILJS_PUBLIC_KEY
         );
         
         successCount++;

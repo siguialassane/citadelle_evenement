@@ -33,13 +33,13 @@ export function MessageComposer({
   // Quelques modèles de messages prédéfinis
   const messageTemplates = {
     personal: [
-      "Cher(e) {{prenom}} {{nom}}, nous tenons à vous remercier personnellement pour votre participation à l'IFTAR 2025. Votre présence a contribué au succès de cet événement.",
-      "Cher(e) {{prenom}} {{nom}}, c'est avec une grande joie que nous avons pu vous accueillir à l'IFTAR 2025. Merci pour votre participation qui a rendu cet événement spécial.",
-      "Assalam Aleykoum {{prenom}} {{nom}},\nSuite à votre intérêt pour notre club service, nous souhaitons vous inviter officiellement à rejoindre LA CITADELLE en tant que membre actif."
+      "Assalam Aleykoum {{prenom}} {{nom}}, que la paix et les bénédictions d'Allah soient sur vous. Nous vous remercions chaleureusement pour votre présence à l'IFTAR 2026. Votre participation a rendu cet événement encore plus spécial.",
+      "Assalam Aleykoum {{prenom}} {{nom}}, c'est avec joie et gratitude que nous vous remercions d'avoir partagé ce moment de rupture du jeûne avec nous lors de l'IFTAR 2026. Qu'Allah accepte vos bonnes actions.",
+      "Assalam Aleykoum {{prenom}} {{nom}},\nSuite à votre intérêt pour notre association, nous souhaitons vous inviter officiellement à rejoindre LA CITADELLE en tant que membre actif. Qu'Allah guide nos pas."
     ],
     public: [
-      "Chers participants, nous tenons à vous remercier chaleureusement pour votre présence à l'IFTAR 2025. Cet événement a été un succès grâce à vous tous.",
-      "Chers frères et sœurs, c'est avec gratitude que nous vous remercions d'avoir participé à notre IFTAR 2025. Votre présence a fait de cet événement un moment mémorable."
+      "Assalam Aleykoum chers frères et sœurs, nous vous remercions du fond du cœur pour votre présence à l'IFTAR 2026. Qu'Allah récompense chacun d'entre vous pour sa participation et sénisse cet événement.",
+      "Assalam Aleykoum chers frères et sœurs, c'est avec gratitude et émotion que nous vous remercions d'avoir rompu le jeûne ensemble lors de notre IFTAR 2026. Votre présence a été un don précieux. Qu'Allah nous réunisse à nouveau."
     ]
   };
 

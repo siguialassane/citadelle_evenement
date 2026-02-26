@@ -64,13 +64,16 @@ export function useManualPayment(participant: Participant) {
       console.log("Paiement manuel enregistré avec ID:", manualPayment.id);
 
       // Envoyer une notification à l'administrateur (email défini dans EmailJS)
-      await sendAdminNotification(
+      const adminEmailSent = await sendAdminNotification(
         manualPayment.id,
         participant,
         paymentMethod,
         phoneNumber,
         comments
       );
+      if (!adminEmailSent) {
+        console.warn("Email admin non envoyé - vérifier la console pour les détails");
+      }
 
       // Tenter d'envoyer l'email initial au participant
       const participantEmailSent = await sendParticipantInitialEmail(

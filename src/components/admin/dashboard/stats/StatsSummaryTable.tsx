@@ -57,7 +57,7 @@ export const StatsSummaryTable = ({
     <div className={`bg-white rounded-lg shadow-sm border ${className || ''}`}>
       <div className="p-4 border-b">
         <h2 className="text-xl font-bold">Tableau récapitulatif des statistiques</h2>
-        <p className="text-sm text-gray-500">Rapport généré le {currentDate} - IFTAR 2025</p>
+        <p className="text-sm text-gray-500">Rapport généré le {currentDate} - IFTAR 2026</p>
       </div>
       
       <div className="overflow-x-auto">

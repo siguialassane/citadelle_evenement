@@ -39,7 +39,7 @@ export const SearchAndExport = ({
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow mb-6">
+    <div className="bg-white p-4 rounded-lg shadow mb-6 w-full">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <SearchBar 
           searchTerm={searchTerm} 

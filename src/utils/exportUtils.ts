@@ -62,7 +62,7 @@ export const exportStatsToPDF = async (element: HTMLElement, fileName: string) =
     
     // Ajouter l'en-tête au PDF
     doc.setFontSize(18);
-    doc.text("Statistiques complètes - IFTAR 2025", pageWidth / 2, 15, { align: 'center' });
+    doc.text("Statistiques complètes - IFTAR 2026", pageWidth / 2, 15, { align: 'center' });
     
     doc.setFontSize(12);
     doc.text(`Rapport généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 25, { align: 'center' });

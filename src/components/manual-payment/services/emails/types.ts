@@ -6,11 +6,11 @@
 // - Ajout des types pour les emails de remerciement qui manquaient
 
 export interface EmailTemplateParams {
-  to_email: string;
+  to_email?: string;
   to_name?: string;
-  from_name: string;
-  prenom: string;
-  nom: string;
+  from_name?: string;
+  prenom?: string;
+  nom?: string;
   participant_phone?: string;
   status?: string;
   payment_method?: string;

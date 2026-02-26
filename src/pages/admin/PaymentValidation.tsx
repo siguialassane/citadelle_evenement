@@ -89,7 +89,7 @@ const PaymentValidation = () => {
 
   if (paymentId && currentPayment) {
     return (
-      <div className="container mx-auto py-10">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-10">
         <div className="flex justify-between items-center mb-6">
           <Button 
             variant="outline" 
@@ -116,7 +116,7 @@ const PaymentValidation = () => {
   }
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Validation des Paiements</h1>

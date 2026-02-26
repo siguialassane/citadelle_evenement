@@ -454,7 +454,7 @@ const Confirmation = () => {
                 <span className="block text-green-700">Inscription confirmée</span>
               </h1>
               <p className="mt-3 max-w-md mx-auto text-base text-gray-600 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-                Merci pour votre inscription à l'IFTAR 2025! Votre paiement a été traité avec succès.
+                Merci pour votre inscription à l'IFTAR 2026 ! Votre paiement a été traité avec succès.
               </p>
             </>
           )}

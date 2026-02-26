@@ -1,31 +1,33 @@
 
 // Ce fichier contient les constantes et configurations pour le paiement manuel
-// Mise à jour: Services EmailJS séparés pour confirmation et rejet
-// Mise à jour: Correction des services et templates pour éviter les doublons d'envoi
-// Mise à jour: NOUVEAU service dédié UNIQUEMENT pour les emails de rejet sans conflit
-// Mise à jour: Email administrateur géré directement dans le template EmailJS
-// Mise à jour: Nouvelles clés API pour le rejet d'adhésion
+// Mise à jour: Un seul service EmailJS pour tous les emails
+// Mise à jour: 2 templates - admin (notification) et participant (dynamique)
 
 // Définition des constantes
 export const PAYMENT_AMOUNT = 30000; // Montant fixé à 30000 XOF
 
-// Service UNIQUEMENT pour les emails initiaux et notifications admin
-export const EMAILJS_SERVICE_ID = "service_wrk5x0l";
-export const EMAILJS_PUBLIC_KEY = "uQAHVMcvEXg6coHr9";
+// Service EmailJS unique pour TOUS les emails
+export const EMAILJS_SERVICE_ID = "service_xt9q709";
+export const EMAILJS_PUBLIC_KEY = "xzpEEppsuAiB9Ktop";
 
-// Service UNIQUEMENT pour les emails de confirmation (avec QR code)
-export const CONFIRMATION_EMAILJS_SERVICE_ID = "service_zes2sew";
-export const CONFIRMATION_EMAILJS_PUBLIC_KEY = "8tZOeeBIj_j__B_cM";
+// Template admin - notification de nouvelle inscription
+// Params EmailJS: {{{email_admin}}}, {{subject}}
+// L'email destinataire admin est configuré directement dans EmailJS
+export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_oz843jo";
 
-// Service UNIQUEMENT pour les emails de rejet - NOUVELLES INFORMATIONS
-export const REJECTION_EMAILJS_SERVICE_ID = "service_zes2sew"; // Nouveau service ID
-export const REJECTION_EMAILJS_PUBLIC_KEY = "8tZOeeBIj_j__B_cM"; // Nouvelle clé API
-export const REJECTION_TEMPLATE_ID = "template_dq0ac69"; // Nouveau template ID
+// Template participant - utilisé pour inscription, validation ET rejet
+// Params EmailJS: {{{email_participant}}}, {{to_email}}, {{subject}}
+// Le contenu HTML de {{{email_participant}}} est généré dynamiquement
+export const PARTICIPANT_TEMPLATE_ID = "template_3e5dq5i";
 
-// Templates pour les différents types d'emails
-export const PARTICIPANT_INITIAL_TEMPLATE_ID = "template_sdofxhv"; // Email initial
-export const ADMIN_NOTIFICATION_TEMPLATE_ID = "template_4filizr"; // Notification admin
-export const CONFIRMATION_TEMPLATE_ID = "template_dq0ac69"; // QR code uniquement
+// Aliases pour compatibilité avec le reste du code
+export const PARTICIPANT_INITIAL_TEMPLATE_ID = PARTICIPANT_TEMPLATE_ID;
+export const CONFIRMATION_TEMPLATE_ID = PARTICIPANT_TEMPLATE_ID;
+export const REJECTION_TEMPLATE_ID = PARTICIPANT_TEMPLATE_ID;
+export const CONFIRMATION_EMAILJS_SERVICE_ID = EMAILJS_SERVICE_ID;
+export const CONFIRMATION_EMAILJS_PUBLIC_KEY = EMAILJS_PUBLIC_KEY;
+export const REJECTION_EMAILJS_SERVICE_ID = EMAILJS_SERVICE_ID;
+export const REJECTION_EMAILJS_PUBLIC_KEY = EMAILJS_PUBLIC_KEY;
 
 // Numéros de paiement
 export const PAYMENT_NUMBERS = {

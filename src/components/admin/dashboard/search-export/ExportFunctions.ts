@@ -264,7 +264,7 @@ export const exportToPDF = async (
     pdf.text('Liste complète des participants', pageWidth / 2, margin + 10, { align: 'center' });
     
     pdf.setFontSize(10);
-    pdf.text(`Extrait le: ${new Date().toLocaleDateString('fr-FR')} - IFTAR 2025`, pageWidth / 2, margin + 20, { align: 'center' });
+    pdf.text(`Extrait le: ${new Date().toLocaleDateString('fr-FR')} - IFTAR 2026`, pageWidth / 2, margin + 20, { align: 'center' });
     
     const columns = [
       "Nom", 

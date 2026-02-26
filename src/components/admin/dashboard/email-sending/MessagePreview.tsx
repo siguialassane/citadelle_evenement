@@ -54,7 +54,7 @@ export function MessagePreview({
       <Card className="border-dashed">
         <CardHeader className="bg-muted/30">
           <CardTitle className="text-center text-xl">
-            Merci pour votre participation à l'IFTAR 2025
+            Assalam Aleykoum — IFTAR 2026
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6 prose-sm max-w-none">
@@ -76,8 +76,8 @@ export function MessagePreview({
         </CardContent>
         <CardFooter className="bg-muted/30 px-6 py-4">
           <div className="text-sm text-center w-full">
-            <p>Que Allah accepte nos prières et nos actes d'adoration.</p>
-            <p className="mt-2">Cordialement,<br />L'équipe organisatrice de l'IFTAR 2025</p>
+            <p>Qu'Allah accepte nos prières et nos actes d'adoration. Ramadan Moubarak 🌙</p>
+            <p className="mt-2">Assalam Aleykoum wa rahmatoullahi wa barakatouhou,<br />L'équipe organisatrice de l'IFTAR 2026 — Association LA CITADELLE</p>
           </div>
         </CardFooter>
       </Card>

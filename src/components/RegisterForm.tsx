@@ -150,60 +150,55 @@ export function RegisterForm() {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto border-green-100 shadow-md">
-      <CardHeader className="space-y-1 bg-green-50 rounded-t-lg">
-        <CardTitle className="text-2xl font-bold text-center text-green-700">Inscription à l'événement</CardTitle>
-        <CardDescription className="text-center text-green-600">Veuillez remplir tous les champs pour vous inscrire</CardDescription>
-      </CardHeader>
-      <CardContent className="pt-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">Prénom</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600 h-4 w-4" />
-                        <Input className="pl-10 border-green-200 focus:border-green-400 focus:ring-green-400" placeholder="Votre prénom" {...field} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">Nom</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600 h-4 w-4" />
-                        <Input className="pl-10 border-green-200 focus:border-green-400 focus:ring-green-400" placeholder="Votre nom" {...field} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+    <div className="w-full">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="firstName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-700 font-medium">Prénom</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 h-4 w-4" />
+                      <Input className="pl-10 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500" placeholder="Votre prénom" {...field} />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="lastName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-700 font-medium">Nom</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 h-4 w-4" />
+                      <Input className="pl-10 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500" placeholder="Votre nom" {...field} />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
             <FormField
               control={form.control}
               name="contactNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700">Numéro de contact</FormLabel>
+                  <FormLabel className="text-slate-700 font-medium">Numéro de contact</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600 h-4 w-4" />
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 h-4 w-4" />
                       <Input 
-                        className="pl-10 border-green-200 focus:border-green-400 focus:ring-green-400" 
+                        className="pl-10 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500" 
                         placeholder="+225" 
                         {...field} 
                         onChange={(e) => {
@@ -234,7 +229,7 @@ export function RegisterForm() {
                     </div>
                   </FormControl>
                   <FormMessage />
-                  <FormDescription className="text-xs text-gray-500">
+                  <FormDescription className="text-xs text-slate-500">
                     Format: +225 suivi de 10 chiffres
                   </FormDescription>
                 </FormItem>
@@ -246,12 +241,12 @@ export function RegisterForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700">Email</FormLabel>
+                  <FormLabel className="text-slate-700 font-medium">Email</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600 h-4 w-4" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 h-4 w-4" />
                       <Input 
-                        className="pl-10 border-green-200 focus:border-green-400 focus:ring-green-400"
+                        className="pl-10 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500"
                         placeholder="votre.email@exemple.com" 
                         {...field} 
                         onBlur={(e) => {
@@ -264,7 +259,7 @@ export function RegisterForm() {
                     </div>
                   </FormControl>
                   <FormMessage />
-                  <FormDescription className="text-xs text-gray-500">
+                  <FormDescription className="text-xs text-slate-500">
                     Vous pouvez utiliser n'importe quel email, y compris des emails déjà utilisés.
                   </FormDescription>
                 </FormItem>
@@ -275,17 +270,17 @@ export function RegisterForm() {
               control={form.control}
               name="isMember"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border border-green-100 p-4 bg-green-50">
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-xl border border-emerald-100 p-4 bg-emerald-50/50">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      className="border-green-400 text-green-700"
+                      className="border-emerald-400 text-emerald-700 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel className="text-gray-700">Membre de la Citadelle</FormLabel>
-                    <FormDescription className="text-green-600">
+                    <FormLabel className="text-slate-700 font-medium cursor-pointer">Membre de la Citadelle</FormLabel>
+                    <FormDescription className="text-emerald-600/80">
                       Cochez cette case si vous êtes membre de la Citadelle
                     </FormDescription>
                   </div>
@@ -295,12 +290,12 @@ export function RegisterForm() {
 
             <Button 
               type="submit" 
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white" 
+              className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-6 text-lg rounded-xl shadow-md transition-all hover:shadow-lg" 
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Inscription en cours...
                 </>
               ) : (
@@ -309,10 +304,6 @@ export function RegisterForm() {
             </Button>
           </form>
         </Form>
-      </CardContent>
-      <CardFooter className="flex justify-center border-t border-green-100 pt-4">
-        <EventLogo size="small" />
-      </CardFooter>
-    </Card>
+    </div>
   );
 }

@@ -216,8 +216,8 @@ export const ParticipantTable = ({
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <Table id="participants-table">
+      <div className="bg-white rounded-lg shadow overflow-x-auto w-full">
+        <Table id="participants-table" className="w-full min-w-[1000px]">
           <TableCaption>Liste des participants à l'événement</TableCaption>
           <TableHeader>
             <TableRow>

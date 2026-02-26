@@ -1,10 +1,7 @@
 
 // Service d'envoi d'emails pour la validation des paiements
-// Mise à jour: Séparation complète des services d'envoi
-// Mise à jour: Un seul type d'email par action
-// Mise à jour: Ajout du statut de membre et du numéro de téléphone dans l'email
-// Mise à jour: Correction pour utiliser exclusivement le service de confirmation
-// Mise à jour: Construction explicite d'URLs complètes au lieu de templates
+// Mise à jour: Utilisation du template participant unique (template_3e5dq5i)
+// Le contenu HTML est généré dynamiquement via {{{email_participant}}}
 
 import emailjs from '@emailjs/browser';
 import { 
@@ -16,73 +13,111 @@ import {
 
 export const sendConfirmationEmail = async (participantData: any, qrCodeId: string): Promise<boolean> => {
   try {
-    console.log("==== ENVOI EMAIL DE CONFIRMATION UNIQUEMENT ====");
-    console.log("Service de confirmation exclusif:", CONFIRMATION_EMAILJS_SERVICE_ID);
-    console.log("Template de confirmation exclusif:", CONFIRMATION_TEMPLATE_ID);
+    console.log("==== ENVOI EMAIL DE CONFIRMATION ====");
+    console.log("Service:", CONFIRMATION_EMAILJS_SERVICE_ID);
+    console.log("Template:", CONFIRMATION_TEMPLATE_ID);
     
-    // Vérification améliorée de l'email
     if (!participantData || !participantData.email) {
       console.error("Données du participant ou email manquants pour la confirmation");
       return false;
     }
     
-    // Traitement amélioré de l'email
     const email = participantData.email.trim();
-    console.log("Email utilisé pour l'envoi de confirmation (après trim):", email);
-    
-    // Vérification supplémentaire pour éviter l'erreur "recipient address is empty"
     if (!email || email === '') {
       console.error("Email vide après trim() pour la confirmation");
       return false;
     }
     
-    // Construction explicite des URLs complètes
+    // Construction des URLs
     const appUrl = window.location.origin;
-    console.log("Origine de l'application:", appUrl);
-    console.log("ID du participant:", participantData.id);
-    console.log("QR Code ID:", qrCodeId);
-    
-    // Construction de l'URL de confirmation complète
     const confirmationPageUrl = `${appUrl}/confirmation/${qrCodeId}?type=qr&pid=${participantData.id}`;
-    console.log("URL de confirmation construite:", confirmationPageUrl);
-    
-    // Génération du QR code avec l'URL complète
     const encodedConfirmationUrl = encodeURIComponent(confirmationPageUrl);
     const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedConfirmationUrl}&qzone=2`;
-    
-    // URL du reçu
     const receiptUrl = `${appUrl}/receipt/${participantData.id}`;
-    console.log("URL du reçu:", receiptUrl);
-    
-    // Formatage du statut de membre
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
-    
+    const confirmationDate = new Date().toLocaleDateString('fr-FR');
+
+    // Génération du contenu HTML dynamique pour la confirmation
+    const emailParticipantHtml = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f4f9f6;">
+        <div style="background-color:white;border-radius:10px;padding:30px;box-shadow:0 4px 12px rgba(0,0,0,0.08);border-top:5px solid #07553B;">
+          <div style="text-align:center;color:#07553B;font-size:1.3em;margin-bottom:15px;font-style:italic;">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+          <div style="text-align:center;padding-bottom:15px;border-bottom:1px solid #e0f0e8;margin-bottom:20px;">
+            <p style="font-size:2em;margin:0;">🌙</p>
+            <h1 style="color:#07553B;font-size:1.5em;margin:5px 0;">Alhamdulillah ! Inscription confirmée</h1>
+            <span style="display:inline-block;background-color:#07553B;color:white;padding:6px 16px;border-radius:20px;font-size:0.9em;">✔️ IFTAR 2026 — 15e Édition</span>
+          </div>
+          <p>Assalamou Aleykoum wa rahmatullahi wa barakatuh, cher(e) <strong>${participantData.first_name} ${participantData.last_name}</strong>,</p>
+          <p>Bonne nouvelle ! Votre paiement a été validé. Vous êtes officiellement inscrit(e) à notre <strong>IFTAR 2026</strong>. Qu'Allah vous récompense pour votre engagement et votre généreux soutien.</p>
+          <div style="background-color:#f0f9f4;padding:15px 20px;border-radius:8px;margin:20px 0;border-left:4px solid #07553B;">
+            <h3 style="margin-top:0;color:#07553B;">🗓️ Détails de l'événement :</h3>
+            <ul style="list-style:none;padding-left:0;">
+              <li>📅 <strong>Date :</strong> Dimanche 8 Mars 2026</li>
+              <li>⏰ <strong>Heure :</strong> De 16h00 à 21h00</li>
+              <li>🎤 <strong>Conférencier :</strong> Imam Cheick Ahmad Tidiane DIABATE</li>
+              <li>📖 <strong>Thème :</strong> « Le Coran : Parole incréée, source de guidance divine et de repère pour l'humanité »</li>
+            </ul>
+            <h3 style="color:#07553B;">👤 Vos informations :</h3>
+            <ul style="list-style:none;padding-left:0;">
+              <li><strong>Nom :</strong> ${participantData.first_name} ${participantData.last_name}</li>
+              <li><strong>Email :</strong> ${participantData.email}</li>
+              <li><strong>Téléphone :</strong> ${participantData.contact_number || 'Non disponible'}</li>
+              <li><strong>Statut :</strong> ${memberStatus}</li>
+              <li><strong>Date de confirmation :</strong> ${confirmationDate}</li>
+            </ul>
+          </div>
+          <p style="text-align:center;color:#07553B;font-weight:bold;">Votre QR code d'accès :</p>
+          <div style="text-align:center;margin:15px 0;">
+            <img src="${qrCodeImageUrl}" alt="QR Code d'accès" style="width:200px;height:200px;border:3px solid #07553B;border-radius:8px;padding:5px;" />
+          </div>
+          <p style="text-align:center;font-size:0.9em;color:#888;">Présentez ce QR code à l'entrée de l'événement</p>
+          <div style="background-color:#fffbe6;border-left:4px solid #f39c12;padding:12px 16px;margin:20px 0;font-style:italic;color:#555;border-radius:4px;">
+            « Celui qui nourrit un jeûneur recevra la même récompense que lui, sans que cela ne diminue en rien la récompense du jeûneur. »<br>
+            <em>(Hadith rapporté par At-Tirmidhi)</em>
+          </div>
+          <p>NB : 5 000 FCFA de votre pass seront utilisés pour offrir <strong>5 repas chauds</strong> à des indigents. Qu'Allah multiplie votre récompense.</p>
+          <div style="text-align:center;margin:20px 0;">
+            <a href="${confirmationPageUrl}" style="display:inline-block;padding:12px 24px;background-color:#07553B;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">📱 Voir ma confirmation</a>
+          </div>
+          <div style="text-align:center;margin:15px 0;">
+            <a href="${EVENT_LOCATION.mapsUrl}" style="display:inline-block;padding:12px 24px;background-color:#1a6b47;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">📍 ${EVENT_LOCATION.name} — Voir sur Google Maps</a>
+          </div>
+          <div style="text-align:center;margin-top:25px;font-size:0.85em;color:#888;border-top:1px solid #e0f0e8;padding-top:15px;">
+            <p>Ramadan Moubarak 🌙 Qu'Allah accepte nos jeûnes et nos prières.</p>
+            <p>Association LA CITADELLE — IFTAR 2026 © Tous droits réservés.</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Template: template_3e5dq5i - Params: {{{email_participant}}}, {{to_email}}, {{subject}}
     const templateParams = {
-      to_email: email, // Email du participant uniquement
+      to_email: email,
+      subject: `Inscription confirmée - ${participantData.first_name} ${participantData.last_name}`,
+      email_participant: emailParticipantHtml,
+      // Params supplémentaires pour compatibilité
       prenom: participantData.first_name,
       nom: participantData.last_name,
       participant_name: `${participantData.first_name} ${participantData.last_name}`,
       participant_phone: participantData.contact_number || "Non disponible",
-      participant_id: participantData.id, // Ajout explicite de l'ID
-      status: memberStatus, // Statut de membre (Membre ou Non membre)
+      participant_id: participantData.id,
+      status: memberStatus,
       qr_code_url: qrCodeImageUrl,
-      confirmation_url: confirmationPageUrl, // URL complète, pas de variable template
+      confirmation_url: confirmationPageUrl,
       receipt_url: receiptUrl,
-      app_url: appUrl, // URL de base complète
+      app_url: appUrl,
       maps_url: EVENT_LOCATION.mapsUrl,
       event_location: EVENT_LOCATION.name,
       event_address: EVENT_LOCATION.address,
-      confirmation_date: new Date().toLocaleDateString('fr-FR'),
+      confirmation_date: confirmationDate,
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    // Logs supplémentaires pour le débogage
     console.log("Paramètres EmailJS pour email de confirmation:", {
       to_email: templateParams.to_email,
+      subject: templateParams.subject,
       participant_name: templateParams.participant_name,
       participant_id: templateParams.participant_id,
-      confirmation_url: templateParams.confirmation_url,
-      app_url: templateParams.app_url
     });
 
     const response = await emailjs.send(

@@ -345,7 +345,7 @@ const Statistics = () => {
             <h1 className="text-2xl font-bold text-gray-900 print:text-black">
               Statistiques générales
             </h1>
-            <p className="text-gray-500 mt-1 print:text-gray-700">IFTAR 2025 - 15 Mars 2025</p>
+            <p className="text-gray-500 mt-1 print:text-gray-700">IFTAR 2026 - 8 Mars 2026</p>
           </div>
           
           <div className="flex items-center gap-3 print:hidden">
@@ -445,7 +445,7 @@ const Statistics = () => {
               <CardHeader>
                 <CardTitle>Évolution des inscriptions avant l'événement</CardTitle>
                 <CardDescription>
-                  Progression des inscriptions du 15 décembre 2024 au 15 mars 2025 (jour de l'événement)
+                  Progression des inscriptions du 8 décembre 2025 au 8 mars 2026 (jour de l'événement)
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -482,7 +482,7 @@ const Statistics = () => {
                 <div className="text-center mt-4">
                   <Badge className="bg-green-100 text-green-800 hover:bg-green-200 mr-2">
                     <Calendar className="mr-1 h-3 w-3" />
-                    Événement: 15 Mars 2025
+                    Événement: 8 Mars 2026
                   </Badge>
                   <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">
                     <Clock className="mr-1 h-3 w-3" />

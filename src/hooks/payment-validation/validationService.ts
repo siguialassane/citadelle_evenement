@@ -19,7 +19,7 @@ import { sendPaymentRejectionEmail } from "@/components/manual-payment/services/
 export const validatePayment = async (paymentId: string, paymentData: any): Promise<ValidationResponse> => {
   try {
     console.log("==== DÉBUT DU PROCESSUS DE VALIDATION UNIQUEMENT ====");
-    console.log("Service EmailJS pour confirmation (UNIQUEMENT):", "service_is5645q");
+    console.log("Service EmailJS pour confirmation (UNIQUEMENT):", "service_xt9q709");
     console.log("ID du paiement à valider:", paymentId);
     
     if (!paymentData) {
@@ -82,7 +82,7 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
 export const rejectPayment = async (paymentId: string): Promise<ValidationResponse> => {
   try {
     console.log("==== DÉBUT DU PROCESSUS DE REJET UNIQUEMENT ====");
-    console.log("NOUVEAU Service EmailJS pour rejet (UNIQUEMENT):", "service_1gvwp2w");
+    console.log("Service EmailJS pour rejet (UNIQUEMENT):", "service_xt9q709");
     console.log("ID du paiement à rejeter:", paymentId);
     
     const paymentData = await fetchPaymentById(paymentId);

@@ -273,7 +273,7 @@ const PaymentPending = () => {
           
           <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
             <span className="block text-green-700">Paiement en attente de validation</span>
-            <span className="block text-orange-500 text-2xl sm:text-3xl">IFTAR 2025 - 14e Édition</span>
+            <span className="block text-orange-500 text-2xl sm:text-3xl">IFTAR 2026 - 15e Édition</span>
           </h1>
         </div>
 

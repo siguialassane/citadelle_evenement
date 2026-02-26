@@ -99,7 +99,7 @@ export const ADHESION_INVITATION_TEMPLATE = `<!DOCTYPE html>
         
         <a href="{{app_url}}/membership" class="action-btn">Je souhaite adhérer</a>
         
-        <p>Si vous avez des questions sur l'adhésion, n'hésitez pas à nous contacter directement.</p>
+        <p>Si vous avez des questions sur l'adhésion, n'hésitez pas à nous contacter directement au <strong>{{contact_phone}}</strong> ou par email à <strong>{{contact_email}}</strong>.</p>
         
         <p>Qu'Allah vous accorde Sa bénédiction et Sa guidance.</p>
         
@@ -468,7 +468,7 @@ export const ADHESION_REJECTION_TEMPLATE = `<!DOCTYPE html>
         
         <p>Nous vous encourageons néanmoins à participer à nos événements ouverts au public et à rester en contact avec notre association.</p>
         
-        <p>Si vous souhaitez soumettre une nouvelle demande ultérieurement ou si vous avez des questions, n'hésitez pas à nous contacter.</p>
+        <p>Si vous souhaitez soumettre une nouvelle demande ultérieurement ou si vous avez des questions, n'hésitez pas à nous contacter au <strong>{{contact_phone}}</strong> ou par email à <strong>{{contact_email}}</strong>.</p>
         
         <a href="{{try_again_url}}" class="action-btn">Soumettre une nouvelle demande</a>
         
