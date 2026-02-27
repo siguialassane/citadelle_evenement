@@ -6,7 +6,7 @@
 // - Notification par email à l'administrateur pour la validation
 
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ManualPaymentForm } from "@/components/manual-payment/ManualPaymentForm";
@@ -22,6 +22,16 @@ const Payment = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Désactiver la restauration automatique du scroll par le navigateur (important pour mobile)
+  useLayoutEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  }, []);
+
   useEffect(() => {
     console.log("Payment Page: Rendu avec URL:", window.location.href);
     console.log("Payment Page: participantId:", participantId);

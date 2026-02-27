@@ -43,34 +43,36 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
       return { success: false, alreadyProcessed: true };
     }
     
-    // Mise à jour de la base de données AVANT l'envoi d'email
-    const { qrCodeId, participantId } = await validatePaymentInDatabase(paymentId);
+    // Mise à jour de la base de données — participantId déjà disponible, pas de SELECT redondant
+    const participantId = paymentData.participant_id;
+    const { qrCodeId } = await validatePaymentInDatabase(paymentId, participantId);
     console.log("Paiement validé dans la base de données:", paymentId);
     console.log("ID QR Code généré:", qrCodeId);
     console.log("ID du participant:", participantId);
-    
-    const participantData = await fetchParticipantData(participantId);
-    
-    if (!participantData?.email) {
-      throw new Error("Données du participant incomplètes");
-    }
-
-    // UNIQUEMENT envoi de l'email de confirmation
-    const emailSuccess = await sendConfirmationEmail(participantData, qrCodeId);
-    
-    if (!emailSuccess) {
-      console.error("Erreur lors de l'envoi de l'email de confirmation");
-      toast({
-        title: "Attention",
-        description: "Paiement validé mais l'email n'a pas pu être envoyé.",
-      });
-    }
 
     toast({
       title: "Validation réussie",
       description: "Le participant va recevoir un email de confirmation.",
     });
-    
+
+    // Envoi de l'email en arrière-plan (non bloquant)
+    // La validation est confirmée immédiatement sans attendre la réponse EmailJS
+    fetchParticipantData(participantId)
+      .then(participantFullData => {
+        if (!participantFullData?.email) return;
+        return sendConfirmationEmail(participantFullData, qrCodeId);
+      })
+      .then(emailSuccess => {
+        if (emailSuccess === false) {
+          console.warn("Email de confirmation non envoyé (non bloquant)");
+        } else {
+          console.log("Email de confirmation envoyé avec succès");
+        }
+      })
+      .catch(err => {
+        console.error("Erreur email confirmation (non bloquant):", err);
+      });
+
     return { success: true };
 
   } catch (error: any) {
@@ -110,35 +112,35 @@ export const rejectPayment = async (paymentId: string): Promise<ValidationRespon
       return { success: true, alreadyProcessed: true };
     }
     
-    // Mise à jour de la base de données AVANT l'envoi d'email
+    // Mise à jour de la base de données — retour immédiat sans attendre l'email
     await rejectPaymentInDatabase(paymentId);
     console.log("Paiement rejeté dans la base de données:", paymentId);
-    
-    const participantData = await fetchParticipantData(paymentData.participant_id);
-    
-    if (!participantData) {
-      throw new Error("Participant introuvable");
-    }
-
-    // UNIQUEMENT envoi de l'email de rejet avec le NOUVEAU service
-    const emailSuccess = await sendPaymentRejectionEmail(
-      participantData,
-      "Votre paiement n'a pas pu être validé. Veuillez réessayer."
-    );
-    
-    if (!emailSuccess) {
-      console.error("Erreur lors de l'envoi de l'email de rejet");
-      toast({
-        title: "Attention",
-        description: "Paiement rejeté mais l'email n'a pas pu être envoyé.",
-      });
-    }
 
     toast({
       title: "Rejet effectué",
       description: "Le participant va recevoir un email de notification.",
     });
-    
+
+    // Récupération du participant et envoi de l'email en arrière-plan (non bloquant)
+    fetchParticipantData(paymentData.participant_id)
+      .then(participantData => {
+        if (!participantData) return;
+        return sendPaymentRejectionEmail(
+          participantData,
+          "Votre paiement n'a pas pu être validé. Veuillez réessayer."
+        );
+      })
+      .then(emailSuccess => {
+        if (!emailSuccess) {
+          console.warn("Email de rejet non envoyé (non bloquant)");
+        } else {
+          console.log("Email de rejet envoyé avec succès");
+        }
+      })
+      .catch(err => {
+        console.error("Erreur email rejet (non bloquant):", err);
+      });
+
     return { success: true };
 
   } catch (error: any) {

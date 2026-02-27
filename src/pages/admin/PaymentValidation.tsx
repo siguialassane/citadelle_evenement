@@ -41,26 +41,17 @@ const PaymentValidation = () => {
   };
 
   const handleValidatePayment = async (paymentId: string) => {
-    // Cette fonction déclenche l'envoi de l'email de confirmation avec QR code
-    // et la notification à l'administrateur
     console.log("Validation du paiement par l'administrateur, ID:", paymentId);
-    console.log("Utilisation de la configuration EmailJS unifiée pour tous les emails");
-    
     const success = await validatePayment(paymentId);
     if (success) {
-      console.log("Validation réussie, tous les emails ont été envoyés avec le service unifié");
-      setTimeout(() => {
-        navigate("/admin/payment-validation");
-      }, 1500);
+      navigate("/admin/payment-validation");
     }
   };
 
   const handleRejectPayment = async (paymentId: string) => {
     const success = await rejectPayment(paymentId);
     if (success) {
-      setTimeout(() => {
-        navigate("/admin/payment-validation");
-      }, 1500);
+      navigate("/admin/payment-validation");
     }
   };
 

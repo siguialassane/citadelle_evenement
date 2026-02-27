@@ -59,10 +59,11 @@ export const fetchPaymentById = async (id: string): Promise<Payment | null> => {
 };
 
 // Met à jour le statut d'un paiement à "completed" et génère un QR code
-export const validatePaymentInDatabase = async (paymentId: string): Promise<{qrCodeId: string; participantId: string}> => {
+// participantId est passé directement pour éviter un SELECT redondant
+export const validatePaymentInDatabase = async (paymentId: string, participantId: string): Promise<{qrCodeId: string; participantId: string}> => {
   try {
     console.log("==== MISE À JOUR DU STATUT DU PAIEMENT ET GÉNÉRATION QR CODE ====");
-    console.log(`Validation du paiement ID: ${paymentId}`);
+    console.log(`Validation du paiement ID: ${paymentId}, participant ID: ${participantId}`);
     
     // Mettre à jour le statut du paiement à "completed"
     const { error: updateError } = await supabase
@@ -70,7 +71,7 @@ export const validatePaymentInDatabase = async (paymentId: string): Promise<{qrC
       .update({ 
         status: 'completed',
         validated_at: new Date().toISOString(),
-        validated_by: "Admin" // Idéalement, remplacer par l'ID ou le nom de l'admin connecté
+        validated_by: "Admin"
       })
       .eq('id', paymentId);
 
@@ -80,25 +81,6 @@ export const validatePaymentInDatabase = async (paymentId: string): Promise<{qrC
     }
     
     console.log("Statut du paiement mis à jour avec succès dans la base de données");
-
-    // Récupérer le paiement pour obtenir l'ID du participant
-    const { data: paymentData, error: fetchError } = await supabase
-      .from('manual_payments')
-      .select('participant_id')
-      .eq('id', paymentId)
-      .single();
-
-    if (fetchError) {
-      console.error("Erreur lors de la récupération de l'ID du participant:", fetchError);
-      throw fetchError;
-    }
-
-    if (!paymentData) {
-      throw new Error("Données de paiement introuvables");
-    }
-
-    const participantId = paymentData.participant_id;
-    console.log("ID du participant récupéré:", participantId);
 
     // Génération d'un UUID pour le QR code
     const qrCodeId = uuidv4();

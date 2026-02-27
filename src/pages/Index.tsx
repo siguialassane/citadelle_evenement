@@ -10,7 +10,7 @@ import React from "react";
 import { RegisterForm } from "@/components/RegisterForm";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Info, Lock, Calendar, MapPin, Clock, Users, Heart, Book, Mic } from "lucide-react";
+import { Info, Calendar, MapPin, Clock, Users, Heart, Book, Mic } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import EventLogo from "@/components/EventLogo";
 import { Card, CardContent } from "@/components/ui/card";
@@ -330,17 +330,6 @@ const Index = () => {
         </div>
       </div>
       
-      {/* Bouton d'accès admin */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <Button 
-          onClick={() => navigate("/admin/login")}
-          className="bg-slate-800 hover:bg-slate-900 text-white shadow-lg rounded-full px-4 py-6 flex items-center gap-2 transition-transform hover:scale-105"
-        >
-          <Lock className="h-4 w-4" />
-          <span className="hidden sm:inline">Accès Admin</span>
-        </Button>
-      </div>
-
       {/* Bande décorative aux couleurs ivoiriennes en bas de la page */}
       <div className="fixed bottom-0 left-0 w-full h-1.5 flex z-50">
         <div className="bg-orange-500 w-1/3 h-full"></div>

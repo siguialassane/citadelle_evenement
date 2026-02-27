@@ -41,6 +41,14 @@ export const usePaymentValidation = (paymentId?: string) => {
     if (paymentId) {
       fetchPaymentDetails(paymentId);
     } else {
+      // Si on a déjà des données en cache (ex: retour après validation),
+      // pas de spinner — on affiche directement et on actualise silencieusement
+      setState(prev => {
+        if (prev.payments.length > 0) {
+          return { ...prev, isLoading: false, currentPayment: null };
+        }
+        return prev;
+      });
       fetchPendingPayments();
     }
   }, [paymentId]);
@@ -190,21 +198,26 @@ export const usePaymentValidation = (paymentId?: string) => {
 
       if (result.success) {
         console.log("Validation réussie, mise à jour de l'interface utilisateur");
-        // Mise à jour locale des données
-        const updatedPayments = state.payments.map(payment => 
-          payment.id === paymentId 
-            ? { ...payment, status: 'completed' } 
-            : payment
-        );
-        
-        setState(prev => ({
-          ...prev,
-          payments: updatedPayments,
-          isValidating: false
-        }));
-        
-        // Mettre à jour la liste filtrée
-        filterPayments(state.searchQuery);
+        // Mise à jour locale des données (filteredPayments inclus dans le même setState)
+        setState(prev => {
+          const updatedPayments = prev.payments.map(payment =>
+            payment.id === paymentId
+              ? { ...payment, status: 'completed' }
+              : payment
+          );
+          const lowerCaseQuery = prev.searchQuery.toLowerCase();
+          const updatedFiltered = updatedPayments.filter(payment =>
+            payment.participant_name.toLowerCase().includes(lowerCaseQuery) ||
+            payment.participant_email.toLowerCase().includes(lowerCaseQuery) ||
+            payment.phone_number.toLowerCase().includes(lowerCaseQuery)
+          );
+          return {
+            ...prev,
+            payments: updatedPayments,
+            filteredPayments: updatedFiltered,
+            isValidating: false
+          };
+        });
         return true;
       } else {
         console.error("Échec de la validation:", result.error);
@@ -273,21 +286,26 @@ export const usePaymentValidation = (paymentId?: string) => {
 
       if (result.success) {
         console.log("Rejet réussi, mise à jour de l'interface utilisateur");
-        // Mise à jour locale des données
-        const updatedPayments = state.payments.map(payment => 
-          payment.id === paymentId 
-            ? { ...payment, status: 'rejected' } 
-            : payment
-        );
-        
-        setState(prev => ({
-          ...prev,
-          payments: updatedPayments,
-          isRejecting: false
-        }));
-        
-        // Mettre à jour la liste filtrée
-        filterPayments(state.searchQuery);
+        // Mise à jour locale des données (filteredPayments inclus dans le même setState)
+        setState(prev => {
+          const updatedPayments = prev.payments.map(payment =>
+            payment.id === paymentId
+              ? { ...payment, status: 'rejected' }
+              : payment
+          );
+          const lowerCaseQuery = prev.searchQuery.toLowerCase();
+          const updatedFiltered = updatedPayments.filter(payment =>
+            payment.participant_name.toLowerCase().includes(lowerCaseQuery) ||
+            payment.participant_email.toLowerCase().includes(lowerCaseQuery) ||
+            payment.phone_number.toLowerCase().includes(lowerCaseQuery)
+          );
+          return {
+            ...prev,
+            payments: updatedPayments,
+            filteredPayments: updatedFiltered,
+            isRejecting: false
+          };
+        });
         return true;
       } else {
         console.error("Échec du rejet:", result.error);
