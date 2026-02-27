@@ -39,25 +39,24 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
 
     // Génération du contenu HTML dynamique pour la confirmation
     const emailParticipantHtml = `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f4f9f6;">
-        <div style="background-color:white;border-radius:10px;padding:30px;box-shadow:0 4px 12px rgba(0,0,0,0.08);border-top:5px solid #07553B;">
-          <div style="text-align:center;color:#07553B;font-size:1.3em;margin-bottom:15px;font-style:italic;">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
-          <div style="text-align:center;padding-bottom:15px;border-bottom:1px solid #e0f0e8;margin-bottom:20px;">
-            <p style="font-size:2em;margin:0;">🌙</p>
-            <h1 style="color:#07553B;font-size:1.5em;margin:5px 0;">Alhamdulillah ! Inscription confirmée</h1>
-            <span style="display:inline-block;background-color:#07553B;color:white;padding:6px 16px;border-radius:20px;font-size:0.9em;">✔️ IFTAR 2026 — 15e Édition</span>
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f7f7f7;">
+        <div style="background-color:white;border-radius:8px;padding:30px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid #e0e0e0;">
+          <div style="text-align:center;color:#07553B;font-size:1.2em;margin-bottom:15px;font-style:italic;">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+          <div style="text-align:center;padding-bottom:15px;border-bottom:1px solid #e0e0e0;margin-bottom:20px;">
+            <h1 style="color:#07553B;font-size:1.5em;margin:5px 0;">Inscription confirmée — IFTAR 2026</h1>
+            <span style="display:inline-block;background-color:#07553B;color:white;padding:5px 14px;border-radius:4px;font-size:0.9em;">15e Édition</span>
           </div>
           <p>Assalamou Aleykoum wa rahmatullahi wa barakatuh, cher(e) <strong>${participantData.first_name} ${participantData.last_name}</strong>,</p>
-          <p>Bonne nouvelle ! Votre paiement a été validé. Vous êtes officiellement inscrit(e) à notre <strong>IFTAR 2026</strong>. Qu'Allah vous récompense pour votre engagement et votre généreux soutien.</p>
-          <div style="background-color:#f0f9f4;padding:15px 20px;border-radius:8px;margin:20px 0;border-left:4px solid #07553B;">
-            <h3 style="margin-top:0;color:#07553B;">🗓️ Détails de l'événement :</h3>
+          <p>Alhamdulillah ! Votre paiement a été validé. Vous êtes officiellement inscrit(e) à l'<strong>IFTAR 2026</strong>. Qu'Allah vous récompense pour votre engagement et votre généreux soutien.</p>
+          <div style="background-color:#f9f9f9;padding:15px 20px;border-radius:6px;margin:20px 0;border:1px solid #e0e0e0;">
+            <h3 style="margin-top:0;color:#333;">Détails de l'événement :</h3>
             <ul style="list-style:none;padding-left:0;">
-              <li>📅 <strong>Date :</strong> Dimanche 8 Mars 2026</li>
-              <li>⏰ <strong>Heure :</strong> De 16h00 à 21h00</li>
-              <li>🎤 <strong>Conférencier :</strong> Imam Cheick Ahmad Tidiane DIABATE</li>
-              <li>📖 <strong>Thème :</strong> « Le Coran : Parole incréée, source de guidance divine et de repère pour l'humanité »</li>
+              <li><strong>Date :</strong> Dimanche 8 Mars 2026</li>
+              <li><strong>Heure :</strong> De 16h00 à 21h00</li>
+              <li><strong>Conférencier :</strong> Imam Cheick Ahmad Tidiane DIABATE</li>
+              <li><strong>Thème :</strong> « Le Coran : Parole incréée, source de guidance divine et de repère pour l'humanité »</li>
             </ul>
-            <h3 style="color:#07553B;">👤 Vos informations :</h3>
+            <h3 style="color:#333;">Vos informations :</h3>
             <ul style="list-style:none;padding-left:0;">
               <li><strong>Nom :</strong> ${participantData.first_name} ${participantData.last_name}</li>
               <li><strong>Email :</strong> ${participantData.email}</li>
@@ -68,22 +67,22 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
           </div>
           <p style="text-align:center;color:#07553B;font-weight:bold;">Votre QR code d'accès :</p>
           <div style="text-align:center;margin:15px 0;">
-            <img src="${qrCodeImageUrl}" alt="QR Code d'accès" style="width:200px;height:200px;border:3px solid #07553B;border-radius:8px;padding:5px;" />
+            <img src="${qrCodeImageUrl}" alt="QR Code d'accès" style="width:200px;height:200px;border:1px solid #e0e0e0;border-radius:6px;padding:5px;" />
           </div>
           <p style="text-align:center;font-size:0.9em;color:#888;">Présentez ce QR code à l'entrée de l'événement</p>
-          <div style="background-color:#fffbe6;border-left:4px solid #f39c12;padding:12px 16px;margin:20px 0;font-style:italic;color:#555;border-radius:4px;">
+          <div style="background-color:#f9f9f9;padding:12px 16px;margin:20px 0;font-style:italic;color:#555;border-radius:6px;border:1px solid #e0e0e0;">
             « Celui qui nourrit un jeûneur recevra la même récompense que lui, sans que cela ne diminue en rien la récompense du jeûneur. »<br>
             <em>(Hadith rapporté par At-Tirmidhi)</em>
           </div>
           <p>NB : 5 000 FCFA de votre pass seront utilisés pour offrir <strong>5 repas chauds</strong> à des indigents. Qu'Allah multiplie votre récompense.</p>
           <div style="text-align:center;margin:20px 0;">
-            <a href="${confirmationPageUrl}" style="display:inline-block;padding:12px 24px;background-color:#07553B;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">📱 Voir ma confirmation</a>
+            <a href="${confirmationPageUrl}" style="display:inline-block;padding:12px 24px;background-color:#07553B;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">Voir ma confirmation</a>
           </div>
-          <div style="text-align:center;margin:15px 0;">
-            <a href="${EVENT_LOCATION.mapsUrl}" style="display:inline-block;padding:12px 24px;background-color:#1a6b47;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">📍 ${EVENT_LOCATION.name} — Voir sur Google Maps</a>
+          <div style="text-align:center;margin:10px 0;">
+            <a href="${EVENT_LOCATION.mapsUrl}" style="display:inline-block;padding:12px 24px;background-color:#444;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">${EVENT_LOCATION.name} — Voir sur Google Maps</a>
           </div>
-          <div style="text-align:center;margin-top:25px;font-size:0.85em;color:#888;border-top:1px solid #e0f0e8;padding-top:15px;">
-            <p>Ramadan Moubarak 🌙 Qu'Allah accepte nos jeûnes et nos prières.</p>
+          <div style="text-align:center;margin-top:25px;font-size:0.85em;color:#888;border-top:1px solid #e0e0e0;padding-top:15px;">
+            <p>Ramadan Moubarak. Qu'Allah accepte nos jeûnes et nos prières.</p>
             <p>Association LA CITADELLE — IFTAR 2026 © Tous droits réservés.</p>
           </div>
         </div>

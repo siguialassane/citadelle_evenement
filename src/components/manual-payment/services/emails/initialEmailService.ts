@@ -54,24 +54,23 @@ export const sendAdminNotification = async (
 
     // Génération du contenu HTML pour l'email admin
     const emailAdminHtml = `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f4f9f6;">
-        <div style="background-color:white;border-radius:10px;padding:30px;box-shadow:0 4px 12px rgba(0,0,0,0.08);border-top:5px solid #07553B;">
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f7f7f7;">
+        <div style="background-color:white;border-radius:8px;padding:30px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid #e0e0e0;">
           <div style="text-align:center;color:#07553B;font-size:1.2em;margin-bottom:15px;font-style:italic;">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
-          <div style="text-align:center;padding-bottom:15px;border-bottom:1px solid #e0f0e8;margin-bottom:20px;">
-            <p style="font-size:2em;margin:0;">🌙</p>
+          <div style="text-align:center;padding-bottom:15px;border-bottom:1px solid #e0e0e0;margin-bottom:20px;">
             <h1 style="color:#07553B;font-size:1.4em;margin:5px 0;">Nouvelle Inscription — IFTAR 2026</h1>
             <p style="color:#555;margin:5px 0;">Demande de validation de paiement</p>
           </div>
           <p>Assalamou Aleykoum wa rahmatullahi wa barakatuh,</p>
-          <p>Alhamdulillah ! Un(e) nouveau(elle) frère/sœur vient de soumettre sa demande d'inscription à l'<strong>IFTAR 2026</strong>. Merci de vérifier son paiement.</p>
-          <div style="background-color:#f0f9f4;padding:15px 20px;border-radius:8px;margin:20px 0;border-left:4px solid #07553B;">
-            <h3 style="margin-top:0;color:#07553B;">👤 Informations du participant :</h3>
+          <p>Un(e) nouveau(elle) participant(e) vient de soumettre sa demande d'inscription à l'<strong>IFTAR 2026</strong>. Merci de vérifier son paiement.</p>
+          <div style="background-color:#f9f9f9;padding:15px 20px;border-radius:6px;margin:20px 0;border:1px solid #e0e0e0;">
+            <h3 style="margin-top:0;color:#333;">Informations du participant :</h3>
             <ul style="list-style:none;padding-left:0;">
               <li><strong>Nom complet :</strong> ${participantData.first_name} ${participantData.last_name}</li>
               <li><strong>Email :</strong> ${participantData.email}</li>
               <li><strong>Téléphone :</strong> ${participantData.contact_number || 'NON SPÉCIFIÉ'}</li>
             </ul>
-            <h3 style="color:#07553B;">💰 Détails du paiement :</h3>
+            <h3 style="color:#333;">Détails du paiement :</h3>
             <ul style="list-style:none;padding-left:0;">
               <li><strong>Montant :</strong> ${PAYMENT_AMOUNT.toLocaleString()} FCFA</li>
               <li><strong>Méthode :</strong> ${formattedPaymentMethod}</li>
@@ -82,10 +81,9 @@ export const sendAdminNotification = async (
           </div>
           <p>Veuillez vérifier que le paiement a bien été reçu avant de valider.</p>
           <div style="text-align:center;margin:25px 0;">
-            <a href="${validationLink}" style="display:inline-block;padding:14px 28px;background-color:#07553B;color:white;text-decoration:none;border-radius:6px;font-weight:bold;font-size:1em;">✔️ Valider ce paiement</a>
+            <a href="${validationLink}" style="display:inline-block;padding:14px 28px;background-color:#07553B;color:white;text-decoration:none;border-radius:6px;font-weight:bold;font-size:1em;">Valider ce paiement</a>
           </div>
-          <div style="text-align:center;margin-top:25px;font-size:0.85em;color:#888;border-top:1px solid #e0f0e8;padding-top:15px;">
-            <p>Qu'Allah facilite votre travail et bénisse l'organisation de cet événement.</p>
+          <div style="text-align:center;margin-top:25px;font-size:0.85em;color:#888;border-top:1px solid #e0e0e0;padding-top:15px;">
             <p>Association LA CITADELLE — IFTAR 2026 © Tous droits réservés.</p>
           </div>
         </div>
@@ -180,19 +178,19 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     
     // Génération du contenu HTML dynamique pour le participant
     const emailParticipantHtml = `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f4f9f6;">
-        <div style="background-color:white;border-radius:10px;padding:30px;box-shadow:0 4px 12px rgba(0,0,0,0.08);border-top:5px solid #f39c12;">
-          <div style="text-align:center;color:#07553B;font-size:1.3em;margin-bottom:15px;font-style:italic;">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
-          <div style="text-align:center;padding-bottom:15px;border-bottom:1px solid #fdeeba;margin-bottom:20px;">
-            <p style="font-size:2em;margin:0;">⏳</p>
-            <h1 style="color:#d68910;font-size:1.4em;margin:5px 0;">Votre inscription est en attente de validation</h1>
-            <span style="display:inline-block;background-color:#f39c12;color:white;padding:6px 16px;border-radius:20px;font-size:0.9em;">IFTAR 2026 — 15e Édition</span>
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f7f7f7;">
+        <div style="background-color:white;border-radius:8px;padding:30px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid #e0e0e0;">
+          <div style="text-align:center;color:#07553B;font-size:1.2em;margin-bottom:15px;font-style:italic;">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+          <div style="text-align:center;padding-bottom:15px;border-bottom:1px solid #e0e0e0;margin-bottom:20px;">
+            <h1 style="color:#07553B;font-size:1.4em;margin:5px 0;">Enregistrement reçu — IFTAR 2026</h1>
+            <span style="display:inline-block;background-color:#07553B;color:white;padding:5px 14px;border-radius:4px;font-size:0.9em;">15e Édition</span>
           </div>
           <p>Assalamou Aleykoum wa rahmatullahi wa barakatuh, cher(e) <strong>${participantData.first_name} ${participantData.last_name}</strong>,</p>
-          <p>Barakallahu fik pour votre démarche ! Votre paiement pour l'<strong>IFTAR 2026</strong> a bien été reçu et est en cours de vérification par notre équipe. Qu'Allah facilite les choses pour vous.</p>
-          <div style="background-color:#fffbe6;padding:15px 20px;border-radius:8px;margin:20px 0;border-left:4px solid #f39c12;">
-            <h3 style="margin-top:0;color:#d68910;">💰 Récapitulatif de votre paiement :</h3>
-            <ul style="list-style:none;padding-left:0;">
+          <p>Votre enregistrement pour l'<strong>IFTAR 2026</strong> a bien été reçu. Nous sommes dans l'attente de recevoir votre paiement pour finaliser votre inscription.</p>
+          <p>Qu'Allah accepte votre intention, facilite votre démarche et vous récompense au centuple en ce mois béni de Ramadan.</p>
+          <div style="background-color:#f9f9f9;padding:15px 20px;border-radius:6px;margin:20px 0;border:1px solid #e0e0e0;">
+            <h3 style="margin-top:0;color:#333;">Récapitulatif :</h3>
+            <ul style="list-style:none;padding-left:0;margin:0;">
               <li><strong>Nom :</strong> ${participantData.first_name} ${participantData.last_name}</li>
               <li><strong>Email :</strong> ${participantData.email}</li>
               <li><strong>Téléphone :</strong> ${participantData.contact_number || 'Non disponible'}</li>
@@ -201,19 +199,19 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
               <li><strong>Statut :</strong> ${memberStatus}</li>
             </ul>
           </div>
-          <div style="background-color:#f0f9f4;border-left:4px solid #07553B;padding:12px 16px;margin:20px 0;font-style:italic;color:#555;border-radius:4px;">
+          <div style="background-color:#f9f9f9;padding:12px 16px;margin:20px 0;font-style:italic;color:#555;border-radius:6px;border:1px solid #e0e0e0;">
             « Toute action étant liée à l'intention, chacun sera récompensé selon son intention. »<br>
             <em>(Hadith rapporté par Al-Bukhari et Muslim)</em>
           </div>
-          <p>Votre inscription sera confirmée sous <strong>24 heures</strong> maximum. Vous recevrez un email avec votre QR code d'accès dès validation.</p>
+          <p>Dès confirmation de votre paiement, vous recevrez un email avec votre QR code d'accès.</p>
           <div style="text-align:center;margin:20px 0;">
-            <a href="${pendingUrl}" style="display:inline-block;padding:12px 24px;background-color:#f39c12;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">🔍 Suivre mon dossier</a>
+            <a href="${pendingUrl}" style="display:inline-block;padding:12px 24px;background-color:#07553B;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">Suivre mon dossier</a>
           </div>
-          <div style="text-align:center;margin:20px 0;">
-            <a href="${EVENT_LOCATION.mapsUrl}" style="display:inline-block;padding:12px 24px;background-color:#07553B;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">📍 ${EVENT_LOCATION.name} — Voir sur Google Maps</a>
+          <div style="text-align:center;margin:10px 0;">
+            <a href="${EVENT_LOCATION.mapsUrl}" style="display:inline-block;padding:12px 24px;background-color:#444;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">${EVENT_LOCATION.name} — Voir sur Google Maps</a>
           </div>
-          <div style="text-align:center;margin-top:25px;font-size:0.85em;color:#888;border-top:1px solid #fdeeba;padding-top:15px;">
-            <p>Ramadan Moubarak 🌙 Qu'Allah bénisse votre démarche.</p>
+          <div style="text-align:center;margin-top:25px;font-size:0.85em;color:#888;border-top:1px solid #e0e0e0;padding-top:15px;">
+            <p>Ramadan Moubarak. Qu'Allah bénisse votre démarche.</p>
             <p>Association LA CITADELLE — IFTAR 2026 © Tous droits réservés.</p>
           </div>
         </div>
