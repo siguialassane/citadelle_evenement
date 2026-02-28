@@ -17,6 +17,8 @@ export interface Payment {
   participant_email: string;
   participant_phone: string;
   participant: any;
+  number_of_places?: number;
+  guests?: GuestRecord[];
 }
 
 export interface ManualPayment {
@@ -32,4 +34,18 @@ export interface ManualPayment {
   admin_notes?: string;
   validated_at?: string;
   validated_by?: string;
+  number_of_places?: number;
+}
+
+// Type pour les invités stockés en BD
+export interface GuestRecord {
+  id: string;
+  participant_id: string;
+  payment_id?: string;
+  first_name: string;
+  last_name: string;
+  is_main_participant: boolean;
+  check_in_status: boolean;
+  check_in_timestamp?: string;
+  created_at: string;
 }

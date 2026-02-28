@@ -36,6 +36,9 @@ export const PaymentRow = ({
       <TableCell>
         <div className="font-medium">{payment.participant_name}</div>
         <div className="text-xs text-gray-500">{payment.participant_email}</div>
+        {(payment.number_of_places || 1) > 1 && (
+          <div className="text-xs text-green-600 font-medium mt-0.5">{payment.number_of_places} places</div>
+        )}
       </TableCell>
       <TableCell>
         <div>{payment.payment_method}</div>

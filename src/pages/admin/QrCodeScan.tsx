@@ -14,7 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Header } from "@/components/admin/dashboard/Header";
-import { ArrowLeft, QrCode, Camera, Upload, ExternalLink, Link2, Settings2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, QrCode, Camera, Upload, ExternalLink, Link2, Settings2, AlertCircle, CheckCircle2, Users } from "lucide-react";
 import { ShortcutButton } from "@/components/admin/qr-scan/ShortcutButton";
 import { Html5Qrcode } from "html5-qrcode";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ const QrCodeScan = () => {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [lastScannedId, setLastScannedId] = useState<string | null>(null);
   const [lastScannedName, setLastScannedName] = useState<string | null>(null);
+  const [lastScannedGuests, setLastScannedGuests] = useState<any[]>([]);
   const [scanInProgress, setScanInProgress] = useState(false);
   const [cameraStartProgress, setCameraStartProgress] = useState(0);
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -254,6 +255,14 @@ const QrCodeScan = () => {
         setLastScannedId(participantId);
         setLastScannedName(`${participant.first_name} ${participant.last_name}`);
         
+        // Récupérer les invités pour affichage même si déjà enregistré
+        const { data: existingGuests } = await supabase
+          .from('guests')
+          .select('*')
+          .eq('participant_id', participantId)
+          .order('is_main_participant', { ascending: false });
+        setLastScannedGuests(existingGuests || []);
+        
         toast({
           title: "Déjà enregistré",
           description: `${participant.first_name} ${participant.last_name} a déjà été marqué comme présent.`,
@@ -294,7 +303,7 @@ const QrCodeScan = () => {
           { 
             participant_id: participantId,
             checked_in_at: new Date().toISOString(),
-            checked_in_by: 'admin', // À remplacer par l'ID de l'admin
+            checked_in_by: 'admin',
             method: 'qr_scan'
           }
         ]);
@@ -304,13 +313,45 @@ const QrCodeScan = () => {
         throw checkInError;
       }
 
+      // Récupérer et enregistrer les invités
+      const { data: guestsData } = await supabase
+        .from('guests')
+        .select('*')
+        .eq('participant_id', participantId)
+        .order('is_main_participant', { ascending: false });
+      
+      const fetchedGuests = guestsData || [];
+      
+      // Check-in automatique de tous les invités du groupe
+      if (fetchedGuests.length > 0) {
+        const now = new Date().toISOString();
+        const { error: guestCheckInError } = await supabase
+          .from('guests')
+          .update({ check_in_status: true, check_in_timestamp: now })
+          .eq('participant_id', participantId);
+        
+        if (guestCheckInError) {
+          console.error("Erreur lors du check-in des invités:", guestCheckInError);
+        } else {
+          // Mettre à jour localement les invités
+          fetchedGuests.forEach(g => {
+            g.check_in_status = true;
+            g.check_in_timestamp = now;
+          });
+        }
+      }
+      
+      setLastScannedGuests(fetchedGuests);
+
       console.log("Check-in réussi pour:", `${participant.first_name} ${participant.last_name}`);
       setLastScannedId(participantId);
       setLastScannedName(`${participant.first_name} ${participant.last_name}`);
       
       toast({
         title: "Présence confirmée",
-        description: `${participant.first_name} ${participant.last_name} a été marqué comme présent.`,
+        description: fetchedGuests.length > 1 
+          ? `${participant.first_name} ${participant.last_name} et ${fetchedGuests.length - 1} invité(s) ont été marqués comme présents.`
+          : `${participant.first_name} ${participant.last_name} a été marqué comme présent.`,
         variant: "default",
       });
       
@@ -334,6 +375,42 @@ const QrCodeScan = () => {
         scannerRef.current.resume();
       }
       setScanInProgress(false);
+    }
+  };
+
+  const handleToggleGuestCheckIn = async (guestId: string, currentStatus: boolean) => {
+    try {
+      const newStatus = !currentStatus;
+      const now = newStatus ? new Date().toISOString() : null;
+      
+      const { error } = await supabase
+        .from('guests')
+        .update({ check_in_status: newStatus, check_in_timestamp: now })
+        .eq('id', guestId);
+      
+      if (error) {
+        console.error("Erreur lors de la mise à jour du statut de l'invité:", error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de mettre à jour le statut de l'invité.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Mettre à jour localement
+      setLastScannedGuests(prev => prev.map(g => 
+        g.id === guestId ? { ...g, check_in_status: newStatus, check_in_timestamp: now } : g
+      ));
+      
+      const guest = lastScannedGuests.find(g => g.id === guestId);
+      toast({
+        title: newStatus ? "Invité enregistré" : "Enregistrement annulé",
+        description: `${guest?.first_name} ${guest?.last_name} - ${newStatus ? 'présence confirmée' : 'enregistrement annulé'}.`,
+        variant: "default",
+      });
+    } catch (err) {
+      console.error("Erreur:", err);
     }
   };
 
@@ -514,6 +591,45 @@ const QrCodeScan = () => {
                   <p className="font-medium text-gray-800">{lastScannedName}</p>
                   <p className="text-sm text-gray-600">ID: {lastScannedId}</p>
                   <p className="text-green-600 font-medium mt-2">Présence confirmée</p>
+                  
+                  {/* Affichage des invités pour les réservations multi-places */}
+                  {lastScannedGuests.length > 1 && (
+                    <div className="mt-3 border-t pt-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Users className="h-4 w-4 text-blue-600" />
+                        <p className="text-sm font-medium text-blue-800">
+                          Groupe de {lastScannedGuests.length} personnes
+                        </p>
+                      </div>
+                      <ul className="space-y-2">
+                        {lastScannedGuests.map((guest) => (
+                          <li key={guest.id} className="flex items-center justify-between text-sm bg-gray-50 rounded-md px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <span className={guest.check_in_status ? "text-green-700" : "text-gray-600"}>
+                                {guest.first_name} {guest.last_name}
+                              </span>
+                              {guest.is_main_participant && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                                  Principal
+                                </span>
+                              )}
+                            </div>
+                            <Button
+                              variant={guest.check_in_status ? "outline" : "default"}
+                              size="sm"
+                              className={guest.check_in_status 
+                                ? "h-7 text-xs border-green-200 text-green-700" 
+                                : "h-7 text-xs bg-green-600 hover:bg-green-700"}
+                              onClick={() => handleToggleGuestCheckIn(guest.id, guest.check_in_status)}
+                            >
+                              {guest.check_in_status ? "✓ Présent" : "Check-in"}
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
                   <Button 
                     variant="outline" 
                     size="sm" 

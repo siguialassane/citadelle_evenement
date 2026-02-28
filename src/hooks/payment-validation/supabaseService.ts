@@ -16,7 +16,8 @@ export const fetchAllPayments = async (): Promise<Payment[]> => {
       .from('manual_payments')
       .select(`
         *,
-        participants(*)
+        participants(*),
+        guests(*)
       `)
       .order('created_at', { ascending: false });
 
@@ -40,7 +41,8 @@ export const fetchPaymentById = async (id: string): Promise<Payment | null> => {
       .from('manual_payments')
       .select(`
         *,
-        participants(*)
+        participants(*),
+        guests(*)
       `)
       .eq('id', id)
       .single();
@@ -191,7 +193,9 @@ const formatSinglePayment = (payment: any): Payment => {
     participant_name: `${payment.participants.first_name} ${payment.participants.last_name}`,
     participant_email: payment.participants.email,
     participant_phone: payment.participants.contact_number,
-    participant: payment.participants
+    participant: payment.participants,
+    number_of_places: payment.number_of_places || 1,
+    guests: payment.guests || [],
   };
 };
 

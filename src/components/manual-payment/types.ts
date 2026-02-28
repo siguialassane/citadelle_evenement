@@ -22,6 +22,13 @@ export type Participant = {
   [key: string]: any;
 };
 
+// Informations d'un invité
+export type Guest = {
+  first_name: string;
+  last_name: string;
+  is_main_participant: boolean;
+};
+
 // Propriétés du formulaire de paiement manuel
 export type ManualPaymentFormProps = {
   participant: Participant;

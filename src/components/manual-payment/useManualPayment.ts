@@ -1,17 +1,12 @@
 
 // Ce hook gère la logique du paiement manuel
-// Mise à jour: Restructuration en modules plus petits pour une meilleure maintenance
-// Correction: Validation des adresses email avant envoi pour éviter les erreurs 422
-// Mise à jour: Suppression de la référence de transaction
-// Mise à jour: Email administrateur dynamique géré dans EmailJS
-// Mise à jour: Ajout de logs supplémentaires pour le débogage des emails
-// Mise à jour: Correction des importations
+// Mise à jour: Support multi-places avec sélection du nombre de places et noms des invités
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { PAYMENT_AMOUNT } from "./config";
-import { PaymentMethod, Participant, CopyStates } from "./types";
+import { PaymentMethod, Participant, CopyStates, Guest } from "./types";
 import { 
   sendAdminNotification,
   sendParticipantInitialEmail 
@@ -24,7 +19,37 @@ export function useManualPayment(participant: Participant) {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [comments, setComments] = useState("");
   const [isCopied, setIsCopied] = useState<CopyStates>({});
+  const [numberOfPlaces, setNumberOfPlaces] = useState(1);
+  const [guests, setGuests] = useState<Guest[]>([
+    { first_name: participant.first_name, last_name: participant.last_name, is_main_participant: true }
+  ]);
   const navigate = useNavigate();
+
+  const totalAmount = numberOfPlaces * PAYMENT_AMOUNT;
+
+  // Synchroniser la liste des invités avec le nombre de places
+  useEffect(() => {
+    setGuests(prev => {
+      const newGuests: Guest[] = [];
+      for (let i = 0; i < numberOfPlaces; i++) {
+        if (i === 0) {
+          // La première place est toujours le participant principal
+          newGuests.push({
+            first_name: participant.first_name,
+            last_name: participant.last_name,
+            is_main_participant: true,
+          });
+        } else if (prev[i] && !prev[i].is_main_participant) {
+          // Conserver les données déjà saisies pour les invités existants
+          newGuests.push(prev[i]);
+        } else {
+          // Nouvelle place vide
+          newGuests.push({ first_name: '', last_name: '', is_main_participant: false });
+        }
+      }
+      return newGuests;
+    });
+  }, [numberOfPlaces, participant.first_name, participant.last_name]);
 
   // Fonction pour copier du texte dans le presse-papier
   const copyToClipboard = (text: string, key: string) => {
@@ -53,12 +78,27 @@ export function useManualPayment(participant: Participant) {
         return;
       }
 
+      // Validation des noms d'invités si multi-places
+      if (numberOfPlaces > 1) {
+        const emptyGuests = guests.filter((g, i) => i > 0 && (!g.first_name.trim() || !g.last_name.trim()));
+        if (emptyGuests.length > 0) {
+          toast({
+            title: "Noms requis",
+            description: "Veuillez renseigner le nom et le prénom de chaque invité",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       // Enregistrer le paiement manuel dans la base de données
       const manualPayment = await registerManualPayment(
         participant.id,
         paymentMethod,
         phoneNumber,
-        comments
+        comments,
+        numberOfPlaces,
+        guests
       );
 
       console.log("Paiement manuel enregistré avec ID:", manualPayment.id);
@@ -69,7 +109,10 @@ export function useManualPayment(participant: Participant) {
         participant,
         paymentMethod,
         phoneNumber,
-        comments
+        comments,
+        numberOfPlaces,
+        guests,
+        totalAmount
       );
       if (!adminEmailSent) {
         console.warn("Email admin non envoyé - vérifier la console pour les détails");
@@ -79,7 +122,10 @@ export function useManualPayment(participant: Participant) {
       const participantEmailSent = await sendParticipantInitialEmail(
         participant,
         paymentMethod,
-        phoneNumber
+        phoneNumber,
+        numberOfPlaces,
+        guests,
+        totalAmount
       );
 
       if (!participantEmailSent) {
@@ -93,7 +139,7 @@ export function useManualPayment(participant: Participant) {
         // Afficher un message de succès
         toast({
           title: "Paiement soumis avec succès",
-          description: "Votre demande est en attente de validation par un administrateur. Vous recevrez un email de confirmation une fois validée.",
+          description: `Votre demande pour ${numberOfPlaces} place${numberOfPlaces > 1 ? 's' : ''} est en attente de validation. Vous recevrez un email de confirmation.`,
           variant: "default",
         });
       }
@@ -125,6 +171,11 @@ export function useManualPayment(participant: Participant) {
     setComments,
     isCopied,
     copyToClipboard,
-    handleSubmit
+    handleSubmit,
+    numberOfPlaces,
+    setNumberOfPlaces,
+    guests,
+    setGuests,
+    totalAmount,
   };
 }

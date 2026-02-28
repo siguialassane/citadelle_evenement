@@ -2,6 +2,7 @@
 import emailjs from '@emailjs/browser';
 import { validateEmailData, prepareEmailData } from './emailValidation';
 import { EmailTemplateParams } from './types';
+import { Guest } from "../../types";
 import { 
   EMAILJS_SERVICE_ID, 
   EMAILJS_PUBLIC_KEY,
@@ -12,15 +13,32 @@ import {
 } from "../../config";
 
 /**
+ * Génère le HTML de la liste des invités pour inclusion dans les emails
+ */
+const generateGuestListHtml = (guests: Guest[], numberOfPlaces: number): string => {
+  if (numberOfPlaces <= 1 || guests.length <= 1) return '';
+  
+  let html = `<h3 style="color:#333;">Liste des participants (${numberOfPlaces} places) :</h3><ul style="list-style:none;padding-left:0;">`;
+  guests.forEach((guest, index) => {
+    const tag = guest.is_main_participant ? ' (principal)' : '';
+    html += `<li><strong>Place ${index + 1} :</strong> ${guest.first_name} ${guest.last_name}${tag}</li>`;
+  });
+  html += '</ul>';
+  return html;
+};
+
+/**
  * Envoie un email à l'administrateur pour notifier d'un nouveau paiement
- * L'email du destinataire est désormais géré directement dans le template EmailJS
  */
 export const sendAdminNotification = async (
   manualPaymentId: string,
   participantData: any,
   paymentMethod: string,
   phoneNumber: string,
-  comments: string
+  comments: string,
+  numberOfPlaces: number = 1,
+  guests: Guest[] = [],
+  totalAmount: number = PAYMENT_AMOUNT
 ) => {
   try {
     console.log("Envoi de notification à l'administrateur pour nouveau paiement...");
@@ -53,16 +71,19 @@ export const sendAdminNotification = async (
     });
 
     // Génération du contenu HTML pour l'email admin
+    const guestListHtml = generateGuestListHtml(guests, numberOfPlaces);
+    const placesInfo = numberOfPlaces > 1 ? `(${numberOfPlaces} places)` : '(1 place)';
+    
     const emailAdminHtml = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f7f7f7;">
         <div style="background-color:white;border-radius:8px;padding:30px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid #e0e0e0;">
           <div style="text-align:center;color:#07553B;font-size:1.2em;margin-bottom:15px;font-style:italic;">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
           <div style="text-align:center;padding-bottom:15px;border-bottom:1px solid #e0e0e0;margin-bottom:20px;">
-            <h1 style="color:#07553B;font-size:1.4em;margin:5px 0;">Nouvelle Inscription — IFTAR 2026</h1>
+            <h1 style="color:#07553B;font-size:1.4em;margin:5px 0;">Nouvelle Inscription ${placesInfo} — IFTAR 2026</h1>
             <p style="color:#555;margin:5px 0;">Demande de validation de paiement</p>
           </div>
           <p>Assalamou Aleykoum wa rahmatullahi wa barakatuh,</p>
-          <p>Un(e) nouveau(elle) participant(e) vient de soumettre sa demande d'inscription à l'<strong>IFTAR 2026</strong>. Merci de vérifier son paiement.</p>
+          <p>Un(e) nouveau(elle) participant(e) vient de soumettre sa demande d'inscription à l'<strong>IFTAR 2026</strong> pour <strong>${numberOfPlaces} place${numberOfPlaces > 1 ? 's' : ''}</strong>. Merci de vérifier son paiement.</p>
           <div style="background-color:#f9f9f9;padding:15px 20px;border-radius:6px;margin:20px 0;border:1px solid #e0e0e0;">
             <h3 style="margin-top:0;color:#333;">Informations du participant :</h3>
             <ul style="list-style:none;padding-left:0;">
@@ -70,9 +91,11 @@ export const sendAdminNotification = async (
               <li><strong>Email :</strong> ${participantData.email}</li>
               <li><strong>Téléphone :</strong> ${participantData.contact_number || 'NON SPÉCIFIÉ'}</li>
             </ul>
+            ${guestListHtml}
             <h3 style="color:#333;">Détails du paiement :</h3>
             <ul style="list-style:none;padding-left:0;">
-              <li><strong>Montant :</strong> ${PAYMENT_AMOUNT.toLocaleString()} FCFA</li>
+              <li><strong>Nombre de places :</strong> ${numberOfPlaces}</li>
+              <li><strong>Montant total :</strong> ${totalAmount.toLocaleString()} FCFA${numberOfPlaces > 1 ? ` (${numberOfPlaces} × ${PAYMENT_AMOUNT.toLocaleString()})` : ''}</li>
               <li><strong>Méthode :</strong> ${formattedPaymentMethod}</li>
               <li><strong>Numéro utilisé :</strong> ${formattedPhoneNumber}</li>
               <li><strong>Date :</strong> ${currentDate}</li>
@@ -93,13 +116,13 @@ export const sendAdminNotification = async (
     // Préparation des paramètres pour le template EmailJS admin
     // Template: template_oz843jo - Params: {{{email_admin}}}, {{subject}}
     const templateParams: EmailTemplateParams = {
-      subject: `Nouvelle inscription - ${participantData.first_name} ${participantData.last_name}`,
+      subject: `Nouvelle inscription${numberOfPlaces > 1 ? ` (${numberOfPlaces} places)` : ''} - ${participantData.first_name} ${participantData.last_name}`,
       email_admin: emailAdminHtml,
       // Params supplémentaires pour compatibilité
       participant_name: `${participantData.first_name} ${participantData.last_name}`,
       participant_email: participantData.email,
       participant_phone: participantData.contact_number || "NON SPÉCIFIÉ",
-      payment_amount: `${PAYMENT_AMOUNT} XOF`,
+      payment_amount: `${totalAmount} XOF`,
       payment_method: formattedPaymentMethod,
       payment_phone: formattedPhoneNumber,
       comments: formattedComments,
@@ -146,7 +169,14 @@ export const sendAdminNotification = async (
 /**
  * Envoie un email initial au participant
  */
-export const sendParticipantInitialEmail = async (participantData: any, paymentMethod: string, phoneNumber: string) => {
+export const sendParticipantInitialEmail = async (
+  participantData: any,
+  paymentMethod: string,
+  phoneNumber: string,
+  numberOfPlaces: number = 1,
+  guests: Guest[] = [],
+  totalAmount: number = PAYMENT_AMOUNT
+) => {
   try {
     console.log("===== PRÉPARATION EMAIL INITIAL AU PARTICIPANT =====");
     
@@ -162,19 +192,8 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     const appUrl = window.location.origin;
     const pendingUrl = `${appUrl}/payment-pending/${participantData.id}?type=initial`;
     
-    console.log("URL de paiement en attente construite:", pendingUrl);
-    console.log("ID du participant:", participantData.id);
-    console.log("Origine de l'application:", appUrl);
-    
     const memberStatus = participantData.is_member ? "Membre" : "Non membre";
-    
-    // Ajouter des logs pour vérifier les données du participant
-    console.log("Données participant pour email initial:", {
-      email: email,
-      nom_complet: `${participantData.first_name} ${participantData.last_name}`,
-      participant_email: participantData.email,
-      participant_id: participantData.id // Vérifier que l'ID existe
-    });
+    const guestListHtml = generateGuestListHtml(guests, numberOfPlaces);
     
     // Génération du contenu HTML dynamique pour le participant
     const emailParticipantHtml = `
@@ -186,7 +205,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
             <span style="display:inline-block;background-color:#07553B;color:white;padding:5px 14px;border-radius:4px;font-size:0.9em;">15e Édition</span>
           </div>
           <p>Assalamou Aleykoum wa rahmatullahi wa barakatuh, cher(e) <strong>${participantData.first_name} ${participantData.last_name}</strong>,</p>
-          <p>Votre enregistrement pour l'<strong>IFTAR 2026</strong> a bien été reçu. Nous sommes dans l'attente de recevoir votre paiement pour finaliser votre inscription.</p>
+          <p>Votre enregistrement pour l'<strong>IFTAR 2026</strong>${numberOfPlaces > 1 ? ` (${numberOfPlaces} places)` : ''} a bien été reçu. Nous sommes dans l'attente de recevoir votre paiement pour finaliser votre inscription.</p>
           <p>Qu'Allah accepte votre intention, facilite votre démarche et vous récompense au centuple en ce mois béni de Ramadan.</p>
           <div style="background-color:#f9f9f9;padding:15px 20px;border-radius:6px;margin:20px 0;border:1px solid #e0e0e0;">
             <h3 style="margin-top:0;color:#333;">Récapitulatif :</h3>
@@ -194,10 +213,12 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
               <li><strong>Nom :</strong> ${participantData.first_name} ${participantData.last_name}</li>
               <li><strong>Email :</strong> ${participantData.email}</li>
               <li><strong>Téléphone :</strong> ${participantData.contact_number || 'Non disponible'}</li>
-              <li><strong>Montant :</strong> ${PAYMENT_AMOUNT.toLocaleString()} FCFA</li>
+              <li><strong>Nombre de places :</strong> ${numberOfPlaces}</li>
+              <li><strong>Montant total :</strong> ${totalAmount.toLocaleString()} FCFA${numberOfPlaces > 1 ? ` (${numberOfPlaces} × ${PAYMENT_AMOUNT.toLocaleString()})` : ''}</li>
               <li><strong>Méthode :</strong> ${paymentMethod}</li>
               <li><strong>Statut :</strong> ${memberStatus}</li>
             </ul>
+            ${guestListHtml}
           </div>
           <div style="background-color:#f9f9f9;padding:12px 16px;margin:20px 0;font-style:italic;color:#555;border-radius:6px;border:1px solid #e0e0e0;">
             « Toute action étant liée à l'intention, chacun sera récompensé selon son intention. »<br>
@@ -221,9 +242,8 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
     // Template: template_3e5dq5i - Params: {{{email_participant}}}, {{to_email}}, {{subject}}
     const templateParams: EmailTemplateParams = {
       to_email: email,
-      subject: `Inscription enregistrée - ${participantData.first_name} ${participantData.last_name}`,
+      subject: `Inscription enregistrée${numberOfPlaces > 1 ? ` (${numberOfPlaces} places)` : ''} - ${participantData.first_name} ${participantData.last_name}`,
       email_participant: emailParticipantHtml,
-      // Params supplémentaires pour compatibilité
       to_name: `${participantData.first_name} ${participantData.last_name}`,
       from_name: "La Citadelle",
       prenom: participantData.first_name,
@@ -234,7 +254,7 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       participant_id: participantData.id,
       status: memberStatus,
       payment_method: paymentMethod,
-      payment_amount: `${PAYMENT_AMOUNT} XOF`,
+      payment_amount: `${totalAmount} XOF`,
       payment_phone: phoneNumber,
       app_url: appUrl,
       pending_url: pendingUrl,
@@ -245,17 +265,12 @@ export const sendParticipantInitialEmail = async (participantData: any, paymentM
       reply_to: "ne-pas-repondre@lacitadelle.ci"
     };
 
-    // Ajouter un log pour vérifier les paramètres envoyés au template
     console.log("Paramètres EmailJS pour email initial participant:", {
       participant_name: templateParams.participant_name,
-      participant_email: templateParams.participant_email,
-      participant_id: templateParams.participant_id,
-      to_name: templateParams.to_name,
-      current_date: templateParams.current_date,
-      pending_url: templateParams.pending_url // Log de l'URL complète
+      to_email: templateParams.to_email,
+      numberOfPlaces,
     });
 
-    // IMPORTANT: N'utilise que le template PARTICIPANT_INITIAL_TEMPLATE_ID pour le participant
     const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
       PARTICIPANT_INITIAL_TEMPLATE_ID,

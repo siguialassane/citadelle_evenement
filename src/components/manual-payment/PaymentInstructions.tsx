@@ -11,6 +11,7 @@ type PaymentInstructionsProps = {
   isCopied: CopyStates;
   copyToClipboard: (text: string, key: string) => void;
   paymentAmount: number;
+  stepNumber?: number;
 };
 
 export function PaymentInstructions({
@@ -18,12 +19,13 @@ export function PaymentInstructions({
   paymentNumbers,
   isCopied,
   copyToClipboard,
-  paymentAmount
+  paymentAmount,
+  stepNumber = 2
 }: PaymentInstructionsProps) {
   return (
     <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
       <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-        <span className="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center mr-2 text-sm">2</span>
+        <span className="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center mr-2 text-sm">{stepNumber}</span>
         Effectuez votre paiement
       </h3>
       

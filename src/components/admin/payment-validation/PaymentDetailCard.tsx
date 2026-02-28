@@ -72,9 +72,36 @@ export const PaymentDetailCard = ({
                 {payment.formatted_date} à {payment.formatted_time}
               </p>
             </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">
+                Nombre de places
+              </p>
+              <p className="font-semibold">{payment.number_of_places || 1}</p>
+            </div>
           </div>
 
           <Separator />
+
+          {/* Liste des invités si multi-places */}
+          {payment.guests && payment.guests.length > 1 && (
+            <>
+              <div>
+                <p className="text-sm font-medium text-gray-500 mb-2">Participants ({payment.guests.length})</p>
+                <div className="space-y-2">
+                  {payment.guests.map((guest: any, index: number) => (
+                    <div key={guest.id || index} className={`flex items-center gap-2 p-2 rounded ${guest.is_main_participant ? 'bg-green-50' : 'bg-gray-50'}`}>
+                      <span className="text-sm font-medium text-gray-500 w-8">#{index + 1}</span>
+                      <span className="text-sm">{guest.first_name} {guest.last_name}</span>
+                      {guest.is_main_participant && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Principal</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
 
           <div>
             <p className="text-sm font-medium text-gray-500">Commentaires</p>

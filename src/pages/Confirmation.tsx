@@ -32,6 +32,8 @@ const Confirmation = () => {
   // Ajout d'états pour la gestion du dialogue de confirmation de présence
   const [confirmPresenceDialogOpen, setConfirmPresenceDialogOpen] = useState(false);
   const [isPresent, setIsPresent] = useState(false);
+  const [guests, setGuests] = useState<any[]>([]);
+  const [numberOfPlaces, setNumberOfPlaces] = useState(1);
 
   useEffect(() => {
     // ... keep existing code (fetchData function)
@@ -158,6 +160,19 @@ const Confirmation = () => {
             transaction_id: `MANUAL-${manualPaymentData.id.substring(0, 8)}`,
           });
           setIsManualPayment(true);
+          setNumberOfPlaces(manualPaymentData.number_of_places || 1);
+
+          // Récupérer les invités associés
+          const { data: guestsData } = await supabase
+            .from('guests')
+            .select('*')
+            .eq('payment_id', manualPaymentData.id)
+            .order('is_main_participant', { ascending: false });
+          
+          if (guestsData && guestsData.length > 0) {
+            console.log("Invités trouvés:", guestsData);
+            setGuests(guestsData);
+          }
         } else {
           console.log("Aucun paiement manuel trouvé pour ce participant, recherche de paiement standard...");
           
@@ -499,7 +514,36 @@ const Confirmation = () => {
                   {participant?.is_member ? "Oui" : "Non"}
                 </dd>
               </div>
-              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              {numberOfPlaces > 1 && (
+                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Nombre de places</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      {numberOfPlaces} places
+                    </span>
+                  </dd>
+                </div>
+              )}
+              {guests.length > 1 && (
+                <div className={`${numberOfPlaces > 1 ? 'bg-white' : 'bg-gray-50'} px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6`}>
+                  <dt className="text-sm font-medium text-gray-500">Invités</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    <ul className="space-y-1">
+                      {guests.map((guest, index) => (
+                        <li key={guest.id || index} className="flex items-center gap-2">
+                          <span>{guest.first_name} {guest.last_name}</span>
+                          {guest.is_main_participant && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              Principal
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+              )}
+              <div className={`${guests.length > 1 ? (numberOfPlaces > 1 ? 'bg-gray-50' : 'bg-white') : 'bg-gray-50'} px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6`}>
                 <dt className="text-sm font-medium text-gray-500">Montant payé</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                   {payment?.amount.toLocaleString()} {payment?.currency || 'XOF'}
