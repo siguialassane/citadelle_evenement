@@ -5,7 +5,7 @@
 // - Types rendus plus clairs
 // - Support explicite pour les paiements multiples
 
-import { ManualPayment } from './payment';
+import { ManualPayment, GuestRecord } from './payment';
 
 export type Participant = {
   id: string;
@@ -20,6 +20,7 @@ export type Participant = {
   check_in_timestamp?: string; // Horodatage du check-in
   payments: Payment[]; // Liste des paiements associés au participant
   manual_payments?: ManualPayment[]; // Liste des paiements manuels
+  guests?: GuestRecord[]; // Liste des invités/accompagnants
 };
 
 export type Payment = {

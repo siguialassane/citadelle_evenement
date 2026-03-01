@@ -66,7 +66,13 @@ const AdminDashboard = () => {
         participant.first_name.toLowerCase().includes(searchTermLower) ||
         participant.last_name.toLowerCase().includes(searchTermLower) ||
         participant.email.toLowerCase().includes(searchTermLower) ||
-        participant.contact_number.includes(searchTerm)
+        participant.contact_number.includes(searchTerm) ||
+        // Recherche aussi dans les invités/accompagnants
+        (participant.guests && participant.guests.some(
+          guest => 
+            guest.first_name.toLowerCase().includes(searchTermLower) ||
+            guest.last_name.toLowerCase().includes(searchTermLower)
+        ))
     );
 
     setFilteredParticipants(filtered);
@@ -99,7 +105,19 @@ const AdminDashboard = () => {
             screenshot_url,
             admin_notes,
             validated_at,
-            validated_by
+            validated_by,
+            number_of_places
+          ),
+          guests (
+            id,
+            participant_id,
+            payment_id,
+            first_name,
+            last_name,
+            is_main_participant,
+            check_in_status,
+            check_in_timestamp,
+            created_at
           )
         `)
         .order('created_at', { ascending: false });
@@ -185,6 +203,13 @@ const AdminDashboard = () => {
         )
       );
 
+      // Mettre à jour aussi le participant sélectionné si c'est le même
+      setSelectedParticipant(prev => 
+        prev && prev.id === participantId 
+          ? { ...prev, check_in_status: !currentStatus } 
+          : prev
+      );
+
       toast({
         title: "Statut mis à jour",
         description: !currentStatus 
@@ -213,6 +238,55 @@ const AdminDashboard = () => {
   const handleViewDetails = (participant: Participant) => {
     setSelectedParticipant(participant);
     setDetailsOpen(true);
+  };
+
+  // Gestion du check-in d'un invité (guest)
+  const handleGuestCheckIn = async (guestId: string, currentStatus: boolean) => {
+    try {
+      const newStatus = !currentStatus;
+      
+      const { error } = await supabase
+        .from('guests')
+        .update({ 
+          check_in_status: newStatus,
+          check_in_timestamp: newStatus ? new Date().toISOString() : null
+        })
+        .eq('id', guestId);
+
+      if (error) throw error;
+
+      // Mettre à jour localement les guests dans les participants
+      const updateGuests = (participant: Participant) => ({
+        ...participant,
+        guests: participant.guests?.map(g => 
+          g.id === guestId 
+            ? { ...g, check_in_status: newStatus, check_in_timestamp: newStatus ? new Date().toISOString() : undefined } 
+            : g
+        )
+      });
+
+      setParticipants(prev => prev.map(p => 
+        p.guests?.some(g => g.id === guestId) ? updateGuests(p) : p
+      ));
+      
+      setSelectedParticipant(prev => 
+        prev && prev.guests?.some(g => g.id === guestId) ? updateGuests(prev) : prev
+      );
+
+      toast({
+        title: "Statut mis à jour",
+        description: newStatus 
+          ? "L'invité a été enregistré comme présent."
+          : "Le statut de présence de l'invité a été annulé.",
+      });
+    } catch (error) {
+      console.error("Erreur lors du check-in de l'invité:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le statut de présence.",
+        variant: "destructive",
+      });
+    }
   };
 
   const goToPaymentValidation = () => {
@@ -313,6 +387,7 @@ const AdminDashboard = () => {
           pdfDownloaded={pdfDownloaded}
           onViewDetails={handleViewDetails}
           onCheckIn={handleCheckIn}
+          onGuestCheckIn={handleGuestCheckIn}
           onDelete={handleRefresh}
           onPaymentProcessed={handlePaymentProcessed}
           onMemberStatusChanged={handleRefresh}
@@ -323,6 +398,8 @@ const AdminDashboard = () => {
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
         participant={selectedParticipant}
+        onGuestCheckIn={handleGuestCheckIn}
+        onRefresh={handleRefresh}
       />
       
       <DeleteConfirmation 

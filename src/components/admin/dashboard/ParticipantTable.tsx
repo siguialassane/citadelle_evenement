@@ -24,7 +24,8 @@ import {
   CreditCard,
   Zap,
   UserCheck,
-  UserX
+  UserX,
+  Users
 } from "lucide-react";
 import { type Participant, type Payment } from "../../../types/participant";
 import { ParticipantDeleteDialog } from "./ParticipantDeleteDialog";
@@ -40,6 +41,7 @@ interface ParticipantTableProps {
   pdfDownloaded?: boolean;
   onViewDetails: (participant: Participant) => void;
   onCheckIn: (participantId: string, currentStatus: boolean | null) => void;
+  onGuestCheckIn?: (guestId: string, currentStatus: boolean) => void;
   onDelete?: () => void;
   onPaymentProcessed?: () => void;
   onMemberStatusChanged?: () => void; // Nouveau callback pour le statut de membre
@@ -52,6 +54,7 @@ export const ParticipantTable = ({
   pdfDownloaded = false,
   onViewDetails,
   onCheckIn,
+  onGuestCheckIn,
   onDelete,
   onPaymentProcessed,
   onMemberStatusChanged
@@ -227,7 +230,6 @@ export const ParticipantTable = ({
               <TableHead>Membre</TableHead>
               <TableHead>Date d'inscription</TableHead>
               <TableHead>Paiement</TableHead>
-              <TableHead>Présence</TableHead>
               <TableHead className="text-center">Détails</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -235,7 +237,7 @@ export const ParticipantTable = ({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-10">
+                <TableCell colSpan={8} className="text-center py-10">
                   <div className="flex justify-center items-center">
                     <RefreshCw className="animate-spin h-5 w-5 mr-2" />
                     Chargement des participants...
@@ -244,7 +246,7 @@ export const ParticipantTable = ({
               </TableRow>
             ) : uniqueParticipants.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-10">
+                <TableCell colSpan={8} className="text-center py-10">
                   {searchTerm ? (
                     <div className="flex flex-col items-center">
                       <AlertTriangle className="h-8 w-8 text-yellow-500 mb-2" />
@@ -259,10 +261,35 @@ export const ParticipantTable = ({
                 </TableCell>
               </TableRow>
             ) : (
-              uniqueParticipants.map(participant => (
+              uniqueParticipants.map(participant => {
+                const companions = participant.guests?.filter(g => !g.is_main_participant) || [];
+                const hasCompanions = companions.length > 0;
+                
+                return (
                 <TableRow key={participant.id}>
+                  {/* Colonne Nom: participant principal + accompagnants en dessous */}
                   <TableCell className="font-medium">
-                    {participant.last_name} {participant.first_name}
+                    <div className="flex flex-col gap-0">
+                      {/* Participant principal */}
+                      <div className="flex items-center gap-2">
+                        <span>{participant.last_name} {participant.first_name}</span>
+                        {hasCompanions && (
+                          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-xs px-1.5 py-0">
+                            <Users className="h-3 w-3 mr-1" />
+                            {companions.length + 1} places
+                          </Badge>
+                        )}
+                      </div>
+                      {/* Accompagnants collés en dessous */}
+                      {companions.map((guest, idx) => (
+                        <div key={guest.id} className="flex items-center gap-1 pl-4 border-l-2 border-blue-200 mt-1">
+                          <span className="text-sm text-blue-700">
+                            {guest.first_name} {guest.last_name}
+                          </span>
+                          <span className="text-xs text-blue-400">(accompagnant)</span>
+                        </div>
+                      ))}
+                    </div>
                   </TableCell>
                   <TableCell>{participant.email}</TableCell>
                   <TableCell>{participant.contact_number}</TableCell>
@@ -297,13 +324,6 @@ export const ParticipantTable = ({
                   <TableCell>
                     {getPaymentStatusBadge(participant)}
                   </TableCell>
-                  <TableCell>
-                    {participant.check_in_status ? (
-                      <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Présent</Badge>
-                    ) : (
-                      <Badge variant="outline">Non enregistré</Badge>
-                    )}
-                  </TableCell>
                   <TableCell className="text-center">
                     <Button
                       size="sm"
@@ -315,36 +335,73 @@ export const ParticipantTable = ({
                       <span className="hidden sm:inline">Détails</span>
                     </Button>
                   </TableCell>
+                  {/* Colonne Actions: un bouton Présent/Absent par personne */}
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant={participant.check_in_status ? "outline" : "default"}
-                        className={`flex items-center gap-1 ${
-                          participant.check_in_status 
-                            ? "border-red-200 text-red-700 hover:bg-red-50" 
-                            : "bg-green-600 hover:bg-green-700"
-                        }`}
-                        onClick={() => onCheckIn(participant.id, participant.check_in_status)}
-                      >
-                        {participant.check_in_status ? (
-                          <>
-                            <XCircle className="h-3 w-3" />
-                            <span className="hidden sm:inline">Annuler</span>
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="h-3 w-3" />
-                            <span className="hidden sm:inline">Présent</span>
-                          </>
-                        )}
-                      </Button>
-                      
+                    <div className="flex flex-col gap-1 items-end">
+                      {/* Bouton check-in du participant principal */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 hidden sm:inline">
+                          {participant.last_name}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant={participant.check_in_status ? "outline" : "default"}
+                          className={`flex items-center gap-1 ${
+                            participant.check_in_status 
+                              ? "border-red-200 text-red-700 hover:bg-red-50" 
+                              : "bg-green-600 hover:bg-green-700"
+                          }`}
+                          onClick={() => onCheckIn(participant.id, participant.check_in_status)}
+                        >
+                          {participant.check_in_status ? (
+                            <>
+                              <XCircle className="h-3 w-3" />
+                              <span className="hidden sm:inline">Absent</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-3 w-3" />
+                              <span className="hidden sm:inline">Présent</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      {/* Boutons check-in pour chaque accompagnant */}
+                      {companions.map((guest) => (
+                        <div key={guest.id} className="flex items-center gap-2">
+                          <span className="text-xs text-blue-500 hidden sm:inline">
+                            {guest.last_name}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant={guest.check_in_status ? "outline" : "default"}
+                            className={`flex items-center gap-1 ${
+                              guest.check_in_status 
+                                ? "border-red-200 text-red-700 hover:bg-red-50" 
+                                : "bg-blue-600 hover:bg-blue-700"
+                            }`}
+                            onClick={() => onGuestCheckIn && onGuestCheckIn(guest.id, guest.check_in_status)}
+                          >
+                            {guest.check_in_status ? (
+                              <>
+                                <XCircle className="h-3 w-3" />
+                                <span className="hidden sm:inline">Absent</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="h-3 w-3" />
+                                <span className="hidden sm:inline">Présent</span>
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      ))}
+                      {/* Bouton supprimer */}
                       {pdfDownloaded && (
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex items-center gap-1 border-red-200 text-red-700 hover:bg-red-50"
+                          className="flex items-center gap-1 border-red-200 text-red-700 hover:bg-red-50 mt-1"
                           onClick={() => handleDeleteClick(participant)}
                         >
                           <Trash className="h-3 w-3" />
@@ -354,7 +411,8 @@ export const ParticipantTable = ({
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             )}
           </TableBody>
         </Table>

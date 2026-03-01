@@ -194,6 +194,9 @@ export const exportToCSV = (participants: Participant[]) => {
     "Téléphone", 
     "Membre", 
     "Présent", 
+    "Nb de places",
+    "Accompagnants",
+    "Présence accompagnants",
     "Date d'inscription", 
     "Statut du paiement", 
     "Montant",
@@ -202,21 +205,31 @@ export const exportToCSV = (participants: Participant[]) => {
     "Date d'enregistrement"
   ];
   
-  const rows = participants.map(participant => [
-    escapeCSV(participant.last_name || ""),
-    escapeCSV(participant.first_name || ""),
-    escapeCSV(participant.email || ""),
-    escapeCSV(formatPhoneNumber(participant.contact_number || "")),
-    escapeCSV(participant.is_member ? "Oui" : "Non"),
-    escapeCSV(participant.check_in_status ? "Oui" : "Non"),
-    escapeCSV(formatFrenchDate(participant.created_at)),
-    escapeCSV(getPaymentStatus(participant)),
-    escapeCSV(getPaymentAmount(participant)),
-    escapeCSV(getPaymentMethod(participant)),
-    escapeCSV(getPaymentDate(participant)),
-    escapeCSV(participant.check_in_timestamp ? 
-      formatFrenchDate(participant.check_in_timestamp) : "Non enregistré")
-  ]);
+  const rows = participants.map(participant => {
+    const companions = participant.guests?.filter(g => !g.is_main_participant) || [];
+    const totalPlaces = companions.length > 0 ? companions.length + 1 : 1;
+    const companionNames = companions.map(g => `${g.first_name} ${g.last_name}`).join(" | ");
+    const companionPresence = companions.map(g => `${g.first_name} ${g.last_name}: ${g.check_in_status ? 'Présent' : 'Absent'}`).join(" | ");
+    
+    return [
+      escapeCSV(participant.last_name || ""),
+      escapeCSV(participant.first_name || ""),
+      escapeCSV(participant.email || ""),
+      escapeCSV(formatPhoneNumber(participant.contact_number || "")),
+      escapeCSV(participant.is_member ? "Oui" : "Non"),
+      escapeCSV(participant.check_in_status ? "Oui" : "Non"),
+      escapeCSV(totalPlaces),
+      escapeCSV(companionNames || "-"),
+      escapeCSV(companionPresence || "-"),
+      escapeCSV(formatFrenchDate(participant.created_at)),
+      escapeCSV(getPaymentStatus(participant)),
+      escapeCSV(getPaymentAmount(participant)),
+      escapeCSV(getPaymentMethod(participant)),
+      escapeCSV(getPaymentDate(participant)),
+      escapeCSV(participant.check_in_timestamp ? 
+        formatFrenchDate(participant.check_in_timestamp) : "Non enregistré")
+    ];
+  });
   
   // Ajouter le BOM (Byte Order Mark) pour que Excel reconnaisse l'UTF-8
   const BOM = "\uFEFF";
@@ -267,21 +280,23 @@ export const exportToPDF = async (
     pdf.text(`Extrait le: ${new Date().toLocaleDateString('fr-FR')} - IFTAR 2026`, pageWidth / 2, margin + 20, { align: 'center' });
     
     const columns = [
-      "Nom", 
+      "Nom / Accompagnants", 
       "Email", 
       "Téléphone", 
       "Membre", 
       "Date d'inscription", 
-      "Paiement"
+      "Paiement",
+      "Places"
     ];
     
     const columnWidths = {
-      0: usableWidth * 0.20, // Nom
-      1: usableWidth * 0.30, // Email
-      2: usableWidth * 0.15, // Téléphone
-      3: usableWidth * 0.10, // Membre
-      4: usableWidth * 0.15, // Date
+      0: usableWidth * 0.22, // Nom
+      1: usableWidth * 0.27, // Email
+      2: usableWidth * 0.14, // Téléphone
+      3: usableWidth * 0.09, // Membre
+      4: usableWidth * 0.13, // Date
       5: usableWidth * 0.10, // Paiement
+      6: usableWidth * 0.05, // Places
     };
     
     let yPosition = margin + 30;
@@ -319,7 +334,43 @@ export const exportToPDF = async (
     
     drawHeader();
     
-    filteredParticipants.forEach((participant, index) => {
+    // Aplatir les participants + leurs accompagnants pour le rendu PDF
+    const pdfRows: Array<{ label: string; email: string; phone: string; membre: string; date: string; payment: string; places: string; isCompanion: boolean; isPresent: boolean }> = [];
+    
+    filteredParticipants.forEach(participant => {
+      const companions = participant.guests?.filter(g => !g.is_main_participant) || [];
+      const totalPlaces = companions.length > 0 ? companions.length + 1 : 1;
+      
+      // Ligne du participant principal
+      pdfRows.push({
+        label: `${participant.last_name} ${participant.first_name}`,
+        email: participant.email,
+        phone: participant.contact_number,
+        membre: participant.is_member ? "Oui" : "Non",
+        date: new Date(participant.created_at).toLocaleDateString('fr-FR'),
+        payment: getPaymentStatus(participant),
+        places: String(totalPlaces),
+        isCompanion: false,
+        isPresent: !!participant.check_in_status,
+      });
+      
+      // Lignes des accompagnants
+      companions.forEach(guest => {
+        pdfRows.push({
+          label: `  ↳ ${guest.first_name} ${guest.last_name}`,
+          email: "(accompagnant)",
+          phone: "",
+          membre: "",
+          date: "",
+          payment: "",
+          places: "",
+          isCompanion: true,
+          isPresent: !!guest.check_in_status,
+        });
+      });
+    });
+
+    pdfRows.forEach((row, index) => {
       if (index > 0 && index % maxRowsPerPage === 0) {
         pdf.addPage();
         currentPage++;
@@ -333,33 +384,45 @@ export const exportToPDF = async (
         drawHeader();
       }
       
-      if (index % 2 === 1) {
+      if (row.isCompanion) {
+        // Fond légèrement bleuté pour les accompagnants
+        pdf.setFillColor(239, 246, 255);
+        pdf.rect(margin, yPosition, usableWidth, lineHeight, 'F');
+      } else if (index % 2 === 1) {
         pdf.setFillColor(249, 250, 251);
         pdf.rect(margin, yPosition, usableWidth, lineHeight, 'F');
       }
       
       let xPosition = margin;
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(8);
+      pdf.setFont("helvetica", row.isCompanion ? "italic" : "normal");
+      pdf.setFontSize(row.isCompanion ? 7 : 8);
+      pdf.setTextColor(row.isCompanion ? 59 : 0, row.isCompanion ? 130 : 0, row.isCompanion ? 246 : 0);
       
-      pdf.text(`${participant.last_name} ${participant.first_name}`.substring(0, 25), xPosition + 2, yPosition + 5);
+      pdf.text(row.label.substring(0, 28), xPosition + 2, yPosition + 5);
       xPosition += columnWidths[0];
       
-      pdf.text(participant.email.substring(0, 35), xPosition + 2, yPosition + 5);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(row.email.substring(0, 32), xPosition + 2, yPosition + 5);
       xPosition += columnWidths[1];
       
-      pdf.text(participant.contact_number, xPosition + 2, yPosition + 5);
+      pdf.text(row.phone, xPosition + 2, yPosition + 5);
       xPosition += columnWidths[2];
       
-      pdf.text(participant.is_member ? "Oui" : "Non", xPosition + 2, yPosition + 5);
+      pdf.text(row.membre, xPosition + 2, yPosition + 5);
       xPosition += columnWidths[3];
       
-      pdf.text(new Date(participant.created_at).toLocaleDateString('fr-FR'), xPosition + 2, yPosition + 5);
+      pdf.text(row.date, xPosition + 2, yPosition + 5);
       xPosition += columnWidths[4];
       
-      // Utilisation de la fonction utilitaire pour obtenir le statut de paiement formaté
-      const paymentStatus = getPaymentStatus(participant);
-      pdf.text(paymentStatus, xPosition + 2, yPosition + 5);
+      // Statut de présence en couleur
+      if (!row.isCompanion || row.isPresent !== undefined) {
+        pdf.setTextColor(row.isPresent ? 22 : 107, row.isPresent ? 163 : 114, row.isPresent ? 74 : 128);
+        pdf.text(row.payment || (row.isCompanion ? (row.isPresent ? 'Présent' : 'Absent') : ''), xPosition + 2, yPosition + 5);
+        pdf.setTextColor(0, 0, 0);
+      }
+      xPosition += columnWidths[5];
+      
+      pdf.text(row.places, xPosition + 2, yPosition + 5);
       
       drawRowLines(yPosition + lineHeight);
       
@@ -388,11 +451,15 @@ export const exportToPDF = async (
     
     const presentCount = filteredParticipants.filter(p => p.check_in_status).length;
     const memberCount = filteredParticipants.filter(p => p.is_member).length;
+    const totalCompanions = filteredParticipants.reduce((acc, p) => acc + (p.guests?.filter(g => !g.is_main_participant).length || 0), 0);
+    const presentCompanions = filteredParticipants.reduce((acc, p) => acc + (p.guests?.filter(g => !g.is_main_participant && g.check_in_status).length || 0), 0);
+    const totalPersons = filteredParticipants.length + totalCompanions;
+    const totalPresent = presentCount + presentCompanions;
     
     pdf.setFontSize(9);
-    pdf.text(`• Total des participants: ${filteredParticipants.length}`, margin + 5, recapYPosition);
+    pdf.text(`• Total des inscrits: ${filteredParticipants.length} (+ ${totalCompanions} accompagnant${totalCompanions > 1 ? 's' : ''} = ${totalPersons} personnes)`, margin + 5, recapYPosition);
     recapYPosition += 4;
-    pdf.text(`• Participants enregistrés: ${presentCount} (${Math.round((presentCount / filteredParticipants.length) * 100) || 0}%)`, margin + 5, recapYPosition);
+    pdf.text(`• Personnes enregistrées: ${totalPresent} / ${totalPersons} (${Math.round((totalPresent / totalPersons) * 100) || 0}%)`, margin + 5, recapYPosition);
     recapYPosition += 4;
     pdf.text(`• Membres de la communauté: ${memberCount} (${Math.round((memberCount / filteredParticipants.length) * 100) || 0}%)`, margin + 5, recapYPosition);
     

@@ -9,15 +9,30 @@ export const StatisticsSection = ({ participants }: StatisticsSectionProps) => {
   // Calculate statistics
   const totalParticipants = participants.length;
   
+  // Calcul du nombre total de places (participants + accompagnants)
+  const totalPlaces = participants.reduce((total, p) => {
+    const guestCount = p.guests?.length || 0;
+    return total + (guestCount > 0 ? guestCount : 1);
+  }, 0);
+  
   const confirmedPayments = participants.filter(p => 
     (p.payments && p.payments.length > 0 && p.payments[0].status.toLowerCase() === 'completed') ||
     (p.manual_payments && p.manual_payments.length > 0 && p.manual_payments[0].status.toLowerCase() === 'completed')
   ).length;
   
   const checkedInCount = participants.filter(p => p.check_in_status).length;
+  
+  // Nombre d'accompagnants enregistrés (check-in)
+  const guestsCheckedInCount = participants.reduce((total, p) => {
+    return total + (p.guests?.filter(g => !g.is_main_participant && g.check_in_status).length || 0);
+  }, 0);
+  const totalGuests = participants.reduce((total, p) => {
+    return total + (p.guests?.filter(g => !g.is_main_participant).length || 0);
+  }, 0);
 
   const confirmedPaymentsPercentage = totalParticipants > 0 ? Math.round((confirmedPayments / totalParticipants) * 100) : 0;
-  const checkedInPercentage = totalParticipants > 0 ? Math.round((checkedInCount / totalParticipants) * 100) : 0;
+  const totalCheckedIn = checkedInCount + guestsCheckedInCount;
+  const checkedInPercentage = totalPlaces > 0 ? Math.round((totalCheckedIn / totalPlaces) * 100) : 0;
 
   return (
     <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -29,7 +44,12 @@ export const StatisticsSection = ({ participants }: StatisticsSectionProps) => {
         </div>
         <div>
           <p className="text-sm text-blue-700">Total Participants</p>
-          <p className="text-2xl font-bold text-blue-900">{totalParticipants}</p>
+          <p className="text-2xl font-bold text-blue-900">
+            {totalParticipants}
+            {totalGuests > 0 && (
+              <span className="text-sm font-normal ml-1">({totalPlaces} places)</span>
+            )}
+          </p>
         </div>
       </div>
       
@@ -54,10 +74,15 @@ export const StatisticsSection = ({ participants }: StatisticsSectionProps) => {
           </svg>
         </div>
         <div>
-          <p className="text-sm text-amber-700">Participants enregistrés</p>
+          <p className="text-sm text-amber-700">Personnes enregistrées</p>
           <p className="text-2xl font-bold text-amber-900">
-            {checkedInCount} <span className="text-sm font-normal">({checkedInPercentage}%)</span>
+            {totalCheckedIn} <span className="text-sm font-normal">({checkedInPercentage}%)</span>
           </p>
+          {totalGuests > 0 && (
+            <p className="text-xs text-amber-600 mt-1">
+              {checkedInCount} participants + {guestsCheckedInCount} accompagnants
+            </p>
+          )}
         </div>
       </div>
     </div>

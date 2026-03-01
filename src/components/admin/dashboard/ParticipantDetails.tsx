@@ -19,12 +19,12 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Download, QrCode, RefreshCw } from "lucide-react";
+import { AlertTriangle, Download, QrCode, RefreshCw, Users, CheckCircle2, XCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { type Participant, type Payment } from "../../../types/participant";
-import { type ManualPayment } from "../../../types/payment";
+import { type ManualPayment, type GuestRecord } from "../../../types/payment";
 import html2canvas from 'html2canvas';
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -32,12 +32,16 @@ interface ParticipantDetailsProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   participant: Participant | null;
+  onGuestCheckIn?: (guestId: string, currentStatus: boolean) => void;
+  onRefresh?: () => void;
 }
 
 export const ParticipantDetails = ({ 
   open, 
   onOpenChange, 
-  participant 
+  participant,
+  onGuestCheckIn,
+  onRefresh
 }: ParticipantDetailsProps) => {
   const [isRegeneratingQR, setIsRegeneratingQR] = useState(false);
   const isMobile = useIsMobile();
@@ -209,6 +213,16 @@ export const ParticipantDetails = ({
                                      activePayment.payment.status.toUpperCase() === "SUCCESS" || 
                                      activePayment.payment.status.toUpperCase() === "COMPLETED");
 
+  // Gestion du check-in des invités (via le parent)
+  const handleGuestCheckIn = (guest: GuestRecord) => {
+    if (onGuestCheckIn) {
+      onGuestCheckIn(guest.id, guest.check_in_status);
+    }
+  };
+
+  // Obtenir les invités (non principal)
+  const companions = participant?.guests?.filter(g => !g.is_main_participant) || [];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -374,6 +388,84 @@ export const ParticipantDetails = ({
                       <p className="text-sm">Le QR code sera disponible après validation du paiement</p>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Carte pour les invités/accompagnants */}
+            {companions.length > 0 && (
+              <Card className={`${isMobile ? "col-span-1" : "col-span-2"}`}>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <Users className="h-5 w-5 mr-2 text-blue-600" />
+                    Accompagnants ({companions.length})
+                  </CardTitle>
+                  <CardDescription>
+                    Personnes accompagnant {participant.first_name} {participant.last_name} — Réservation de {(companions.length + 1)} places
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {/* Participant principal */}
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-green-700 bg-green-200 w-6 h-6 rounded-full flex items-center justify-center">1</span>
+                        <div>
+                          <p className="font-medium text-green-800">{participant.first_name} {participant.last_name}</p>
+                          <p className="text-xs text-green-600">Participant principal</p>
+                        </div>
+                      </div>
+                      <div>
+                        {participant.check_in_status ? (
+                          <Badge className="bg-green-100 text-green-800">Présent</Badge>
+                        ) : (
+                          <Badge variant="outline">Non enregistré</Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Invités/accompagnants */}
+                    {companions.map((guest, index) => (
+                      <div key={guest.id} className="flex items-center justify-between p-3 rounded-lg bg-blue-50 border border-blue-200">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-blue-700 bg-blue-200 w-6 h-6 rounded-full flex items-center justify-center">{index + 2}</span>
+                          <div>
+                            <p className="font-medium text-blue-800">{guest.first_name} {guest.last_name}</p>
+                            <p className="text-xs text-blue-600">Accompagnant</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {guest.check_in_status ? (
+                            <Badge className="bg-green-100 text-green-800">Présent</Badge>
+                          ) : (
+                            <Badge variant="outline">Non enregistré</Badge>
+                          )}
+                          <Button
+                            size="sm"
+                            variant={guest.check_in_status ? "outline" : "default"}
+                            className={`flex items-center gap-1 ${
+                              guest.check_in_status 
+                                ? "border-red-200 text-red-700 hover:bg-red-50" 
+                                : "bg-green-600 hover:bg-green-700"
+                            }`}
+                            onClick={() => handleGuestCheckIn(guest)}
+                          >
+                            {guest.check_in_status ? (
+                              <>
+                                <XCircle className="h-3 w-3" />
+                                <span>Annuler</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="h-3 w-3" />
+                                <span>Présent</span>
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             )}

@@ -48,6 +48,57 @@ export type Database = {
           },
         ]
       }
+      guests: {
+        Row: {
+          id: string
+          participant_id: string
+          payment_id: string | null
+          first_name: string
+          last_name: string
+          is_main_participant: boolean
+          check_in_status: boolean
+          check_in_timestamp: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          participant_id: string
+          payment_id?: string | null
+          first_name: string
+          last_name: string
+          is_main_participant?: boolean
+          check_in_status?: boolean
+          check_in_timestamp?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          participant_id?: string
+          payment_id?: string | null
+          first_name?: string
+          last_name?: string
+          is_main_participant?: boolean
+          check_in_status?: boolean
+          check_in_timestamp?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guests_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guests_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "manual_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       manual_payments: {
         Row: {
           admin_notes: string | null
@@ -55,6 +106,7 @@ export type Database = {
           comments: string | null
           created_at: string
           id: string
+          number_of_places: number | null
           participant_id: string
           payment_method: string
           phone_number: string
@@ -69,6 +121,7 @@ export type Database = {
           comments?: string | null
           created_at?: string
           id?: string
+          number_of_places?: number | null
           participant_id: string
           payment_method: string
           phone_number: string
@@ -83,6 +136,7 @@ export type Database = {
           comments?: string | null
           created_at?: string
           id?: string
+          number_of_places?: number | null
           participant_id?: string
           payment_method?: string
           phone_number?: string
