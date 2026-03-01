@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Download, QrCode, RefreshCw, Users, CheckCircle2, XCircle } from "lucide-react";
+import { AlertTriangle, Download, QrCode, RefreshCw, Users, CheckCircle2, XCircle, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -268,6 +268,20 @@ export const ParticipantDetails = ({
                   <p className="text-sm text-muted-foreground">Date d'inscription</p>
                   <p className="font-medium">{formatDate(participant.created_at)}</p>
                 </div>
+                {participant.sms_code && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Code SMS</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <MessageSquare className="h-4 w-4 text-orange-500" />
+                      <span className="font-bold text-orange-700 text-lg tracking-wider">{participant.sms_code}</span>
+                      {participant.sms_sent_at && (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                          SMS envoyé
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

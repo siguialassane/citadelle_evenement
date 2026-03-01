@@ -17,6 +17,8 @@ export type Participant = {
   check_in_status: boolean;
   created_at: string;
   qr_code_id?: string; // ID du QR code associé au participant
+  sms_code?: string; // Code SMS unique pour vérification
+  sms_sent_at?: string; // Date d'envoi du SMS
   check_in_timestamp?: string; // Horodatage du check-in
   payments: Payment[]; // Liste des paiements associés au participant
   manual_payments?: ManualPayment[]; // Liste des paiements manuels

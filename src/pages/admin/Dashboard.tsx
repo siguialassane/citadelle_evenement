@@ -22,6 +22,7 @@ import { ParticipantTable } from "@/components/admin/dashboard/ParticipantTable"
 import { ParticipantDetails } from "@/components/admin/dashboard/ParticipantDetails";
 import { DeleteConfirmation } from "@/components/admin/dashboard/DeleteConfirmation";
 import { DashboardCommunication } from "@/components/admin/dashboard/DashboardCommunication";
+import SmsCodeVerification from "@/components/admin/dashboard/SmsCodeVerification";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -67,6 +68,8 @@ const AdminDashboard = () => {
         participant.last_name.toLowerCase().includes(searchTermLower) ||
         participant.email.toLowerCase().includes(searchTermLower) ||
         participant.contact_number.includes(searchTerm) ||
+        // Recherche par code SMS
+        (participant.sms_code && participant.sms_code.toUpperCase().includes(searchTerm.toUpperCase())) ||
         // Recherche aussi dans les invités/accompagnants
         (participant.guests && participant.guests.some(
           guest => 
@@ -307,6 +310,29 @@ const AdminDashboard = () => {
     navigate("/admin/statistics");
   };
 
+  const handleSmsParticipantFound = (participant: Participant) => {
+    setSelectedParticipant(participant);
+    setDetailsOpen(true);
+  };
+
+  const handleSmsCheckIn = async (participantId: string) => {
+    setParticipants(prevParticipants =>
+      prevParticipants.map(participant =>
+        participant.id === participantId
+          ? { ...participant, check_in_status: true, check_in_timestamp: new Date().toISOString() }
+          : participant
+      )
+    );
+
+    setSelectedParticipant(prev =>
+      prev && prev.id === participantId
+        ? { ...prev, check_in_status: true, check_in_timestamp: new Date().toISOString() }
+        : prev
+    );
+
+    await handleRefresh();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header onLogout={handleLogout} />
@@ -367,6 +393,14 @@ const AdminDashboard = () => {
             <p className="mt-2">Le statut de présence des participants sera automatiquement mis à jour dans le tableau ci-dessous lorsqu'ils confirmeront leur présence.</p>
           </AlertDescription>
         </Alert>
+
+        <div className="mb-6">
+          <SmsCodeVerification
+            onParticipantFound={handleSmsParticipantFound}
+            onCheckIn={handleSmsCheckIn}
+            onRefresh={handleRefresh}
+          />
+        </div>
 
         <SearchAndExport 
           searchTerm={searchTerm}

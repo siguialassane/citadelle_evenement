@@ -15,6 +15,7 @@ import {
 } from "./supabaseService";
 import { sendConfirmationEmail } from "./emailService";
 import { sendPaymentRejectionEmail } from "@/components/manual-payment/services/emails/rejectionEmailService";
+import { sendSmsViaEdgeFunction } from "@/services/smsService";
 
 export const validatePayment = async (paymentId: string, paymentData: any): Promise<ValidationResponse> => {
   try {
@@ -45,18 +46,18 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
     
     // Mise à jour de la base de données — participantId déjà disponible, pas de SELECT redondant
     const participantId = paymentData.participant_id;
-    const { qrCodeId } = await validatePaymentInDatabase(paymentId, participantId);
+    const { qrCodeId, smsCode, contactNumber } = await validatePaymentInDatabase(paymentId, participantId);
     console.log("Paiement validé dans la base de données:", paymentId);
     console.log("ID QR Code généré:", qrCodeId);
+    console.log("Code SMS généré:", smsCode);
     console.log("ID du participant:", participantId);
 
     toast({
       title: "Validation réussie",
-      description: "Le participant va recevoir un email de confirmation.",
+      description: "Le participant va recevoir un email de confirmation et un SMS.",
     });
 
     // Envoi de l'email en arrière-plan (non bloquant)
-    // La validation est confirmée immédiatement sans attendre la réponse EmailJS
     fetchParticipantData(participantId)
       .then(participantFullData => {
         if (!participantFullData?.email) return;
@@ -72,6 +73,22 @@ export const validatePayment = async (paymentId: string, paymentData: any): Prom
       .catch(err => {
         console.error("Erreur email confirmation (non bloquant):", err);
       });
+
+    // Envoi du SMS en arrière-plan (non bloquant, en parallèle de l'email)
+    if (contactNumber && smsCode) {
+      const participantName = paymentData.participant_name || `${paymentData.participants?.first_name || ''} ${paymentData.participants?.last_name || ''}`.trim();
+      sendSmsViaEdgeFunction(contactNumber, smsCode, participantName)
+        .then(smsSuccess => {
+          if (smsSuccess) {
+            console.log(`✅ SMS envoyé avec succès au ${contactNumber} (code: ${smsCode})`);
+          } else {
+            console.warn(`⚠️ SMS non envoyé au ${contactNumber} (non bloquant)`);
+          }
+        })
+        .catch(err => {
+          console.error("Erreur envoi SMS (non bloquant):", err);
+        });
+    }
 
     return { success: true };
 

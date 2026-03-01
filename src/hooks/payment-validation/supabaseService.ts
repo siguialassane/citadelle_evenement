@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Payment } from "@/types/payment";
 import { ValidationResponse } from "./types";
 import { v4 as uuidv4 } from "uuid";
+import { generateUniqueSmsCode } from "@/services/smsService";
 
 // Récupère tous les paiements
 export const fetchAllPayments = async (): Promise<Payment[]> => {
@@ -62,7 +63,7 @@ export const fetchPaymentById = async (id: string): Promise<Payment | null> => {
 
 // Met à jour le statut d'un paiement à "completed" et génère un QR code
 // participantId est passé directement pour éviter un SELECT redondant
-export const validatePaymentInDatabase = async (paymentId: string, participantId: string): Promise<{qrCodeId: string; participantId: string}> => {
+export const validatePaymentInDatabase = async (paymentId: string, participantId: string): Promise<{qrCodeId: string; participantId: string; smsCode: string; contactNumber: string}> => {
   try {
     console.log("==== MISE À JOUR DU STATUT DU PAIEMENT ET GÉNÉRATION QR CODE ====");
     console.log(`Validation du paiement ID: ${paymentId}, participant ID: ${participantId}`);
@@ -88,14 +89,26 @@ export const validatePaymentInDatabase = async (paymentId: string, participantId
     const qrCodeId = uuidv4();
     console.log("Génération d'un nouveau QR code ID:", qrCodeId);
 
-    // Mettre à jour le statut du participant et associer le QR code
-    console.log("Mise à jour du statut du participant et enregistrement du QR code...");
+    // Générer un code SMS unique pour le participant
+    // Récupérer le nom du participant pour générer le préfixe
+    const { data: participantInfo } = await supabase
+      .from('participants')
+      .select('last_name, contact_number')
+      .eq('id', participantId)
+      .single();
     
-    // Mise à jour du QR code et du statut de check-in
+    const smsCode = await generateUniqueSmsCode(participantInfo?.last_name || 'XXX');
+    console.log("Code SMS généré:", smsCode);
+
+    // Mettre à jour le statut du participant et associer le QR code + code SMS
+    console.log("Mise à jour du statut du participant et enregistrement du QR code + code SMS...");
+    
+    // Mise à jour du QR code, code SMS et du statut de check-in
     const { error: participantError } = await supabase
       .from('participants')
       .update({ 
         qr_code_id: qrCodeId,
+        sms_code: smsCode,
         check_in_status: false  // Réinitialisation du statut de check-in
       })
       .eq('id', participantId);
@@ -106,9 +119,10 @@ export const validatePaymentInDatabase = async (paymentId: string, participantId
     }
     
     console.log("QR code associé au participant avec succès:", qrCodeId);
-    console.log("Participant ID associé au QR code:", participantId);
+    console.log("Code SMS associé au participant avec succès:", smsCode);
+    console.log("Participant ID:", participantId);
 
-    return { qrCodeId, participantId };
+    return { qrCodeId, participantId, smsCode, contactNumber: participantInfo?.contact_number || '' };
   } catch (error) {
     console.error("Erreur lors de la validation en base de données:", error);
     throw error;

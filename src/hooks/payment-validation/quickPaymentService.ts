@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { validatePaymentInDatabase, fetchParticipantData } from "./supabaseService";
 import { sendConfirmationEmail } from "./emailService";
+import { sendSmsViaEdgeFunction } from "@/services/smsService";
 import { v4 as uuidv4 } from "uuid";
 import { PAYMENT_AMOUNT } from "@/components/manual-payment/config";
 import { PaymentMethod } from "@/components/manual-payment/types";
@@ -46,9 +47,10 @@ export const performQuickPayment = async (
     console.log("Paiement manuel enregistré avec ID:", manualPayment.id);
     
     // 2. Valider le paiement immédiatement
-    const { qrCodeId, participantId: validatedParticipantId } = await validatePaymentInDatabase(manualPayment.id);
+    const { qrCodeId, participantId: validatedParticipantId, smsCode, contactNumber } = await validatePaymentInDatabase(manualPayment.id, participantId);
     console.log("Paiement validé dans la base de données");
     console.log("ID QR Code généré:", qrCodeId);
+    console.log("Code SMS généré:", smsCode);
     console.log("ID du participant confirmé:", validatedParticipantId);
     
     // 3. Récupérer les données complètes du participant
@@ -68,7 +70,20 @@ export const performQuickPayment = async (
         description: "Paiement validé mais l'email n'a pas pu être envoyé.",
         variant: "destructive",
       });
-      return false;
+    }
+    
+    // 5. Envoyer le SMS (non bloquant)
+    if (contactNumber && smsCode) {
+      const fullName = `${participantData.first_name || ''} ${participantData.last_name || ''}`.trim();
+      sendSmsViaEdgeFunction(contactNumber, smsCode, fullName)
+        .then(smsSuccess => {
+          if (smsSuccess) {
+            console.log(`✅ SMS envoyé (paiement rapide) au ${contactNumber}`);
+          } else {
+            console.warn(`⚠️ SMS non envoyé au ${contactNumber}`);
+          }
+        })
+        .catch(err => console.error("Erreur SMS paiement rapide:", err));
     }
     
     console.log("Email de confirmation envoyé avec succès");

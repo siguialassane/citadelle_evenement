@@ -247,6 +247,8 @@ export type Database = {
           is_member: boolean | null
           last_name: string
           qr_code_id: string | null
+          sms_code: string | null
+          sms_sent_at: string | null
         }
         Insert: {
           check_in_status?: boolean | null
@@ -259,6 +261,8 @@ export type Database = {
           is_member?: boolean | null
           last_name: string
           qr_code_id?: string | null
+          sms_code?: string | null
+          sms_sent_at?: string | null
         }
         Update: {
           check_in_status?: boolean | null
@@ -271,6 +275,8 @@ export type Database = {
           is_member?: boolean | null
           last_name?: string
           qr_code_id?: string | null
+          sms_code?: string | null
+          sms_sent_at?: string | null
         }
         Relationships: []
       }
