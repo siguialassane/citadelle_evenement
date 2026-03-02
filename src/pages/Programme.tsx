@@ -19,7 +19,7 @@ const PROGRAMME: ProgramItem[] = [
   { debut: "18:50", fin: "19:00", heure: "18:50 - 19:00", duree: "10 min", rubrique: "Démonstration de lecture coranique", highlight: false },
   { debut: "19:05", fin: "19:10", heure: "19:05 - 19:10", duree: "5 min", rubrique: "Discours du DEX", highlight: false },
   { debut: "19:11", fin: "19:18", heure: "19:11 - 19:18", duree: "7 min", rubrique: "Discours du PCA", highlight: false },
-  { debut: "19:15", fin: "19:22", heure: "19:15 - 19:22", duree: "7 min", rubrique: "Discours du Parrain", highlight: false },
+  { debut: "19:15", fin: "19:22", heure: "19:15 - 19:22", duree: "7 min", rubrique: "Discours du Parrain — Tidiane KABA DIAKITE", highlight: false },
   { debut: "19:23", fin: "19:28", heure: "19:23 - 19:28", duree: "5 min", rubrique: "Projection du film — Projet Parrainage", highlight: false },
   { debut: "19:30", fin: "19:40", heure: "19:30 - 19:40", duree: "10 min", rubrique: "Communication du Cheikoul", highlight: false },
   { debut: "19:40", fin: "20:20", heure: "19:40 - 20:20", duree: "40 min", rubrique: "Salat Ichai et Tarawih", highlight: true },
@@ -51,17 +51,23 @@ export default function Programme() {
     doc.setTextColor(50, 50, 50);
     doc.text("Dimanche 8 Mars 2026  |  NOOM Hotel Abidjan Plateau", pageW / 2, 38, { align: "center" });
 
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text("Parrain : Tidiane KABA DIAKITE", pageW / 2, 43, { align: "center" });
+    doc.text("Directeur du Domaine, de la Conservation Fonciere, de l'Enregistrement et du Timbre - DGI", pageW / 2, 48, { align: "center", maxWidth: contentW });
+
     doc.setFont("helvetica", "bolditalic");
     doc.setFontSize(10);
     doc.setTextColor(7, 85, 59);
     doc.text(
       "« Le Coran : Parole increee, source de guidance divine et de repere pour l'humanite »",
       pageW / 2,
-      46,
+      58,
       { align: "center", maxWidth: contentW }
     );
 
-    y = 60;
+    y = 70;
     
     // Ligne au-dessus du tableau
     doc.setDrawColor(200, 200, 200);
@@ -149,6 +155,19 @@ export default function Programme() {
           <p className="text-sm font-serif italic text-gray-500 mb-4">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
           <h1 className="text-3xl font-bold text-[#07553B] uppercase tracking-wide mb-2">Programme Officiel — Iftar 2026</h1>
           <p className="text-gray-500 font-medium mb-6">Dimanche 8 Mars 2026 • NOOM Hôtel Abidjan Plateau</p>
+          
+          <div className="flex flex-col sm:flex-row justify-center gap-6 mb-6 text-sm">
+            <div className="text-left">
+              <p className="text-gray-400 uppercase tracking-wider text-xs font-semibold mb-1">Conférencier</p>
+              <p className="font-bold text-[#07553B]">Imam Cheick Ahmad Tidiane DIABATE</p>
+            </div>
+            <div className="hidden sm:block w-px bg-gray-200 self-stretch"></div>
+            <div className="text-left">
+              <p className="text-gray-400 uppercase tracking-wider text-xs font-semibold mb-1">Parrain</p>
+              <p className="font-bold text-[#07553B]">Tidiane KABA DIAKITE</p>
+              <p className="text-gray-500 text-xs max-w-xs">Directeur du Domaine, de la Conservation Foncière, de l'Enregistrement et du Timbre à la DGI</p>
+            </div>
+          </div>
           
           <div className="inline-block bg-gray-50 border border-gray-100 px-6 py-3 rounded-lg">
             <p className="text-[#07553B] font-semibold italic">

@@ -10,10 +10,27 @@ import React from "react";
 import { RegisterForm } from "@/components/RegisterForm";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Info, Calendar, MapPin, Clock, Users, Heart, Book, Mic } from "lucide-react";
+import { Info, Calendar, MapPin, Clock, Users, Heart, Book, Mic, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import EventLogo from "@/components/EventLogo";
 import { Card, CardContent } from "@/components/ui/card";
+
+
+const PROGRAMME = [
+  { heure: "16:15 - 16:20", duree: "5 min", rubrique: "Mot de bienvenue et dispositions pratiques", highlight: false },
+  { heure: "16:30 - 18:00", duree: "1h 30min", rubrique: "Conférence — Imam Cheick Ahmad Tidiane DIABATE", highlight: true },
+  { heure: "18:00 - 18:25", duree: "25 min", rubrique: "Séance de Zikr", highlight: false },
+  { heure: "18:29 - 18:45", duree: "16 min", rubrique: "Iftar + Prière de Maghrib", highlight: true },
+  { heure: "18:50 - 19:00", duree: "10 min", rubrique: "Démonstration de lecture coranique", highlight: false },
+  { heure: "19:05 - 19:10", duree: "5 min", rubrique: "Discours du DEX", highlight: false },
+  { heure: "19:11 - 19:18", duree: "7 min", rubrique: "Discours du PCA", highlight: false },
+  { heure: "19:15 - 19:22", duree: "7 min", rubrique: "Discours du Parrain — Tidiane KABA DIAKITE", highlight: false },
+  { heure: "19:23 - 19:28", duree: "5 min", rubrique: "Projection du film — Projet Parrainage", highlight: false },
+  { heure: "19:30 - 19:40", duree: "10 min", rubrique: "Communication du Cheikoul", highlight: false },
+  { heure: "19:40 - 20:20", duree: "40 min", rubrique: "Salat Ichai et Tarawih", highlight: true },
+  { heure: "20:20 - 21:00", duree: "40 min", rubrique: "Dîner + Activité artistique ou culturelle", highlight: true },
+  { heure: "20:40", duree: "-", rubrique: "Douah de clôture", highlight: false },
+];
 
 const Index = () => {
   const navigate = useNavigate();
@@ -127,13 +144,26 @@ const Index = () => {
                 <p className="text-xl md:text-2xl font-semibold text-slate-800 leading-snug">
                   « Le Coran : Parole incréée, source de guidance divine et de repère pour l'humanité »
                 </p>
-                <div className="mt-6 flex items-center gap-4">
-                  <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 shrink-0">
-                    <Mic className="h-6 w-6" />
+                                <div className="mt-6 flex flex-col sm:flex-row gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 shrink-0">
+                      <Mic className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500 uppercase tracking-wider font-semibold">Conférencier</p>
+                      <p className="font-bold text-emerald-700 text-lg">Imam Cheick Ahmad Tidiane DIABATE</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500 uppercase tracking-wider font-semibold">Conférencier</p>
-                    <p className="font-bold text-emerald-700 text-lg">Imam Cheick Ahmad Tidiane DIABATE</p>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 shrink-0">
+                      <Star className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500 uppercase tracking-wider font-semibold">Parrain</p>
+                      <p className="font-bold text-emerald-700 text-lg">Tidiane KABA DIAKITE</p>
+                      <p className="text-xs text-slate-600 max-w-xs">Directeur du Domaine, de la Conservation Foncière, de l’Enregistrement et du Timbre à la DGI</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -148,152 +178,25 @@ const Index = () => {
             <div className="w-24 h-1 bg-amber-500 mx-auto rounded-full"></div>
           </div>
           
-          <div className="relative border-l-2 border-emerald-200 ml-4 md:ml-0 md:border-none space-y-8 mt-12">
+                              <div className="relative border-l-2 border-emerald-200 ml-4 md:ml-0 md:border-none space-y-8 mt-12">
             {/* Ligne centrale pour desktop */}
             <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-emerald-200 -ml-[1px]"></div>
 
-            {/* Timeline Item 1 */}
-            <div className="relative pl-8 md:pl-0">
-              <div className="md:flex items-center justify-between w-full">
-                <div className="hidden md:block w-5/12 text-right pr-8">
-                  <span className="text-amber-600 font-bold text-lg">16h00</span>
-                </div>
-                <div className="absolute left-[-9px] md:left-1/2 md:-ml-[9px] w-4 h-4 rounded-full bg-amber-500 border-4 border-white shadow z-10"></div>
-                <div className="md:w-5/12 md:pl-8">
-                  <span className="md:hidden text-amber-600 font-bold block mb-1">16h00</span>
-                  <h4 className="font-bold text-slate-800 text-lg">Accueil</h4>
-                  <p className="text-slate-600">Accueil et installation des participants</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Timeline Item 2 */}
-            <div className="relative pl-8 md:pl-0">
-              <div className="md:flex items-center justify-between w-full">
-                <div className="hidden md:block w-5/12 text-right pr-8">
-                  <span className="text-amber-600 font-bold text-lg">16h00 – 16h45</span>
-                </div>
-                <div className="absolute left-[-9px] md:left-1/2 md:-ml-[9px] w-4 h-4 rounded-full bg-emerald-500 border-4 border-white shadow z-10"></div>
-                <div className="md:w-5/12 md:pl-8">
-                  <span className="md:hidden text-amber-600 font-bold block mb-1">16h00 – 16h45</span>
-                  <h4 className="font-bold text-slate-800 text-lg">Prières & Zikr</h4>
-                  <ul className="text-slate-600 list-disc ml-4 mt-2 space-y-1">
-                    <li>Prière de Asr</li>
-                    <li>Zikr Collectif – Demande de pardon</li>
-                    <li>Lecture de la sourate Yasin (21 Fois)</li>
-                  </ul>
+            {PROGRAMME.map((item, index) => (
+              <div key={index} className="relative pl-8 md:pl-0">
+                <div className="md:flex items-center justify-between w-full">
+                  <div className="hidden md:block w-5/12 text-right pr-8">
+                    <span className="text-amber-600 font-bold text-lg">{item.heure}</span>
+                  </div>
+                  <div className={`absolute left-[-9px] md:left-1/2 md:-ml-[9px] w-4 h-4 rounded-full ${item.highlight ? 'bg-amber-500' : 'bg-emerald-500'} border-4 border-white shadow z-10`}></div>
+                  <div className="md:w-5/12 md:pl-8">
+                    <span className="md:hidden text-amber-600 font-bold block mb-1">{item.heure}</span>
+                    <h4 className="font-bold text-slate-800 text-lg">{item.rubrique}</h4>
+                    <p className="text-slate-500 text-sm mt-1">Durée : {item.duree}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Timeline Item 3 */}
-            <div className="relative pl-8 md:pl-0">
-              <div className="md:flex items-center justify-between w-full">
-                <div className="hidden md:block w-5/12 text-right pr-8">
-                  <span className="text-amber-600 font-bold text-lg">16h50 – 18h00</span>
-                </div>
-                <div className="absolute left-[-9px] md:left-1/2 md:-ml-[9px] w-4 h-4 rounded-full bg-emerald-500 border-4 border-white shadow z-10"></div>
-                <div className="md:w-5/12 md:pl-8">
-                  <span className="md:hidden text-amber-600 font-bold block mb-1">16h50 – 18h00</span>
-                  <h4 className="font-bold text-slate-800 text-lg">Conférence</h4>
-                  <p className="text-slate-600">« Le Coran : Parole incréée, source de guidance divine et de repère pour l'humanité » par l'Imam Cheick Ahmad Tidiane DIABATE</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Timeline Item 4 */}
-            <div className="relative pl-8 md:pl-0">
-              <div className="md:flex items-center justify-between w-full">
-                <div className="hidden md:block w-5/12 text-right pr-8">
-                  <span className="text-amber-600 font-bold text-lg">18h10 – 18h25</span>
-                </div>
-                <div className="absolute left-[-9px] md:left-1/2 md:-ml-[9px] w-4 h-4 rounded-full bg-emerald-500 border-4 border-white shadow z-10"></div>
-                <div className="md:w-5/12 md:pl-8">
-                  <span className="md:hidden text-amber-600 font-bold block mb-1">18h10 – 18h25</span>
-                  <h4 className="font-bold text-slate-800 text-lg">Méditation</h4>
-                  <p className="text-slate-600">Séance individuelle et collective de ZIKR, Invocations sous séquence audio de lecture coranique.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Timeline Item 5 */}
-            <div className="relative pl-8 md:pl-0">
-              <div className="md:flex items-center justify-between w-full">
-                <div className="hidden md:block w-5/12 text-right pr-8">
-                  <span className="text-amber-600 font-bold text-lg">18h25 – 18h50</span>
-                </div>
-                <div className="absolute left-[-9px] md:left-1/2 md:-ml-[9px] w-4 h-4 rounded-full bg-amber-500 border-4 border-white shadow z-10"></div>
-                <div className="md:w-5/12 md:pl-8">
-                  <span className="md:hidden text-amber-600 font-bold block mb-1">18h25 – 18h50</span>
-                  <h4 className="font-bold text-slate-800 text-lg">Rupture & Prière</h4>
-                  <p className="text-slate-600">IFTAR et prière de maghrib</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Timeline Item 6 */}
-            <div className="relative pl-8 md:pl-0">
-              <div className="md:flex items-center justify-between w-full">
-                <div className="hidden md:block w-5/12 text-right pr-8">
-                  <span className="text-amber-600 font-bold text-lg">18h50 – 19h20</span>
-                </div>
-                <div className="absolute left-[-9px] md:left-1/2 md:-ml-[9px] w-4 h-4 rounded-full bg-emerald-500 border-4 border-white shadow z-10"></div>
-                <div className="md:w-5/12 md:pl-8">
-                  <span className="md:hidden text-amber-600 font-bold block mb-1">18h50 – 19h20</span>
-                  <h4 className="font-bold text-slate-800 text-lg">Cérémonie Officielle</h4>
-                  <ul className="text-slate-600 list-disc ml-4 mt-2 space-y-1">
-                    <li>Projection d'un film Institutionnel sur LA CITADELLE</li>
-                    <li>Allocutions (Directeur Exécutif, PCA)</li>
-                    <li>Communication du Parrain TOURE Faman</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Timeline Item 7 */}
-            <div className="relative pl-8 md:pl-0">
-              <div className="md:flex items-center justify-between w-full">
-                <div className="hidden md:block w-5/12 text-right pr-8">
-                  <span className="text-amber-600 font-bold text-lg">19h25 – 19h45</span>
-                </div>
-                <div className="absolute left-[-9px] md:left-1/2 md:-ml-[9px] w-4 h-4 rounded-full bg-emerald-500 border-4 border-white shadow z-10"></div>
-                <div className="md:w-5/12 md:pl-8">
-                  <span className="md:hidden text-amber-600 font-bold block mb-1">19h25 – 19h45</span>
-                  <h4 className="font-bold text-slate-800 text-lg">Prières du Soir</h4>
-                  <p className="text-slate-600">Salat ICHAI, TARAWIH et Bénédictions QUNUT</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Timeline Item 8 */}
-            <div className="relative pl-8 md:pl-0">
-              <div className="md:flex items-center justify-between w-full">
-                <div className="hidden md:block w-5/12 text-right pr-8">
-                  <span className="text-amber-600 font-bold text-lg">19h45 – 20h30</span>
-                </div>
-                <div className="absolute left-[-9px] md:left-1/2 md:-ml-[9px] w-4 h-4 rounded-full bg-amber-500 border-4 border-white shadow z-10"></div>
-                <div className="md:w-5/12 md:pl-8">
-                  <span className="md:hidden text-amber-600 font-bold block mb-1">19h45 – 20h30</span>
-                  <h4 className="font-bold text-slate-800 text-lg">Dîner & Défilé</h4>
-                  <p className="text-slate-600">Dîner ponctué d'une présentation de tuniques homme et dame de YONI Couture</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Timeline Item 9 */}
-            <div className="relative pl-8 md:pl-0">
-              <div className="md:flex items-center justify-between w-full">
-                <div className="hidden md:block w-5/12 text-right pr-8">
-                  <span className="text-amber-600 font-bold text-lg">20h30</span>
-                </div>
-                <div className="absolute left-[-9px] md:left-1/2 md:-ml-[9px] w-4 h-4 rounded-full bg-emerald-500 border-4 border-white shadow z-10"></div>
-                <div className="md:w-5/12 md:pl-8">
-                  <span className="md:hidden text-amber-600 font-bold block mb-1">20h30</span>
-                  <h4 className="font-bold text-slate-800 text-lg">Clôture</h4>
-                  <p className="text-slate-600">Douah Final et départ</p>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
