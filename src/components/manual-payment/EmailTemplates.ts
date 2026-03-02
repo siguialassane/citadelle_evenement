@@ -78,6 +78,7 @@ export const PARTICIPANT_PAYMENT_CONFIRMATION_TEMPLATE = `<!DOCTYPE html>
         .info-block { background-color: #f0f9f4; padding: 15px 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #07553B; }
         .qr-code { display: block; width: 150px; height: 150px; margin: 15px auto; border: 3px solid #07553B; border-radius: 8px; padding: 5px; }
         .cta-btn { display: block; width: 230px; margin: 20px auto; padding: 12px 20px; background-color: #07553B; color: white; text-decoration: none; border-radius: 6px; text-align: center; font-weight: bold; }
+        .programme-btn { display: block; width: 230px; margin: 10px auto; padding: 12px 20px; background-color: #f39c12; color: white; text-decoration: none; border-radius: 6px; text-align: center; font-weight: bold; }
         .hadith { background-color: #fffbe6; border-left: 4px solid #f39c12; padding: 12px 16px; margin: 20px 0; font-style: italic; color: #555; border-radius: 4px; }
         .footer { text-align: center; margin-top: 25px; font-size: 0.85em; color: #888; border-top: 1px solid #e0f0e8; padding-top: 15px; }
     </style>
@@ -119,6 +120,7 @@ export const PARTICIPANT_PAYMENT_CONFIRMATION_TEMPLATE = `<!DOCTYPE html>
         </div>
         <p>NB : 5 000 FCFA de votre pass seront utilisés pour offrir <strong>5 repas chauds</strong> à des indigents. Qu'Allah multiplie votre récompense.</p>
         <a href="{{app_url}}/confirmation/{{participant_id}}" class="cta-btn">📱 Voir ma confirmation</a>
+        <a href="{{app_url}}/programme" class="programme-btn">📋 Voir le programme de la soirée</a>
         <p>Si vous avez des questions, n'hésitez pas à nous contacter au <strong>{{contact_phone}}</strong> ou par email à <strong>{{contact_email}}</strong>.</p>
         <div class="footer">
             <p>Ramadan Moubarak 🌙 Qu'Allah accepte nos jeûnes et nos prières.</p>

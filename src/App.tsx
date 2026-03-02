@@ -15,6 +15,7 @@ import ExcelAnalyzer from './pages/ExcelAnalyzer';
 import MembershipDashboard from './pages/admin/MembershipDashboard';
 import MembershipForm from './pages/Membership';
 import Statistics from './pages/admin/Statistics';
+import Programme from './pages/Programme';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
         <Route path="/confirmation/:participantId" element={<Confirmation />} />
         <Route path="/payment-pending/:participantId" element={<PaymentPending />} />
         <Route path="/membership" element={<MembershipForm />} />
+        <Route path="/programme" element={<Programme />} />
         
         {/* Routes de redirection explicites pour les liens d'email */}
         <Route path="/redirect/payment-pending/:participantId" 
