@@ -259,8 +259,37 @@ export const exportToCSV = (participants: Participant[]) => {
 
 export const exportToPDF = async (
   filteredParticipants: Participant[], 
-  onPdfGenerated: () => void
+  onPdfGenerated: () => void,
+  filterType: 'all' | 'paid' | 'unpaid' = 'all'
 ) => {
+  // Appliquer le filtre par statut de paiement
+  const participantsList = filterType === 'paid'
+    ? filteredParticipants.filter(p => {
+        const s = getPaymentStatus(p);
+        return s === 'Confirmé' || s === 'En cours';
+      })
+    : filterType === 'unpaid'
+    ? filteredParticipants.filter(p => {
+        const s = getPaymentStatus(p);
+        return s === 'Non payé' || s === 'En attente' || s === 'Rejeté';
+      })
+    : filteredParticipants;
+
+  const filterLabels: Record<string, string> = {
+    all: 'LISTE COMPLÈTE DES PARTICIPANTS',
+    paid: 'PARTICIPANTS — PAIEMENTS CONFIRMÉS',
+    unpaid: 'PARTICIPANTS — PAIEMENTS EN ATTENTE / NON PAYÉS',
+  };
+
+  if (participantsList.length === 0) {
+    toast({
+      title: "Aucun participant",
+      description: "Aucun participant ne correspond à ce filtre.",
+      variant: "destructive",
+    });
+    return;
+  }
+
   toast({
     title: "Génération du PDF",
     description: "Veuillez patienter pendant la création du PDF...",
@@ -271,210 +300,481 @@ export const exportToPDF = async (
     
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 10;
+    const margin = 12;
     const usableWidth = pageWidth - (margin * 2);
-    
-    // En-tête amélioré
-    pdf.setFontSize(18);
-    pdf.text('Liste complète des participants', pageWidth / 2, margin + 10, { align: 'center' });
-    
-    pdf.setFontSize(10);
-    pdf.text(`Extrait le: ${new Date().toLocaleDateString('fr-FR')} - IFTAR 2026`, pageWidth / 2, margin + 20, { align: 'center' });
-    
-    const columns = [
-      "Nom / Accompagnants", 
-      "Email", 
-      "Téléphone", 
-      "Membre", 
-      "Date d'inscription", 
-      "Paiement",
-      "Places"
-    ];
-    
-    const columnWidths = {
-      0: usableWidth * 0.22, // Nom
-      1: usableWidth * 0.27, // Email
-      2: usableWidth * 0.14, // Téléphone
-      3: usableWidth * 0.09, // Membre
-      4: usableWidth * 0.13, // Date
-      5: usableWidth * 0.10, // Paiement
-      6: usableWidth * 0.05, // Places
-    };
-    
-    let yPosition = margin + 30;
-    let currentPage = 1;
-    const lineHeight = 7;
-    const maxRowsPerPage = Math.floor((pageHeight - yPosition - margin) / lineHeight);
-    
-    const drawHeader = () => {
-      pdf.setFillColor(240, 240, 240);
-      pdf.rect(margin, yPosition, usableWidth, lineHeight, 'F');
-      
-      let xPosition = margin;
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(9);
-      
-      columns.forEach((column, index) => {
-        pdf.text(column, xPosition + 2, yPosition + 5);
-        xPosition += columnWidths[index as keyof typeof columnWidths];
-      });
-      
-      yPosition += lineHeight;
-    };
-    
-    const drawRowLines = (y: number) => {
-      let xPosition = margin;
-      
-      pdf.setDrawColor(200, 200, 200);
-      pdf.line(margin, y, margin + usableWidth, y);
-      
-      columns.forEach((_, index) => {
-        xPosition += columnWidths[index as keyof typeof columnWidths];
-        pdf.line(xPosition, y - lineHeight, xPosition, y);
-      });
-    };
-    
-    drawHeader();
-    
-    // Aplatir les participants + leurs accompagnants pour le rendu PDF
-    const pdfRows: Array<{ label: string; email: string; phone: string; membre: string; date: string; payment: string; places: string; isCompanion: boolean; isPresent: boolean }> = [];
-    
-    filteredParticipants.forEach(participant => {
-      const companions = participant.guests?.filter(g => !g.is_main_participant) || [];
-      const totalPlaces = companions.length > 0 ? companions.length + 1 : 1;
-      
-      // Ligne du participant principal
-      pdfRows.push({
-        label: `${participant.last_name} ${participant.first_name}`,
-        email: participant.email,
-        phone: participant.contact_number,
-        membre: participant.is_member ? "Oui" : "Non",
-        date: new Date(participant.created_at).toLocaleDateString('fr-FR'),
-        payment: getPaymentStatus(participant),
-        places: String(totalPlaces),
-        isCompanion: false,
-        isPresent: !!participant.check_in_status,
-      });
-      
-      // Lignes des accompagnants
-      companions.forEach(guest => {
-        pdfRows.push({
-          label: `  ↳ ${guest.first_name} ${guest.last_name}`,
-          email: "(accompagnant)",
-          phone: "",
-          membre: "",
-          date: "",
-          payment: "",
-          places: "",
-          isCompanion: true,
-          isPresent: !!guest.check_in_status,
-        });
-      });
-    });
+    const lineHeight = 8;
+    const headerHeight = 45; // Espace réservé pour l'en-tête
+    const footerHeight = 15; // Espace réservé pour le pied de page
 
-    pdfRows.forEach((row, index) => {
-      if (index > 0 && index % maxRowsPerPage === 0) {
-        pdf.addPage();
-        currentPage++;
-        yPosition = margin + 15;
-        
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(14);
-        pdf.text(`Liste des participants (page ${currentPage})`, margin, margin + 5);
-        
-        yPosition += 10;
-        drawHeader();
-      }
-      
-      if (row.isCompanion) {
-        // Fond légèrement bleuté pour les accompagnants
-        pdf.setFillColor(239, 246, 255);
-        pdf.rect(margin, yPosition, usableWidth, lineHeight, 'F');
-      } else if (index % 2 === 1) {
-        pdf.setFillColor(249, 250, 251);
-        pdf.rect(margin, yPosition, usableWidth, lineHeight, 'F');
-      }
-      
-      let xPosition = margin;
-      pdf.setFont("helvetica", row.isCompanion ? "italic" : "normal");
-      pdf.setFontSize(row.isCompanion ? 7 : 8);
-      pdf.setTextColor(row.isCompanion ? 59 : 0, row.isCompanion ? 130 : 0, row.isCompanion ? 246 : 0);
-      
-      pdf.text(row.label.substring(0, 28), xPosition + 2, yPosition + 5);
-      xPosition += columnWidths[0];
-      
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(row.email.substring(0, 32), xPosition + 2, yPosition + 5);
-      xPosition += columnWidths[1];
-      
-      pdf.text(row.phone, xPosition + 2, yPosition + 5);
-      xPosition += columnWidths[2];
-      
-      pdf.text(row.membre, xPosition + 2, yPosition + 5);
-      xPosition += columnWidths[3];
-      
-      pdf.text(row.date, xPosition + 2, yPosition + 5);
-      xPosition += columnWidths[4];
-      
-      // Statut de présence en couleur
-      if (!row.isCompanion || row.isPresent !== undefined) {
-        pdf.setTextColor(row.isPresent ? 22 : 107, row.isPresent ? 163 : 114, row.isPresent ? 74 : 128);
-        pdf.text(row.payment || (row.isCompanion ? (row.isPresent ? 'Présent' : 'Absent') : ''), xPosition + 2, yPosition + 5);
-        pdf.setTextColor(0, 0, 0);
-      }
-      xPosition += columnWidths[5];
-      
-      pdf.text(row.places, xPosition + 2, yPosition + 5);
-      
-      drawRowLines(yPosition + lineHeight);
-      
-      yPosition += lineHeight;
-    });
+    // Remplacer la référence à filteredParticipants par participantsList
+    // (on redéfinit la variable locale pour le reste du code)
+    const filteredParticipants = participantsList;
     
-    pdf.setDrawColor(100, 100, 100);
-    pdf.rect(margin, margin + 30, usableWidth, Math.min(filteredParticipants.length, maxRowsPerPage) * lineHeight, 'D');
-    
-    const totalPages = Math.ceil(filteredParticipants.length / maxRowsPerPage);
-    
-    for (let i = 0; i < totalPages; i++) {
-      pdf.setPage(i + 1);
-      pdf.setFont("helvetica", "italic");
-      pdf.setFontSize(8);
-      pdf.setTextColor(100, 100, 100);
-      pdf.text(`Page ${i + 1}/${totalPages}`, pageWidth - 25, pageHeight - 10);
-    }
-    
-    // Ajouter des informations récapitulatives supplémentaires
-    // Correction : renommé yPosition en recapYPosition pour éviter la redéfinition
-    let recapYPosition = pageHeight - 30;
-    pdf.setFontSize(11);
-    pdf.text("Récapitulatif:", margin, recapYPosition);
-    recapYPosition += 6;
-    
+    // --- Statistiques globales ---
     const presentCount = filteredParticipants.filter(p => p.check_in_status).length;
     const memberCount = filteredParticipants.filter(p => p.is_member).length;
     const totalCompanions = filteredParticipants.reduce((acc, p) => acc + (p.guests?.filter(g => !g.is_main_participant).length || 0), 0);
     const presentCompanions = filteredParticipants.reduce((acc, p) => acc + (p.guests?.filter(g => !g.is_main_participant && g.check_in_status).length || 0), 0);
     const totalPersons = filteredParticipants.length + totalCompanions;
     const totalPresent = presentCount + presentCompanions;
+    const confirmedPayments = filteredParticipants.filter(p => getPaymentStatus(p) === 'Confirmé').length;
     
-    pdf.setFontSize(9);
-    pdf.text(`• Total des inscrits: ${filteredParticipants.length} (+ ${totalCompanions} accompagnant${totalCompanions > 1 ? 's' : ''} = ${totalPersons} personnes)`, margin + 5, recapYPosition);
-    recapYPosition += 4;
-    pdf.text(`• Personnes enregistrées: ${totalPresent} / ${totalPersons} (${Math.round((totalPresent / totalPersons) * 100) || 0}%)`, margin + 5, recapYPosition);
-    recapYPosition += 4;
-    pdf.text(`• Membres de la communauté: ${memberCount} (${Math.round((memberCount / filteredParticipants.length) * 100) || 0}%)`, margin + 5, recapYPosition);
+    // --- Colonnes du tableau ---
+    const columns = ["N°", "Nom complet", "Téléphone", "Membre", "Paiement", "Présence", "Places"];
     
-    // Pied de page amélioré avec date et numéro de page
-    for (let i = 0; i < pdf.getNumberOfPages(); i++) {
-      pdf.setPage(i + 1);
-      pdf.setFontSize(8);
+    const columnWidths = {
+      0: usableWidth * 0.05,  // N°
+      1: usableWidth * 0.32,  // Nom complet
+      2: usableWidth * 0.17,  // Téléphone
+      3: usableWidth * 0.10,  // Membre
+      4: usableWidth * 0.14,  // Paiement
+      5: usableWidth * 0.14,  // Présence
+      6: usableWidth * 0.08,  // Places
+    };
+    
+    // --- Fonctions utilitaires de dessin ---
+    const drawPageHeader = (pageNum: number) => {
+      // Titre principal
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(16);
+      pdf.setTextColor(30, 30, 30);
+      pdf.text('LISTE DES PARTICIPANTS - IFTAR 2026', pageWidth / 2, margin + 8, { align: 'center' });
+      
+      // Sous-titre avec date
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9);
       pdf.setTextColor(100, 100, 100);
-      pdf.text(`LA CITADELLE - Rapport généré le ${new Date().toLocaleDateString('fr-FR')}`, margin, pageHeight - 5);
-      pdf.text(`Page ${i + 1} / ${pdf.getNumberOfPages()}`, pageWidth - margin - 20, pageHeight - 5);
+      pdf.text(`Généré le ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`, pageWidth / 2, margin + 15, { align: 'center' });
+      
+      // Bandeau récapitulatif sur la première page uniquement
+      if (pageNum === 1) {
+        const bannerY = margin + 20;
+        const bannerH = 14;
+        const boxW = usableWidth / 4;
+        
+        // Fond du bandeau
+        pdf.setFillColor(245, 245, 245);
+        pdf.setDrawColor(220, 220, 220);
+        pdf.roundedRect(margin, bannerY, usableWidth, bannerH, 2, 2, 'FD');
+        
+        // 4 blocs de stats
+        const stats = [
+          { label: 'Participants', value: String(filteredParticipants.length) },
+          { label: 'Total personnes', value: `${totalPersons} (dont ${totalCompanions} acc.)` },
+          { label: 'Paiements confirmés', value: `${confirmedPayments} / ${filteredParticipants.length}` },
+          { label: 'Présents', value: `${totalPresent} / ${totalPersons}` },
+        ];
+        
+        stats.forEach((stat, i) => {
+          const x = margin + (boxW * i);
+          // Séparateur vertical
+          if (i > 0) {
+            pdf.setDrawColor(200, 200, 200);
+            pdf.line(x, bannerY + 2, x, bannerY + bannerH - 2);
+          }
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(10);
+          pdf.setTextColor(30, 30, 30);
+          pdf.text(stat.value, x + boxW / 2, bannerY + 6, { align: 'center' });
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(7);
+          pdf.setTextColor(120, 120, 120);
+          pdf.text(stat.label, x + boxW / 2, bannerY + 11, { align: 'center' });
+        });
+      }
+    };
+    
+    const drawTableHeader = (y: number) => {
+      // Fond de l'en-tête de tableau
+      pdf.setFillColor(50, 50, 50);
+      pdf.rect(margin, y, usableWidth, lineHeight, 'F');
+      
+      let xPosition = margin;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(8);
+      pdf.setTextColor(255, 255, 255);
+      
+      columns.forEach((column, index) => {
+        const colW = columnWidths[index as keyof typeof columnWidths];
+        // Centrer les petites colonnes
+        if (index === 0 || index >= 3) {
+          pdf.text(column, xPosition + colW / 2, y + 5.5, { align: 'center' });
+        } else {
+          pdf.text(column, xPosition + 3, y + 5.5);
+        }
+        xPosition += colW;
+      });
+      
+      pdf.setTextColor(0, 0, 0);
+      return y + lineHeight;
+    };
+    
+    const drawPageFooter = (pageNum: number, totalPages: number) => {
+      pdf.setFont("helvetica", "italic");
+      pdf.setFontSize(7);
+      pdf.setTextColor(150, 150, 150);
+      pdf.text(`LA CITADELLE - Document confidentiel`, margin, pageHeight - 6);
+      pdf.text(`Page ${pageNum} / ${totalPages}`, pageWidth - margin, pageHeight - 6, { align: 'right' });
+      // Ligne de séparation
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
+    };
+    
+    // --- Préparer les données du tableau ---
+    type PdfRow = { 
+      num: string; name: string; phone: string; membre: string; 
+      payment: string; presence: string; places: string; 
+      isCompanion: boolean; paymentColor: [number, number, number]; 
+      presenceColor: [number, number, number];
+    };
+    const pdfRows: PdfRow[] = [];
+    let participantNum = 0;
+    
+    filteredParticipants.forEach(participant => {
+      participantNum++;
+      const companions = participant.guests?.filter(g => !g.is_main_participant) || [];
+      const totalPlaces = companions.length > 0 ? companions.length + 1 : 1;
+      const paymentStatus = getPaymentStatus(participant);
+      
+      // Couleur du paiement
+      let paymentColor: [number, number, number] = [100, 100, 100];
+      if (paymentStatus === 'Confirmé') paymentColor = [22, 163, 74];
+      else if (paymentStatus === 'En attente') paymentColor = [202, 138, 4];
+      else if (paymentStatus === 'Non payé') paymentColor = [220, 38, 38];
+      
+      // Couleur de la présence
+      const presenceColor: [number, number, number] = participant.check_in_status 
+        ? [22, 163, 74] : [220, 38, 38];
+      
+      pdfRows.push({
+        num: String(participantNum),
+        name: `${participant.last_name} ${participant.first_name}`,
+        phone: participant.contact_number || '',
+        membre: participant.is_member ? "Oui" : "Non",
+        payment: paymentStatus,
+        presence: participant.check_in_status ? "Présent" : "Absent",
+        places: String(totalPlaces),
+        isCompanion: false,
+        paymentColor,
+        presenceColor,
+      });
+      
+      companions.forEach(guest => {
+        const gPresenceColor: [number, number, number] = guest.check_in_status 
+          ? [22, 163, 74] : [220, 38, 38];
+        pdfRows.push({
+          num: '',
+          name: `    ↳ ${guest.first_name} ${guest.last_name}`,
+          phone: '',
+          membre: '',
+          payment: '',
+          presence: guest.check_in_status ? "Présent" : "Absent",
+          places: '',
+          isCompanion: true,
+          paymentColor: [100, 100, 100],
+          presenceColor: gPresenceColor,
+        });
+      });
+    });
+    
+    // --- Calcul de la pagination ---
+    const firstPageTableStart = headerHeight;
+    const nextPageTableStart = margin + 20;
+    const maxContentHeight = pageHeight - footerHeight;
+    
+    const rowsFirstPage = Math.floor((maxContentHeight - firstPageTableStart - lineHeight) / lineHeight);
+    const rowsNextPage = Math.floor((maxContentHeight - nextPageTableStart - lineHeight) / lineHeight);
+    
+    let totalPages = 1;
+    let remainingRows = pdfRows.length - rowsFirstPage;
+    if (remainingRows > 0) {
+      totalPages += Math.ceil(remainingRows / rowsNextPage);
     }
     
-    pdf.save(`participants-${new Date().toISOString().slice(0,10)}.pdf`);
+    // --- Rendu page par page ---
+    let rowIndex = 0;
+    let currentPage = 1;
+    let participantRowCount = 0; // Pour alterner les couleurs par participant
+    
+    while (rowIndex < pdfRows.length) {
+      if (currentPage > 1) {
+        pdf.addPage();
+      }
+      
+      drawPageHeader(currentPage);
+      
+      const tableStartY = currentPage === 1 ? firstPageTableStart : nextPageTableStart;
+      let yPos = drawTableHeader(tableStartY);
+      const maxRowsThisPage = currentPage === 1 ? rowsFirstPage : rowsNextPage;
+      let rowsDrawn = 0;
+      
+      while (rowIndex < pdfRows.length && rowsDrawn < maxRowsThisPage) {
+        const row = pdfRows[rowIndex];
+        
+        // Fond alterné (par groupe de participant, pas par ligne)
+        if (!row.isCompanion) {
+          participantRowCount++;
+        }
+        
+        if (row.isCompanion) {
+          pdf.setFillColor(240, 247, 255); // Bleu très léger pour accompagnants
+          pdf.rect(margin, yPos, usableWidth, lineHeight, 'F');
+        } else if (participantRowCount % 2 === 0) {
+          pdf.setFillColor(250, 250, 250);
+          pdf.rect(margin, yPos, usableWidth, lineHeight, 'F');
+        }
+        
+        // Ligne de séparation
+        pdf.setDrawColor(230, 230, 230);
+        pdf.line(margin, yPos + lineHeight, margin + usableWidth, yPos + lineHeight);
+        
+        let xPos = margin;
+        
+        // N°
+        const colW0 = columnWidths[0];
+        pdf.setFont("helvetica", row.isCompanion ? "italic" : "normal");
+        pdf.setFontSize(8);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text(row.num, xPos + colW0 / 2, yPos + 5.5, { align: 'center' });
+        xPos += colW0;
+        
+        // Nom
+        const colW1 = columnWidths[1];
+        if (row.isCompanion) {
+          pdf.setFont("helvetica", "italic");
+          pdf.setFontSize(7.5);
+          pdf.setTextColor(80, 120, 200);
+        } else {
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(8.5);
+          pdf.setTextColor(30, 30, 30);
+        }
+        pdf.text(row.name.substring(0, 40), xPos + 3, yPos + 5.5);
+        xPos += colW1;
+        
+        // Téléphone
+        const colW2 = columnWidths[2];
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        pdf.setTextColor(60, 60, 60);
+        pdf.text(row.phone, xPos + 3, yPos + 5.5);
+        xPos += colW2;
+        
+        // Membre
+        const colW3 = columnWidths[3];
+        if (row.membre === "Oui") {
+          pdf.setTextColor(22, 163, 74);
+          pdf.setFont("helvetica", "bold");
+        } else {
+          pdf.setTextColor(150, 150, 150);
+          pdf.setFont("helvetica", "normal");
+        }
+        pdf.setFontSize(8);
+        pdf.text(row.membre, xPos + colW3 / 2, yPos + 5.5, { align: 'center' });
+        xPos += colW3;
+        
+        // Paiement
+        const colW4 = columnWidths[4];
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(8);
+        pdf.setTextColor(...row.paymentColor);
+        pdf.text(row.payment, xPos + colW4 / 2, yPos + 5.5, { align: 'center' });
+        xPos += colW4;
+        
+        // Présence
+        const colW5 = columnWidths[5];
+        pdf.setFont("helvetica", row.presence === "Présent" ? "bold" : "normal");
+        pdf.setFontSize(8);
+        pdf.setTextColor(...row.presenceColor);
+        pdf.text(row.presence, xPos + colW5 / 2, yPos + 5.5, { align: 'center' });
+        xPos += colW5;
+        
+        // Places
+        const colW6 = columnWidths[6];
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        pdf.setTextColor(60, 60, 60);
+        pdf.text(row.places, xPos + colW6 / 2, yPos + 5.5, { align: 'center' });
+        
+        yPos += lineHeight;
+        rowIndex++;
+        rowsDrawn++;
+      }
+      
+      // Bordure extérieure du tableau
+      pdf.setDrawColor(180, 180, 180);
+      pdf.rect(margin, tableStartY, usableWidth, (rowsDrawn + 1) * lineHeight, 'D');
+      
+      // Lignes verticales de séparation des colonnes
+      let colX = margin;
+      for (let c = 0; c < columns.length - 1; c++) {
+        colX += columnWidths[c as keyof typeof columnWidths];
+        pdf.setDrawColor(230, 230, 230);
+        pdf.line(colX, tableStartY + lineHeight, colX, tableStartY + (rowsDrawn + 1) * lineHeight);
+      }
+      
+      currentPage++;
+    }
+    
+    // --- Page de statistiques récapitulatives ---
+    pdf.addPage();
+    const statsPage = pdf.getNumberOfPages();
+    
+    const sp = { x: margin, y: margin + 8 };
+    
+    // Titre de la page stats
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(15);
+    pdf.setTextColor(30, 30, 30);
+    pdf.text('RÉCAPITULATIF STATISTIQUE', pageWidth / 2, sp.y, { align: 'center' });
+    sp.y += 6;
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    pdf.setTextColor(120, 120, 120);
+    pdf.text(`Données au ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`, pageWidth / 2, sp.y, { align: 'center' });
+    sp.y += 10;
+    
+    // Calcul des statistiques détaillées
+    const totalParticipants = filteredParticipants.length;
+    const totalAccompagnants = filteredParticipants.reduce((acc, p) => acc + (p.guests?.filter(g => !g.is_main_participant).length || 0), 0);
+    const totalPersonnes = totalParticipants + totalAccompagnants;
+    
+    const presentParticipants = filteredParticipants.filter(p => p.check_in_status).length;
+    const presentAccompagnants = filteredParticipants.reduce((acc, p) => acc + (p.guests?.filter(g => !g.is_main_participant && g.check_in_status).length || 0), 0);
+    const totalPresents = presentParticipants + presentAccompagnants;
+    const totalAbsents = totalPersonnes - totalPresents;
+    
+    const totalMembres = filteredParticipants.filter(p => p.is_member).length;
+    const totalNonMembres = totalParticipants - totalMembres;
+    
+    const payConfirme = filteredParticipants.filter(p => getPaymentStatus(p) === 'Confirmé').length;
+    const payEnAttente = filteredParticipants.filter(p => getPaymentStatus(p) === 'En attente' || getPaymentStatus(p) === 'En cours').length;
+    const payNonPaye = filteredParticipants.filter(p => getPaymentStatus(p) === 'Non payé').length;
+    const payRejete = filteredParticipants.filter(p => getPaymentStatus(p) === 'Rejeté').length;
+    
+    // Fonction helper pour dessiner un tableau de stats
+    const drawStatsTable = (
+      title: string,
+      rows: Array<{ label: string; value: string | number; pct?: string; color?: [number,number,number] }>,
+      startX: number,
+      startY: number,
+      colWidthLabel: number,
+      colWidthValue: number,
+      colWidthPct?: number
+    ): number => {
+      const rowH = 8;
+      const headerH = 7;
+      let y = startY;
+      
+      // En-tête du tableau
+      pdf.setFillColor(50, 50, 50);
+      const totalW = colWidthLabel + colWidthValue + (colWidthPct || 0);
+      pdf.rect(startX, y, totalW, headerH, 'F');
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text(title, startX + totalW / 2, y + 5, { align: 'center' });
+      y += headerH;
+      
+      rows.forEach((row, idx) => {
+        // Fond alterné
+        if (idx % 2 === 1) {
+          pdf.setFillColor(248, 248, 248);
+          pdf.rect(startX, y, totalW, rowH, 'F');
+        }
+        // Ligne séparatrice
+        pdf.setDrawColor(220, 220, 220);
+        pdf.line(startX, y + rowH, startX + totalW, y + rowH);
+        
+        // Label
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(50, 50, 50);
+        pdf.text(row.label, startX + 4, y + 5.5);
+        
+        // Valeur
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(9);
+        if (row.color) {
+          pdf.setTextColor(...row.color);
+        } else {
+          pdf.setTextColor(30, 30, 30);
+        }
+        pdf.text(String(row.value), startX + colWidthLabel + colWidthValue - 4, y + 5.5, { align: 'right' });
+        
+        // Pourcentage (colonne optionnelle)
+        if (colWidthPct && row.pct !== undefined) {
+          pdf.setFont("helvetica", "italic");
+          pdf.setFontSize(7.5);
+          pdf.setTextColor(150, 150, 150);
+          pdf.text(row.pct, startX + colWidthLabel + colWidthValue + colWidthPct - 4, y + 5.5, { align: 'right' });
+        }
+        
+        y += rowH;
+      });
+      
+      // Bordure extérieure
+      pdf.setDrawColor(180, 180, 180);
+      pdf.rect(startX, startY + headerH, totalW, rows.length * rowH, 'D');
+      
+      return y + 4; // retourne la position Y après le tableau
+    };
+    
+    const pct = (n: number, total: number) => total > 0 ? `${Math.round((n / total) * 100)}%` : '0%';
+    const colL = 80; const colV = 30; const colP = 25;
+    
+    // Ligne 1 : 3 tableaux côte à côte
+    const tableY = sp.y;
+    const spacing = 8;
+    const tableW = colL + colV + colP;
+    const col2X = margin + tableW + spacing;
+    const col3X = col2X + tableW + spacing;
+    
+    // Tableau 1 : Présence
+    drawStatsTable(
+      'PRÉSENCE',
+      [
+        { label: 'Présents',      value: totalPresents,  pct: pct(totalPresents, totalPersonnes), color: [22, 163, 74] },
+        { label: 'Absents',       value: totalAbsents,   pct: pct(totalAbsents, totalPersonnes),  color: [220, 38, 38] },
+        { label: 'Total personnes', value: totalPersonnes, pct: '100%' },
+        { label: '↳ dont participants', value: totalParticipants,   pct: pct(totalParticipants, totalPersonnes) },
+        { label: '↳ dont accompagnants', value: totalAccompagnants, pct: pct(totalAccompagnants, totalPersonnes) },
+      ],
+      margin, tableY, colL, colV, colP
+    );
+    
+    // Tableau 2 : Paiements
+    drawStatsTable(
+      'PAIEMENTS',
+      [
+        { label: 'Confirmés',   value: payConfirme,   pct: pct(payConfirme, totalParticipants),   color: [22, 163, 74] },
+        { label: 'En attente',  value: payEnAttente,  pct: pct(payEnAttente, totalParticipants),  color: [202, 138, 4] },
+        { label: 'Non payés',   value: payNonPaye,    pct: pct(payNonPaye, totalParticipants),    color: [220, 38, 38] },
+        { label: 'Rejetés',     value: payRejete,     pct: pct(payRejete, totalParticipants),    color: [153, 27, 27] },
+        { label: 'Total inscrits', value: totalParticipants, pct: '100%' },
+      ],
+      col2X, tableY, colL, colV, colP
+    );
+    
+    // Tableau 3 : Membres
+    drawStatsTable(
+      'MEMBRES / NON-MEMBRES',
+      [
+        { label: 'Membres',             value: totalMembres,    pct: pct(totalMembres, totalParticipants),    color: [147, 51, 234] },
+        { label: 'Non-membres',         value: totalNonMembres, pct: pct(totalNonMembres, totalParticipants), color: [100, 100, 100] },
+        { label: 'Total inscrits',      value: totalParticipants, pct: '100%' },
+      ],
+      col3X, tableY, colL, colV, colP
+    );
+    
+    // --- Pied de page sur toutes les pages ---
+    const numPages = pdf.getNumberOfPages();
+    for (let i = 1; i <= numPages; i++) {
+      pdf.setPage(i);
+      drawPageFooter(i, numPages);
+    }
+    
+    pdf.save(`participants-iftar-${new Date().toISOString().slice(0,10)}.pdf`);
     
     onPdfGenerated();
     

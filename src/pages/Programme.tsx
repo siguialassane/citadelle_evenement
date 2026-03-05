@@ -9,6 +9,7 @@ interface ProgramItem {
   duree: string;
   rubrique: string;
   highlight?: boolean;
+  isSummary?: boolean;
 }
 
 const PROGRAMME: ProgramItem[] = [
@@ -25,6 +26,7 @@ const PROGRAMME: ProgramItem[] = [
   { debut: "19:40", fin: "20:20", heure: "19:40 - 20:20", duree: "40 min", rubrique: "Salat Ichai et Tarawih", highlight: true },
   { debut: "20:20", fin: "21:00", heure: "20:20 - 21:00", duree: "40 min", rubrique: "Dîner + Activité artistique ou culturelle", highlight: true },
   { debut: "20:40", fin: "20:40", heure: "20:40", duree: "-", rubrique: "Douah de clôture", highlight: false },
+  { debut: "16:15", fin: "21:00", heure: "16:15 - 21:00", duree: "4h 45min", rubrique: "FIN DE L'IFTAR 2026", highlight: true, isSummary: true },
 ];
 
 export default function Programme() {
@@ -96,7 +98,22 @@ export default function Programme() {
       }
 
       const isHighlight = item.highlight;
-      
+      const isSummary = item.isSummary;
+
+      // Ligne de résumé finale — fond vert Citadelle
+      if (isSummary) {
+        doc.setFillColor(7, 85, 59);
+        doc.rect(margin, y - 6, contentW, 11, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text(item.heure, margin + 2, y);
+        doc.text(item.duree, margin + 35, y);
+        doc.text(item.rubrique.toUpperCase(), margin + 60, y);
+        y += 14;
+        return;
+      }
+
       // Fond très léger pour le highlight (Gris très clair, PAS NOIR)
       if (isHighlight) {
         doc.setFillColor(248, 248, 248);
@@ -199,16 +216,28 @@ export default function Programme() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {PROGRAMME.map((item, index) => (
-                <tr key={index} className={`transition-colors ${item.highlight ? 'bg-gray-50/80' : 'hover:bg-gray-50/50'}`}>
+              <tr key={index} className={`transition-colors ${
+                item.isSummary
+                  ? 'bg-[#07553B] text-white'
+                  : item.highlight
+                  ? 'bg-gray-50/80'
+                  : 'hover:bg-gray-50/50'
+              }`}>
                   <td className="py-3.5 px-4">
-                    <span className={`text-sm ${item.highlight ? 'font-bold text-[#07553B]' : 'text-gray-600'}`}>
+                    <span className={`text-sm font-bold ${
+                      item.isSummary ? 'text-white' : item.highlight ? 'text-[#07553B]' : 'text-gray-600'
+                    }`}>
                       {item.heure}
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-sm text-gray-500">
+                  <td className={`py-3.5 px-4 text-sm ${
+                    item.isSummary ? 'text-white font-bold' : 'text-gray-500'
+                  }`}>
                     {item.duree}
                   </td>
-                  <td className={`py-3.5 px-4 text-sm md:text-base ${item.highlight ? 'font-bold text-[#07553B]' : 'text-gray-800'}`}>
+                  <td className={`py-3.5 px-4 text-sm md:text-base font-bold ${
+                    item.isSummary ? 'text-white uppercase tracking-wide' : item.highlight ? 'text-[#07553B]' : 'text-gray-800 font-normal'
+                  }`}>
                     {item.rubrique}
                   </td>
                 </tr>

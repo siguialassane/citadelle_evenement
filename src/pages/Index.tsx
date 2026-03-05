@@ -30,6 +30,7 @@ const PROGRAMME = [
   { heure: "19:40 - 20:20", duree: "40 min", rubrique: "Salat Ichai et Tarawih", highlight: true },
   { heure: "20:20 - 21:00", duree: "40 min", rubrique: "Dîner + Activité artistique ou culturelle", highlight: true },
   { heure: "20:40", duree: "-", rubrique: "Douah de clôture", highlight: false },
+  { heure: "16:15 - 21:00", duree: "4h 45min", rubrique: "FIN DE L'IFTAR 2026", highlight: true, isSummary: true },
 ];
 
 const Index = () => {
@@ -183,19 +184,28 @@ const Index = () => {
             <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-emerald-200 -ml-[1px]"></div>
 
             {PROGRAMME.map((item, index) => (
-              <div key={index} className="relative pl-8 md:pl-0">
-                <div className="md:flex items-center justify-between w-full">
-                  <div className="hidden md:block w-5/12 text-right pr-8">
-                    <span className="text-amber-600 font-bold text-lg">{item.heure}</span>
-                  </div>
-                  <div className={`absolute left-[-9px] md:left-1/2 md:-ml-[9px] w-4 h-4 rounded-full ${item.highlight ? 'bg-amber-500' : 'bg-emerald-500'} border-4 border-white shadow z-10`}></div>
-                  <div className="md:w-5/12 md:pl-8">
-                    <span className="md:hidden text-amber-600 font-bold block mb-1">{item.heure}</span>
-                    <h4 className="font-bold text-slate-800 text-lg">{item.rubrique}</h4>
-                    <p className="text-slate-500 text-sm mt-1">Durée : {item.duree}</p>
+              item.isSummary ? (
+                <div key={index} className="relative pl-8 md:pl-0 mt-4">
+                  <div className="bg-emerald-800 text-white rounded-lg px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <span className="font-bold text-lg uppercase tracking-wide">{item.rubrique}</span>
+                    <span className="text-amber-300 font-semibold">{item.heure} — {item.duree}</span>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div key={index} className="relative pl-8 md:pl-0">
+                  <div className="md:flex items-center justify-between w-full">
+                    <div className="hidden md:block w-5/12 text-right pr-8">
+                      <span className="text-amber-600 font-bold text-lg">{item.heure}</span>
+                    </div>
+                    <div className={`absolute left-[-9px] md:left-1/2 md:-ml-[9px] w-4 h-4 rounded-full ${item.highlight ? 'bg-amber-500' : 'bg-emerald-500'} border-4 border-white shadow z-10`}></div>
+                    <div className="md:w-5/12 md:pl-8">
+                      <span className="md:hidden text-amber-600 font-bold block mb-1">{item.heure}</span>
+                      <h4 className="font-bold text-slate-800 text-lg">{item.rubrique}</h4>
+                      <p className="text-slate-500 text-sm mt-1">Durée : {item.duree}</p>
+                    </div>
+                  </div>
+                </div>
+              )
             ))}
           </div>
         </div>

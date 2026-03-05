@@ -6,6 +6,8 @@ import { StatisticsSection } from "./StatisticsSection";
 import { exportToCSV, exportToPDF } from "./ExportFunctions";
 import { type Participant } from "../../../../types/participant";
 
+type PdfFilterType = 'all' | 'paid' | 'unpaid';
+
 interface SearchAndExportProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
@@ -34,8 +36,8 @@ export const SearchAndExport = ({
     exportToCSV(participants);
   };
 
-  const handleExportPDF = async () => {
-    await exportToPDF(filteredParticipants, onPdfGenerated);
+  const handleExportPDF = async (filterType: PdfFilterType = 'all') => {
+    await exportToPDF(filteredParticipants, onPdfGenerated, filterType);
   };
 
   return (

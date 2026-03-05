@@ -14,6 +14,7 @@ type PaymentFormProps = {
   setComments: (value: string) => void;
   isProcessing: boolean;
   handleSubmit: (e: React.FormEvent) => void;
+  stepNumber?: number;
 };
 
 export function PaymentForm({
@@ -22,7 +23,8 @@ export function PaymentForm({
   comments,
   setComments,
   isProcessing,
-  handleSubmit
+  handleSubmit,
+  stepNumber = 4
 }: PaymentFormProps) {
   // État local pour afficher les erreurs de validation
   const [phoneError, setPhoneError] = useState<string | null>(null);
@@ -66,15 +68,15 @@ export function PaymentForm({
   return (
     <form onSubmit={handleFormSubmit} className="bg-gray-50 p-6 rounded-lg border border-gray-200">
       <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-        <span className="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center mr-2 text-sm">3</span>
-        <span className="text-xl font-semibold text-red-600">PRECISEZ SVP LE NUMERO DE TELEPHONE AYANT SERVI AU PAIEMENT</span>
+        <span className="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center mr-2 text-sm">{stepNumber}</span>
+        <span className="text-xl font-semibold text-red-600">CONFIRMEZ VOTRE NUMÉRO DE TÉLÉPHONE</span>
       </h3>
       
       <div className="space-y-4">
         {/* Numéro utilisé pour le paiement */}
         <div>
           <Label htmlFor="phoneNumber" className="block mb-1">
-            Numéro utilisé pour le paiement <span className="text-red-500">*</span>
+            Numéro de contact ou de paiement <span className="text-red-500">*</span>
           </Label>
           <Input
             id="phoneNumber"
@@ -89,7 +91,7 @@ export function PaymentForm({
             <p className="text-sm text-red-500 mt-1">{phoneError}</p>
           )}
           <p className="text-xs text-gray-500 mt-1">
-            Entrez les 10 chiffres sans le préfixe +225
+            Paiement direct Mobile Money → numéro expéditeur. Dépôt via agent ou cabine → votre propre numéro personnel.
           </p>
         </div>
         

@@ -94,6 +94,7 @@ export function ManualPaymentForm({ participant }: ManualPaymentFormProps) {
             setComments={setComments}
             isProcessing={isProcessing}
             handleSubmit={handleSubmit}
+            stepNumber={formStep}
           />
         </div>
       </CardContent>

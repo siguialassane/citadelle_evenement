@@ -325,89 +325,80 @@ export const ParticipantTable = ({
                     {getPaymentStatusBadge(participant)}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex items-center gap-1"
-                      onClick={() => onViewDetails(participant)}
-                    >
-                      <Info className="h-3 w-3" />
-                      <span className="hidden sm:inline">Détails</span>
-                    </Button>
+                    <div className="flex items-center justify-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex items-center gap-1"
+                        onClick={() => onViewDetails(participant)}
+                      >
+                        <Info className="h-3 w-3" />
+                        <span className="hidden sm:inline">Détails</span>
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-red-400 hover:text-red-700 hover:bg-red-50 border border-red-200"
+                        onClick={() => handleDeleteClick(participant)}
+                        title="Supprimer ce participant"
+                      >
+                        <Trash className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </TableCell>
-                  {/* Colonne Actions: un bouton Présent/Absent par personne */}
+                  {/* Colonne Actions: boutons check-in uniquement */}
                   <TableCell className="text-right">
-                    <div className="flex flex-col gap-1 items-end">
+                    <div className="flex flex-col gap-1.5 items-end">
                       {/* Bouton check-in du participant principal */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500 hidden sm:inline">
-                          {participant.last_name}
-                        </span>
+                      <Button
+                        size="sm"
+                        variant={participant.check_in_status ? "outline" : "default"}
+                        className={`flex items-center gap-1.5 min-w-[90px] justify-center ${
+                          participant.check_in_status 
+                            ? "border-orange-300 text-orange-700 hover:bg-orange-50" 
+                            : "bg-green-600 hover:bg-green-700 text-white"
+                        }`}
+                        onClick={() => onCheckIn(participant.id, participant.check_in_status)}
+                      >
+                        {participant.check_in_status ? (
+                          <>
+                            <XCircle className="h-3.5 w-3.5" />
+                            <span>Annuler</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <span>Présent</span>
+                          </>
+                        )}
+                      </Button>
+                      {/* Boutons check-in pour chaque accompagnant */}
+                      {companions.map((guest) => (
                         <Button
+                          key={guest.id}
                           size="sm"
-                          variant={participant.check_in_status ? "outline" : "default"}
-                          className={`flex items-center gap-1 ${
-                            participant.check_in_status 
-                              ? "border-red-200 text-red-700 hover:bg-red-50" 
-                              : "bg-green-600 hover:bg-green-700"
+                          variant={guest.check_in_status ? "outline" : "default"}
+                          className={`flex items-center gap-1.5 min-w-[90px] justify-center ${
+                            guest.check_in_status 
+                              ? "border-orange-300 text-orange-700 hover:bg-orange-50" 
+                              : "bg-blue-600 hover:bg-blue-700 text-white"
                           }`}
-                          onClick={() => onCheckIn(participant.id, participant.check_in_status)}
+                          onClick={() => onGuestCheckIn && onGuestCheckIn(guest.id, guest.check_in_status)}
+                          title={`${guest.first_name} ${guest.last_name}`}
                         >
-                          {participant.check_in_status ? (
+                          {guest.check_in_status ? (
                             <>
-                              <XCircle className="h-3 w-3" />
-                              <span className="hidden sm:inline">Absent</span>
+                              <XCircle className="h-3.5 w-3.5" />
+                              <span className="truncate max-w-[60px]">{guest.first_name}</span>
                             </>
                           ) : (
                             <>
-                              <CheckCircle2 className="h-3 w-3" />
-                              <span className="hidden sm:inline">Présent</span>
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              <span className="truncate max-w-[60px]">{guest.first_name}</span>
                             </>
                           )}
                         </Button>
-                      </div>
-                      {/* Boutons check-in pour chaque accompagnant */}
-                      {companions.map((guest) => (
-                        <div key={guest.id} className="flex items-center gap-2">
-                          <span className="text-xs text-blue-500 hidden sm:inline">
-                            {guest.last_name}
-                          </span>
-                          <Button
-                            size="sm"
-                            variant={guest.check_in_status ? "outline" : "default"}
-                            className={`flex items-center gap-1 ${
-                              guest.check_in_status 
-                                ? "border-red-200 text-red-700 hover:bg-red-50" 
-                                : "bg-blue-600 hover:bg-blue-700"
-                            }`}
-                            onClick={() => onGuestCheckIn && onGuestCheckIn(guest.id, guest.check_in_status)}
-                          >
-                            {guest.check_in_status ? (
-                              <>
-                                <XCircle className="h-3 w-3" />
-                                <span className="hidden sm:inline">Absent</span>
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle2 className="h-3 w-3" />
-                                <span className="hidden sm:inline">Présent</span>
-                              </>
-                            )}
-                          </Button>
-                        </div>
                       ))}
-                      {/* Bouton supprimer */}
-                      {pdfDownloaded && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex items-center gap-1 border-red-200 text-red-700 hover:bg-red-50 mt-1"
-                          onClick={() => handleDeleteClick(participant)}
-                        >
-                          <Trash className="h-3 w-3" />
-                          <span className="hidden sm:inline">Supprimer</span>
-                        </Button>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>
