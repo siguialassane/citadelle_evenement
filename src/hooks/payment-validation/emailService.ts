@@ -56,6 +56,7 @@ const fetchPaymentPlaces = async (participantId: string) => {
   }
 };
 
+
 export const sendConfirmationEmail = async (participantData: any, qrCodeId: string): Promise<boolean> => {
   try {
     console.log("==== ENVOI EMAIL DE CONFIRMATION ====");
@@ -193,6 +194,35 @@ export const sendConfirmationEmail = async (participantData: any, qrCodeId: stri
     return true;
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email de confirmation:", error);
+    return false;
+  }
+};
+
+/**
+ * Renvoie l'email de confirmation à un participant dont le paiement est déjà validé.
+ * Récupère le qr_code_id depuis la base de données pour garantir sa fraicheur.
+ */
+export const resendConfirmationEmail = async (participant: any): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('participants')
+      .select('qr_code_id, first_name, last_name, email, contact_number, is_member, id, created_at')
+      .eq('id', participant.id)
+      .single();
+
+    if (error || !data) {
+      console.error("Erreur récupération participant pour renvoi email:", error);
+      return false;
+    }
+
+    if (!data.qr_code_id) {
+      console.error("Aucun QR code trouvé pour ce participant — le paiement a-t-il été validé ?");
+      return false;
+    }
+
+    return await sendConfirmationEmail(data, data.qr_code_id);
+  } catch (err) {
+    console.error("Erreur resendConfirmationEmail:", err);
     return false;
   }
 };

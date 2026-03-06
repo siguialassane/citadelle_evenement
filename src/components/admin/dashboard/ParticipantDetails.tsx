@@ -19,10 +19,11 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Download, QrCode, RefreshCw, Users, CheckCircle2, XCircle, MessageSquare } from "lucide-react";
+import { AlertTriangle, Download, QrCode, RefreshCw, Users, CheckCircle2, XCircle, MessageSquare, Mail } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { resendConfirmationEmail } from "@/hooks/payment-validation/emailService";
 import { type Participant, type Payment } from "../../../types/participant";
 import { type ManualPayment, type GuestRecord } from "../../../types/payment";
 import html2canvas from 'html2canvas';
@@ -44,7 +45,36 @@ export const ParticipantDetails = ({
   onRefresh
 }: ParticipantDetailsProps) => {
   const [isRegeneratingQR, setIsRegeneratingQR] = useState(false);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
   const isMobile = useIsMobile();
+
+  const handleResendEmail = async () => {
+    if (!participant) return;
+    setIsResendingEmail(true);
+    try {
+      const success = await resendConfirmationEmail(participant);
+      if (success) {
+        toast({
+          title: "Email envoyé ✅",
+          description: `L'email de confirmation a été renvoyé à ${participant.email}.`,
+        });
+      } else {
+        toast({
+          title: "Erreur",
+          description: "Impossible d'envoyer l'email. Vérifiez que le paiement est bien validé.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur inattendue s'est produite.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
   
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
@@ -486,7 +516,20 @@ export const ParticipantDetails = ({
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="flex flex-wrap gap-2 sm:justify-between">
+          <div className="flex gap-2">
+            {hasPayment && (
+              <Button
+                onClick={handleResendEmail}
+                disabled={isResendingEmail}
+                variant="outline"
+                className="flex items-center gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+              >
+                <Mail className={`h-4 w-4 ${isResendingEmail ? 'animate-bounce' : ''}`} />
+                {isResendingEmail ? 'Envoi en cours...' : 'Renvoyer l’email de confirmation'}
+              </Button>
+            )}
+          </div>
           <DialogClose asChild>
             <Button variant="outline">Fermer</Button>
           </DialogClose>
