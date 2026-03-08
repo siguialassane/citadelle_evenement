@@ -15,6 +15,7 @@ import ExcelAnalyzer from './pages/ExcelAnalyzer';
 import MembershipDashboard from './pages/admin/MembershipDashboard';
 import MembershipForm from './pages/Membership';
 import Statistics from './pages/admin/Statistics';
+import EvaluationDashboard from './pages/admin/EvaluationDashboard';
 import Programme from './pages/Programme';
 import Evaluation from './pages/Evaluation';
 
@@ -40,6 +41,7 @@ function App() {
         <Route path="/admin/qr-scan" element={<QrCodeScan />} />
         <Route path="/admin/membership" element={<MembershipDashboard />} />
         <Route path="/admin/statistics" element={<Statistics />} />
+        <Route path="/admin/evaluations" element={<EvaluationDashboard />} />
         
         {/* Routes pour les participants */}
         <Route path="/confirmation/:participantId" element={<Confirmation />} />

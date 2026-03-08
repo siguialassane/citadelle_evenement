@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { type Participant } from "../../types/participant";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Mail, CheckCircle, Users, BarChart } from "lucide-react";
+import { Bell, Mail, CheckCircle, Users, BarChart, ClipboardList } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 
@@ -376,6 +376,14 @@ const AdminDashboard = () => {
             >
               <BarChart className="h-4 w-4" />
               Statistiques générales
+            </Button>
+            
+            <Button
+              onClick={() => navigate("/admin/evaluations")}
+              className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700"
+            >
+              <ClipboardList className="h-4 w-4" />
+              Évaluations
             </Button>
             
             <Button 
