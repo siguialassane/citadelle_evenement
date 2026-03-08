@@ -4,9 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { ArrowLeft, ArrowRight, CheckCircle2, Star, MapPin, BookOpen, Users, Clock, MessageSquare, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Star, MapPin, BookOpen, Users, Clock, MessageSquare, RefreshCw, ChevronRight } from 'lucide-react';
 import { EventLogo } from '@/components/EventLogo';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 type Note = 'mauvais' | 'passable' | 'bon' | 'excellent';
 
@@ -97,6 +97,14 @@ export default function Evaluation() {
   const [autresRemarques, setAutresRemarques] = useState('');
   const [renouveler, setRenouveler] = useState<boolean | null>(null);
   const [frequence, setFrequence] = useState('');
+  const [frequenceModalOpen, setFrequenceModalOpen] = useState(false);
+
+  const FREQUENCES = [
+    { value: 'Mensuelle',      label: 'Mensuelle',      sub: 'Tous les mois' },
+    { value: 'Trimestrielle',  label: 'Trimestrielle',  sub: 'Tous les 3 mois' },
+    { value: 'Semestrielle',   label: 'Semestrielle',   sub: 'Tous les 6 mois' },
+    { value: 'Annuelle',       label: 'Annuelle',       sub: 'Une fois par an' },
+  ];
 
   const goTo = (next: number) => {
     if (animating) return;
@@ -356,9 +364,18 @@ export default function Evaluation() {
                 {renouveler === true && (
                   <div className="pt-1">
                     <label className="block text-xs text-gray-500 mb-1.5">À quelle fréquence ?</label>
-                    <Input value={frequence} onChange={e => setFrequence(e.target.value)}
-                      placeholder="Ex. : annuelle, semestrielle…"
-                      className="bg-gray-50 border-gray-200 focus:border-green-500 focus:ring-green-500" />
+                    <button
+                      type="button"
+                      onClick={() => setFrequenceModalOpen(true)}
+                      className={`w-full flex items-center justify-between rounded-lg border px-4 py-3 text-sm transition-all active:scale-95 ${
+                        frequence
+                          ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                          : 'border-gray-200 bg-white text-gray-400'
+                      }`}
+                    >
+                      <span>{frequence || 'Sélectionner une fréquence'}</span>
+                      <ChevronRight className="h-4 w-4 opacity-50" />
+                    </button>
                   </div>
                 )}
               </div>
@@ -400,6 +417,35 @@ export default function Evaluation() {
           </div>
         </div>
       )}
+
+      {/* Modal fréquence */}
+      <Dialog open={frequenceModalOpen} onOpenChange={setFrequenceModalOpen}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-gray-900">À quelle fréquence ?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 pt-1">
+            {FREQUENCES.map(f => (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => { setFrequence(f.value); setFrequenceModalOpen(false); }}
+                className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-all active:scale-95 ${
+                  frequence === f.value
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-200 bg-white hover:border-green-300'
+                }`}
+              >
+                <div>
+                  <p className={`text-sm font-semibold ${frequence === f.value ? 'text-green-700' : 'text-gray-800'}`}>{f.label}</p>
+                  <p className="text-xs text-gray-400">{f.sub}</p>
+                </div>
+                {frequence === f.value && <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />}
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
