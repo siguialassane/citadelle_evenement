@@ -36,6 +36,7 @@ const AdminDashboard = () => {
   const [pdfDownloaded, setPdfDownloaded] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pendingPayments, setPendingPayments] = useState<number>(0);
+  const [presenceFilter, setPresenceFilter] = useState<'all' | 'present' | 'absent'>('all');
 
   useEffect(() => {
     const checkAuth = () => {
@@ -56,13 +57,22 @@ const AdminDashboard = () => {
   }, [navigate]);
 
   useEffect(() => {
+    let base = participants;
+
+    // Filtre par présence
+    if (presenceFilter === 'present') {
+      base = base.filter(p => p.check_in_status === true);
+    } else if (presenceFilter === 'absent') {
+      base = base.filter(p => !p.check_in_status);
+    }
+
     if (searchTerm.trim() === "") {
-      setFilteredParticipants(participants);
+      setFilteredParticipants(base);
       return;
     }
 
     const searchTermLower = searchTerm.toLowerCase();
-    const filtered = participants.filter(
+    const filtered = base.filter(
       participant =>
         participant.first_name.toLowerCase().includes(searchTermLower) ||
         participant.last_name.toLowerCase().includes(searchTermLower) ||
@@ -79,7 +89,7 @@ const AdminDashboard = () => {
     );
 
     setFilteredParticipants(filtered);
-  }, [searchTerm, participants]);
+  }, [searchTerm, participants, presenceFilter]);
 
   const fetchParticipants = async () => {
     setIsLoading(true);
@@ -412,6 +422,8 @@ const AdminDashboard = () => {
           pdfDownloaded={pdfDownloaded}
           onPdfGenerated={() => setPdfDownloaded(true)}
           onDeleteDialogOpen={() => setDeleteDialogOpen(true)}
+          presenceFilter={presenceFilter}
+          onPresenceFilterChange={setPresenceFilter}
         />
 
         <ParticipantTable 
