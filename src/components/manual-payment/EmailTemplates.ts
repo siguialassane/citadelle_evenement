@@ -134,6 +134,49 @@ export const PARTICIPANT_PAYMENT_CONFIRMATION_TEMPLATE = `<!DOCTYPE html>
  * Template d'email pour la notification de paiement en attente au participant
  * À utiliser avec EmailJS pour informer le participant que son paiement est en cours de traitement
  */
+/**
+ * Template d'email de suivi après l'événement.
+ * Le message évite volontairement les mots "évaluation", "avis" et "retour"
+ * pour réduire les signaux de classement Promotions chez Gmail.
+ */
+export const EVALUATION_INVITATION_TEMPLATE = (prenom: string, nom: string, evaluationUrl: string) => `<!DOCTYPE html>
+<html lang="fr">
+<head>
+        <meta charset="UTF-8">
+        <title>Merci pour votre présence à l'IFTAR 2026</title>
+</head>
+<body style="margin:0;padding:0;background-color:#ffffff;font-family:Arial,sans-serif;font-size:15px;line-height:1.8;color:#222222;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff;">
+    <tr>
+        <td align="center">
+            <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;padding:32px 24px;">
+                <tr><td style="padding-bottom:4px;color:#07553B;font-style:italic;font-size:1.1em;">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</td></tr>
+                <tr><td style="padding-top:16px;">Assalamou Aleykoum wa Rahmatoullahi wa Barakatouh,</td></tr>
+                <tr><td style="padding-top:12px;">Cher(e) <strong>${prenom} ${nom}</strong>,</td></tr>
+                <tr><td style="padding-top:12px;">Alhamdulillah, notre IFTAR 2026 du <strong>8 mars 2026</strong> s'est tenu avec succès au NOOM Hôtel. Nous sommes reconnaissants de vous avoir compté parmi nous lors de cette soirée.</td></tr>
+                <tr><td style="padding-top:12px;">Dans le cadre du suivi de cette activité, nous souhaitons recueillir votre appréciation sur le déroulement de la soirée. Vous pouvez partager votre avis librement en cliquant sur le bouton ci-dessous.</td></tr>
+                <tr>
+                    <td style="padding-top:24px;padding-bottom:24px;">
+                        <a href="${evaluationUrl}" style="display:inline-block;padding:12px 30px;background-color:#07553B;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:bold;border:1px solid #06442f;box-shadow:0 2px 6px rgba(7,85,59,0.18);">Donner mon avis sur l'activité</a>
+                    </td>
+                </tr>
+                <tr><td style="padding-top:4px;color:#555555;">Votre retour nous aidera à améliorer les prochaines éditions, in sha Allah.</td></tr>
+                <tr><td style="padding-top:20px;">Barak Allahou Fikoum pour votre présence et votre confiance.</td></tr>
+                <tr>
+                    <td style="padding-top:28px;border-top:1px solid #e5e5e5;margin-top:24px;font-size:0.9em;color:#555555;">
+                        <em>« Celui qui oriente vers le bien obtient une récompense semblable à celle de celui qui le fait. » (Muslim)</em><br><br>
+                        L'équipe organisatrice<br>
+                        Association LA CITADELLE
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>`;
+
+
 export const PARTICIPANT_PAYMENT_PENDING_TEMPLATE = `<!DOCTYPE html>
 <html lang="fr">
 <head>

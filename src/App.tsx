@@ -16,6 +16,7 @@ import MembershipDashboard from './pages/admin/MembershipDashboard';
 import MembershipForm from './pages/Membership';
 import Statistics from './pages/admin/Statistics';
 import EvaluationDashboard from './pages/admin/EvaluationDashboard';
+import EvaluationEmailDashboard from './pages/admin/EvaluationEmailDashboard';
 import Programme from './pages/Programme';
 import Evaluation from './pages/Evaluation';
 
@@ -42,6 +43,7 @@ function App() {
         <Route path="/admin/membership" element={<MembershipDashboard />} />
         <Route path="/admin/statistics" element={<Statistics />} />
         <Route path="/admin/evaluations" element={<EvaluationDashboard />} />
+        <Route path="/admin/evaluation-email" element={<EvaluationEmailDashboard />} />
         
         {/* Routes pour les participants */}
         <Route path="/confirmation/:participantId" element={<Confirmation />} />
@@ -49,6 +51,7 @@ function App() {
         <Route path="/membership" element={<MembershipForm />} />
         <Route path="/programme" element={<Programme />} />
         <Route path="/evaluation" element={<Evaluation />} />
+        <Route path="/suivi-soiree/:participantId" element={<Evaluation />} />
         
         {/* Routes de redirection explicites pour les liens d'email */}
         <Route path="/redirect/payment-pending/:participantId" 
