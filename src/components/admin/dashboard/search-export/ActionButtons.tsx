@@ -9,15 +9,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { RefreshCw, Download, FileText, Trash2, ChevronDown, CheckCircle2, XCircle, Users } from "lucide-react";
+import { RefreshCw, Download, FileText, Trash2, ChevronDown, CheckCircle2, XCircle, Users, UserCheck, TableIcon } from "lucide-react";
 
-type PdfFilterType = 'all' | 'paid' | 'unpaid';
+type PdfFilterType = 'all' | 'paid' | 'unpaid' | 'present';
 
 interface ActionButtonsProps {
   isRefreshing: boolean;
   onRefresh: () => void;
   onExportCSV: () => void;
   onExportPDF: (filterType: PdfFilterType) => void;
+  onExportExcel: () => void;
   pdfDownloaded: boolean;
   onDeleteDialogOpen: () => void;
 }
@@ -27,6 +28,7 @@ export const ActionButtons = ({
   onRefresh,
   onExportCSV,
   onExportPDF,
+  onExportExcel,
   pdfDownloaded,
   onDeleteDialogOpen
 }: ActionButtonsProps) => {
@@ -50,7 +52,17 @@ export const ActionButtons = ({
         CSV
       </Button>
 
-      {/* Dropdown PDF avec filtres par statut de paiement */}
+      {/* Bouton Excel — présents uniquement */}
+      <Button
+        variant="outline"
+        className="flex items-center gap-2 text-green-700 border-green-600 hover:bg-green-50"
+        onClick={onExportExcel}
+      >
+        <TableIcon className="h-4 w-4" />
+        Excel (présents)
+      </Button>
+
+      {/* Dropdown PDF avec filtres */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button className="flex items-center gap-2 bg-gray-800 hover:bg-gray-900">
@@ -59,7 +71,7 @@ export const ActionButtons = ({
             <ChevronDown className="h-3 w-3 opacity-70" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel className="text-xs text-gray-500">Exporter en PDF</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => onExportPDF('all')} className="cursor-pointer gap-2">
@@ -69,6 +81,14 @@ export const ActionButtons = ({
               <div className="text-xs text-gray-400">Liste complète</div>
             </div>
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onExportPDF('present')} className="cursor-pointer gap-2">
+            <UserCheck className="h-4 w-4 text-green-600" />
+            <div>
+              <div className="font-medium text-green-700">Présents uniquement</div>
+              <div className="text-xs text-gray-400">Participants ayant été présents</div>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => onExportPDF('paid')} className="cursor-pointer gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <div>

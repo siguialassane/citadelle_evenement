@@ -3,11 +3,11 @@
 import { SearchBar } from "./SearchBar";
 import { ActionButtons } from "./ActionButtons";
 import { StatisticsSection } from "./StatisticsSection";
-import { exportToCSV, exportToPDF } from "./ExportFunctions";
+import { exportToCSV, exportToPDF, exportPresentToExcel } from "./ExportFunctions";
 import { type Participant } from "../../../../types/participant";
 import { Button } from "../../../ui/button";
 
-type PdfFilterType = 'all' | 'paid' | 'unpaid';
+type PdfFilterType = 'all' | 'paid' | 'unpaid' | 'present';
 type PresenceFilter = 'all' | 'present' | 'absent';
 
 interface SearchAndExportProps {
@@ -46,6 +46,10 @@ export const SearchAndExport = ({
     await exportToPDF(filteredParticipants, onPdfGenerated, filterType);
   };
 
+  const handleExportExcel = () => {
+    exportPresentToExcel(participants);
+  };
+
   const presentCount = participants.filter(p => p.check_in_status === true).length;
   const absentCount = participants.filter(p => !p.check_in_status).length;
 
@@ -61,6 +65,7 @@ export const SearchAndExport = ({
           onRefresh={onRefresh}
           onExportCSV={handleExportCSV}
           onExportPDF={handleExportPDF}
+          onExportExcel={handleExportExcel}
           pdfDownloaded={pdfDownloaded}
           onDeleteDialogOpen={onDeleteDialogOpen}
         />

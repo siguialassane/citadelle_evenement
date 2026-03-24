@@ -4,6 +4,7 @@
 
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import { toast } from "@/hooks/use-toast";
 import { type Participant } from "../../../../types/participant";
 
@@ -257,12 +258,57 @@ export const exportToCSV = (participants: Participant[]) => {
   });
 };
 
+// Fonction pour exporter les présents au format Excel (.xlsx)
+export const exportPresentToExcel = (participants: Participant[]) => {
+  const presentParticipants = participants.filter(p => p.check_in_status === true);
+
+  if (presentParticipants.length === 0) {
+    toast({
+      title: "Aucun présent",
+      description: "Aucun participant marqué comme présent.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  const rows = presentParticipants.map((p, i) => {
+    const companions = p.guests?.filter(g => !g.is_main_participant) || [];
+    const companionNames = companions.map(g => `${g.first_name} ${g.last_name}`).join(" | ");
+    const companionPresent = companions.filter(g => g.check_in_status).map(g => `${g.first_name} ${g.last_name}`).join(" | ");
+    return {
+      "N°": i + 1,
+      "Nom": p.last_name || "",
+      "Prénom": p.first_name || "",
+      "Email": p.email || "",
+      "Téléphone": formatPhoneNumber(p.contact_number || ""),
+      "Membre": p.is_member ? "Oui" : "Non",
+      "Heure d'arrivée": p.check_in_timestamp ? formatFrenchDateTime(p.check_in_timestamp) : "N/A",
+      "Nb de places": companions.length > 0 ? companions.length + 1 : 1,
+      "Accompagnants": companionNames || "-",
+      "Accompagnants présents": companionPresent || "-",
+      "Statut paiement": getPaymentStatus(p),
+      "Montant": getPaymentAmount(p),
+      "Méthode paiement": getPaymentMethod(p),
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Présents");
+  XLSX.writeFile(wb, `presents-${new Date().toISOString().slice(0, 10)}.xlsx`);
+
+  toast({
+    title: "Export Excel réussi",
+    description: `${presentParticipants.length} participants présents exportés.`,
+  });
+};
+
 export const exportToPDF = async (
   filteredParticipants: Participant[], 
   onPdfGenerated: () => void,
-  filterType: 'all' | 'paid' | 'unpaid' = 'all'
+  filterType: 'all' | 'paid' | 'unpaid' | 'present' = 'all'
 ) => {
-  // Appliquer le filtre par statut de paiement
+  // Appliquer le filtre
   const participantsList = filterType === 'paid'
     ? filteredParticipants.filter(p => {
         const s = getPaymentStatus(p);
@@ -273,12 +319,15 @@ export const exportToPDF = async (
         const s = getPaymentStatus(p);
         return s === 'Non payé' || s === 'En attente' || s === 'Rejeté';
       })
+    : filterType === 'present'
+    ? filteredParticipants.filter(p => p.check_in_status === true)
     : filteredParticipants;
 
   const filterLabels: Record<string, string> = {
     all: 'LISTE COMPLÈTE DES PARTICIPANTS',
     paid: 'PARTICIPANTS — PAIEMENTS CONFIRMÉS',
     unpaid: 'PARTICIPANTS — PAIEMENTS EN ATTENTE / NON PAYÉS',
+    present: 'PARTICIPANTS PRÉSENTS',
   };
 
   if (participantsList.length === 0) {

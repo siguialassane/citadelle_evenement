@@ -11,6 +11,7 @@ import { ArrowLeft, Star, MessageSquare, RefreshCw, ThumbsUp, Users, Download } 
 import { Header } from "@/components/admin/dashboard/Header";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 interface Evaluation {
   id: string;
@@ -225,6 +226,49 @@ export default function EvaluationDashboard() {
     toast({ title: "PDF exporté avec succès !" });
   };
 
+  const exportExcel = () => {
+    const dateExport = new Date().toISOString().split("T")[0];
+
+    // Feuille 1 : données complètes
+    const wsData = evaluations.map(ev => ({
+      "Date": new Date(ev.created_at).toLocaleDateString("fr-FR"),
+      "Note globale": ev.note_globale || "",
+      "Note lieu": ev.note_lieu || "",
+      "Commentaire lieu": ev.commentaire_lieu || "",
+      "Note contenu": ev.note_contenu || "",
+      "Commentaire contenu": ev.commentaire_contenu || "",
+      "Note animateurs": ev.note_animateurs || "",
+      "Commentaire animateurs": ev.commentaire_animateurs || "",
+      "Note timing": ev.note_timing || "",
+      "Commentaire timing": ev.commentaire_timing || "",
+      "Moment apprécié": ev.moment_apprecie || "",
+      "Ce qui a manqué": ev.ce_qui_a_manque || "",
+      "Animateur apprécié": ev.animateur_apprecie || "",
+      "Autres remarques": ev.autres_remarques || "",
+      "Renouveler": ev.renouveler === null ? "" : ev.renouveler ? "Oui" : "Non",
+      "Fréquence": ev.frequence || "",
+    }));
+
+    // Feuille 2 : statistiques
+    const wsStats = [
+      { "Critère": "Note globale",   "Moyenne": moyenneGlobale,   "Score /4": scoreGlobale },
+      { "Critère": "Lieu",           "Moyenne": moyenneLieu,       "Score /4": scoreLieu },
+      { "Critère": "Contenu",        "Moyenne": moyenneContenu,    "Score /4": scoreContenu },
+      { "Critère": "Animateurs",     "Moyenne": moyenneAnimateurs, "Score /4": scoreAnimateurs },
+      { "Critère": "Timing",         "Moyenne": moyenneTiming,     "Score /4": scoreTiming },
+      {},
+      { "Critère": "Total réponses",  "Moyenne": String(evaluations.length) },
+      { "Critère": "Souhaitent renouveler", "Moyenne": `${evaluations.length > 0 ? Math.round((renouvelerOui / evaluations.length) * 100) : 0}% (${renouvelerOui}/${evaluations.length})` },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wsData), "Évaluations");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wsStats), "Statistiques");
+
+    XLSX.writeFile(wb, `evaluations-${dateExport}.xlsx`);
+    toast({ title: "Excel exporté avec succès !" });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header onLogout={handleLogout} />
@@ -244,7 +288,11 @@ export default function EvaluationDashboard() {
             </Button>
             <Button size="sm" onClick={exportPDF} disabled={evaluations.length === 0} className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white">
               <Download className="h-4 w-4" />
-              Télécharger PDF
+              PDF
+            </Button>
+            <Button size="sm" onClick={exportExcel} disabled={evaluations.length === 0} variant="outline" className="flex items-center gap-2 border-green-600 text-green-700 hover:bg-green-50">
+              <Download className="h-4 w-4" />
+              Excel
             </Button>
           </div>
         </div>
